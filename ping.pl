@@ -91,31 +91,35 @@ do {
 print $a;
 slog($a);
 
-# Check your log into subversion.
+# Send your tagtime log to Beeminder if user has $private = 0.
 #   (maybe should do this after retropings too but launch.pl would do that).
 if(!$private && $resp !~ /^\s*$/) {
   #print divider(""), "\n";
-  #print "Showing your pie while your tagtime log gets checked in...\n";
+  #print "Showing your pie while your tagtime log gets uploaded...\n";
   #print divider(""), "\n";
   #system("${path}showpie.pl $logf");
   # We could show historical stats on the tags for the current ping here.
   print divider(" sending your log file to beeminder "), "\n";
-  system("scp ${path}$usr.log $usr\@yootles.com:/var/www/html/kibotzer/data/$usr.log");
-  #if(-e $tskf) {
-  #  print divider(" checking your log and task file into subversion "), "\n";
-  #  $ret = system("$SVN ci $logf $tskf -m \"AUTO-CHECKIN of $usr's log and task file\"");
-  #} else {
-  #  print divider(" checking your log into subversion "), "\n";
-  #  $ret = system("$SVN ci $logf -m \"AUTO-CHECKIN of $usr's log\"");
-  #}
-  #if($ret) {
-  #  print
-  #    "ERROR: could not check in your tagtime log! (no network connection?)\n";
-  #  print
-  #    "  (This does not affect tagtime, just others' ability to see your latest pie.)\n";
-  #  print
-  #    "Please cut and paste the above and send it to dreeves\@yootles.com\n";
-  #  print "[This message will self-destruct in 90 seconds...]\n";
-  #  sleep(90);
-  #}
+  system("scp ${path}$usr.log " . 
+             "$usr\@yootles.com:/var/www/html/kibotzer/data/$usr.log");
 }
+
+# SCHDEL:
+#if(-e $tskf) {
+#  print divider(" checking your log and task file into subversion "), "\n";
+#  $ret = system("$SVN ci $logf $tskf -m \"AUTO-CHECKIN of $usr's log and task file\"");
+#} else {
+#  print divider(" checking your log into subversion "), "\n";
+#  $ret = system("$SVN ci $logf -m \"AUTO-CHECKIN of $usr's log\"");
+#}
+#if($ret) {
+#  print
+#    "ERROR: could not check in your tagtime log! (no network connection?)\n";
+#  print
+#    "  (This does not affect tagtime, just others' ability to see your latest pie.)\n";
+#  print
+#    "Please cut and paste the above and send it to dreeves\@yootles.com\n";
+#  print "[This message will self-destruct in 90 seconds...]\n";
+#  sleep(90);
+#}
+
