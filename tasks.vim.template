@@ -1,0 +1,151 @@
+"These macros call the external script tskproc.pl
+
+set nocompatible
+
+"Append a marker, prepend a '!', filter thru tskproc, remove marker.
+fun! ToggleTask()
+  let col = col(".")
+  if getline(".") =~ "^X "
+    let col = col - 2
+  endif
+  normal A TIMEPIFVR
+  normal 0i!
+  silent execute ":%!./tskproc.pl"
+  call search("TIMEPIFVR", "")
+  execute ":.s/\\s*TIMEPIFVR\\s*/ /"
+  if getline(".") =~ "^X "
+    let col = col + 2
+  endif
+  call cursor(line("."), col)
+  execute ":w"
+  "echo "[SPC/RET toggles task, F5 sorts active tasks, +/- inserts new task]"
+endfun
+
+"Same as ToggleTask() but doesn't prepend '!' so doesn't toggle current task.
+fun! SortActive()
+  let col = col(".")
+  normal A TIMEPIFVS
+  silent execute ":%!./tskproc.pl -sort"
+  call search("TIMEPIFVS", "")
+  execute ":.s/\\s*TIMEPIFVS\\s*/ /"
+  call cursor(line("."), col)
+  "echo "[active tasks sorted (u to undo)]"
+endfun
+
+"Make <enter> toggle task without changing how <enter> normally works.
+fun! PressEnter()
+  if strlen(getline(".")) == col(".")
+    call ToggleTask()
+    normal o
+  else
+    normal lDo
+    normal p0
+  endif
+endfun
+
+"Pause task
+fun! PauseTask()
+  if getline(".") =~ "PAUSE("
+    call ToggleTask()
+    return
+  endif
+  let col = col(".")
+  normal A TIMEPIFVR
+  normal 0f=iPAUSE() 
+  call ToggleTask()
+  "execute ":%!./tskproc.pl"
+  call search("TIMEPIFVR", "")
+  execute ":.s/\\s*TIMEPIFVR\\s*/ /"
+  call cursor(line("."), col)
+endfun
+
+"Use enter or space to toggle tasks in normal mode.
+map <silent> <cr> :call ToggleTask()<cr>
+map <space> <cr>
+
+"This makes <enter> toggle the task iff at eol in insert mode.
+imap <silent> <cr> <esc>:call PressEnter()<cr>i
+
+"F5 sorts the active tasks.
+map <silent> <f5> :call SortActive()<cr>
+imap <f5> <esc><f5>
+
+"F6 pauses a task (TODO: just inserting the PAUSE() string for now)
+map <silent> <f6> :call PauseTask()<cr>
+imap <f6> <esc><f6>
+map \ <f6>
+
+"Go into insert mode at the top or bottom of the active tasks.
+map + ggO
+map - gg/----<cr>O
+
+"---------------------------------------------------------------
+"could put the following in a file and do, eg, source syntax.vim
+" Vim syntax file for TimePie task editor
+
+if version < 600
+  syntax clear
+elseif exists("b:current_syntax")
+  finish
+endif
+
+if version < 508
+  command! -nargs=+ HiLink hi link <args>
+else
+  command! -nargs=+ HiLink hi def link <args>
+endif
+
+hi def tpGray ctermfg=Gray guifg=Gray ctermbg=Black guibg=Black
+hi def tpWhite ctermfg=White guifg=White ctermbg=Black guibg=Black
+
+syn case ignore
+
+syn match  tpEst  "\~\S*"
+syn match  tpNum  "^\d*"
+syn match  tpDiv  "^\-\-\-\-.*"
+syn match  tpTag  "\s\:\S*"
+syn match  tpTS   "\d\d\d\d\d\d\d\d\d\d"hs=s+6
+syn match  tpTS1  "\s\zs\d\d\d\d\d\d"
+syn match  tpTS2  "\-\zs\d\d*"he=e-4
+syn match  tpElap "\s=\S*"
+syn match  tpDone "^X\s\d*"
+syn match  tpPaus "PAUSE("he=e-1
+
+syn sync fromstart
+
+"highlighting (Keyword, String, Type, Tag, Comment)
+HiLink tpEst   Type
+HiLink tpDone  String
+HiLink tpNum   Type
+HiLink tpDiv   Type
+HiLink tpTag   Tag
+HiLink tpTS1   Comment
+HiLink tpTS2   Comment
+HiLink tpPaus  Comment
+HiLink tpElap  String
+
+let b:current_syntax = "timepie"
+
+delcommand HiLink
+
+"---------------------------------------------------------------
+
+
+"SCRATCH: 
+
+"this is nice, since who uses the tab key in normal text:
+"imap <tab> <esc>
+
+"this does what ToggleTask() does but all as a single macro:
+":w<cr>:let g:tpcol = col(".")<cr>A TIMEPIFVR<ESC>I!<ESC>:%!./tskproc.pl<CR>/TIMEPIFVR<CR>:.s/\s*TIMEPIFVR\s*/ /<cr>:call cursor(line("."), g:tpcol)<cr>:echo "[SPC/RET toggles task, F5 sorts active tasks, +/- inserts new task]"<cr>
+
+" WideMsg() prints [long] message up to (&columns-1) length 
+" guaranteed without "Press Enter" prompt. 
+function! WideMsg(msg) 
+  let x=&ruler | let y=&showcmd 
+  set noruler noshowcmd 
+  redraw 
+  echo a:msg 
+  let &ruler=x | let &showcmd=y 
+endfun 
+
