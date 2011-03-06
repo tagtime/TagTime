@@ -1,4 +1,4 @@
-# Settings for timepie.
+# Settings for TagTime.
 # This file must be in your home directory, called .timepierc
 # NB: restart the daemon (timepied.pl) if you change this file.
 
@@ -11,12 +11,12 @@
 #   would interfere with what you're doing (computer game?  demoing
 #   something? application in full-screen mode?) but you want to hear 
 #   the pings and maybe jot down your tags for later entry.
-# * $forward = "email@somewhere.com" would have a timepie bot email
+# * $forward = "email@somewhere.com" would have a tagtime bot email
 #   pings to the specified address (like your phone's email address).
 
 
 $usr = "__USER__";  # your username -- CHANGEME
-$path = "__PATH__";  # path to timepie -- CHANGEME
+$path = "__PATH__";  # path to tagtime -- CHANGEME
         if($path !~ /\/$/) { $path.="/"; }
 $logf = "$path$usr.log";  # log file for pings
 
@@ -33,7 +33,7 @@ $private = 1; # CHANGEME (and svn add your log file) to share your log file.
 
 # Pings from more than this many seconds ago get autologged with tags
 # "afk" and "RETRO".  (Pings can be overdue either because the
-# computer was off or timepie was waiting for you to answer a 
+# computer was off or tagtime was waiting for you to answer a 
 # previous ping.  If the computer was off, the tag "off" is also
 # added.)
 $retrothresh = 60;
@@ -55,7 +55,7 @@ $enforcenums = 0;  # Whether it forces you to include a number in your
 # If you've compiled playsound in sound subdir you can change this to, eg:
 # $playsound = "${path}sound/playsound ${path}sound/blip-twang.wav";
 # $playsound = "echo -e '\a'"; # this is the default if $playsound not defined.
-# $playsound = "";  # makes timepie stay quiet.
+# $playsound = "";  # makes tagtime stay quiet.
 
 
 1; # When requiring a library in perl it has to return 1.

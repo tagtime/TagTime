@@ -27,7 +27,7 @@ my $quiet =  ($args =~ /\bquiet\b/);
 if($test) {  # just pop up the editor and exit; mainly for testing.
   require "$ENV{HOME}/.timepierc";
   require "${path}util.pl";
-  editor($logf, "TimePie Log Editor (invoked explicitly with \"test\" arg)");
+  editor($logf, "TagTime Log Editor (invoked explicitly with \"test\" arg)");
   exit(0);
 }
 
@@ -91,10 +91,10 @@ do {
       slog(annotime(
              "$nxtping err [missed ping from ".ss(time()-$nxtping)." ago]",
              $nxtping)."\n");
-      editor($logf,"TimePie Log Editor (unanswered pings logged as \"err\")");
+      editor($logf,"TagTime Log Editor (unanswered pings logged as \"err\")");
       $editorFlag = 0;
     } elsif(trim(strip($ln)) eq "") {  # no tags in last line of log.
-      #editor($logf, "TimePie Log Editor (add tags for last ping)");
+      #editor($logf, "TagTime Log Editor (add tags for last ping)");
       #$editorFlag = 0;
       $editorFlag = 1;
     }
@@ -103,7 +103,7 @@ do {
     # Here's where we would add an artificial gap of $nxtping-$lstping.
   }
   if($editorFlag) {
-    editor($logf, "TimePie Log Editor (fill in your RETRO pings)");
+    editor($logf, "TagTime Log Editor (fill in your RETRO pings)");
     $editorFlag = 0;
     # when editor finishes there may be new pings missed!
     # that's why we have the outer do-while loop here, to start over if
@@ -145,7 +145,7 @@ sub launch {
     if(!defined($playsound)) { print STDERR "\a"; }
     else { system("$playsound"); }
   }
-  system("$XT -T 'TimePie ${hour}:${min}:${sec}' " .
+  system("$XT -T 'TagTime ${hour}:${min}:${sec}' " .
      "-fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl $t");
   #system("${path}term.sh ${path}ping.pl $t");
 }

@@ -37,7 +37,7 @@ if($cygwin) { unlock(); }  # on cygwin may have stray lock files around.
 system("${path}launch.pl");        # Catch up on any old pings.
 system("${path}launch.pl recalc"); # Recalc .nextping in case settings changed.
 
-print STDERR "Timepie is watching you! Last ping would've been ",
+print STDERR "TagTime is watching you! Last ping would've been ",
   ss(time()-$lstping), " ago.\n";
 
 my $i = 1;

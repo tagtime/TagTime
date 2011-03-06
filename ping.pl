@@ -63,7 +63,7 @@ if(-e $tskf) {  # show pending tasks
 
 my($s,$m,$h,$d) = localtime($t);
 $s = dd($s); $m = dd($m); $h = dd($h); $d = dd($d);
-print "This is the TimePie autopinger.  ",
+print "This is the TagTime autopinger.  ",
   "What are you doing RIGHT NOW ($h:$m:$s)?\n\n";
 my($resp, $tagstr, $comments, $a);
 do {
