@@ -1,7 +1,7 @@
 #!python
 
 # Implements the logic to determine ping times.  Ping times
-# are separated by an exponential distribution, with 
+# are separated by an exponential distribution, with
 # expected interval time = 1 / lambda.
 
 import math

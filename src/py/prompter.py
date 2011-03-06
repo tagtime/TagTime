@@ -6,7 +6,7 @@ import time
 
 
 # Base class to read from pings from storage, compute ping times,
-# and see if another ping is in order, perform the ping and record the result.  
+# and see if another ping is in order, perform the ping and record the result.
 # Subclasses should implement the actual prompt functionality.
 class Prompter:
   def __init__(self, database, l):

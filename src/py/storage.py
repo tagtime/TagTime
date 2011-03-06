@@ -45,7 +45,7 @@ class UserPingDatabase:
     self.cursor.execute("select time from pings order by time desc limit 1")
     rows = [row for row in self.cursor]
     if len(rows) == 0:
-      # We have a new database.  Insert a row for the current time and return it.
+      # We have a new database. Insert a row for the current time and return it.
       t = time.time()
       self.add_ping(t)
       return t
