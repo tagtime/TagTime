@@ -1,10 +1,23 @@
-Core perl implementation of tagtime itself is in the following files:
+Core Perl implementation of TagTime itself is in the following files:
 
 * timepied.pl -- the TagTime daemon
 * launch.pl -- launches the pinger by popping up an xterm
 * ping.pl -- prompts for the tags
 * util.pl -- utility functions
 * settings.pl.template -- user-specific settings
+
+In addtion are the following files:
+
+* install.py -- install script
+* grppings.pl -- grep your tagtime log file
+* cntpings.pl -- tally pings in your log file matching given criteria
+
+* tskedit.pl -- task editor / to-do list that integrates with TagTime
+* tskproc.pl -- helper script used by tskedit.pl
+* tasks.vim.template -- vim macros needed for the task editor
+
+* timepie.cron.template -- cron entries (alternative to timepied.pl)
+* fixlog.pl -- just a stub, for fixing/merging tagtime logs
 
 For install instructions and other info about this project, see 
 http://padm.us/timepie
