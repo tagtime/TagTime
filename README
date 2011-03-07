@@ -1,1 +1,10 @@
-See http://padm.us/timepie
+Core perl implementation of tagtime itself is in the following files:
+
+* timepied.pl -- the TagTime daemon
+* launch.pl -- launches the pinger by popping up an xterm
+* ping.pl -- prompts for the tags
+* util.pl -- utility functions
+* settings.pl.template -- user-specific settings
+
+For install instructions and other info about this project, see 
+http://padm.us/timepie
