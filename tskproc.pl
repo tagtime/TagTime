@@ -7,7 +7,7 @@
 
 my $now = time;
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 
 my $i = 0;  # counter for invalid lines.

@@ -5,15 +5,15 @@
 Anything not parsable as a task gets put here in this middle section.
 
 INSTRUCTIONS FOR TASK MANAGER:
-  First, follow the instructions at padm.us/timepie to install timepie.
-  Copy this file to USERNAME.tsk where USERNAME is your timepie username.
+  First, follow the instructions at padm.us/timepie to install TagTime.
+  Copy this file to USERNAME.tsk where USERNAME is your tagtime username.
   Then run tskedit.pl (it looks best with black background, eg:
     xterm -fg SkyBlue -bg black -cr red).
   Enter tasks with time estimates preceded by tildes.
   To have a task tracked, start it with a number or a bullet, which gets
     auto-replaced with a number.
   Tags may be added to a task by prefixing with a colon; these will be 
-    added to your timepie log when you answer a ping with the task number.
+    added to your tagtime log when you answer a ping with the task number.
   Bullets can be like any of the following but must be flush-left:
     - This is a bulleted item using a dash for the bullet.
     o This is a bulleted item using a lower-case 'o' as the bullet.

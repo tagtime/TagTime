@@ -9,7 +9,7 @@
 my $pingTime = time();
 my $autotags = "";
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 
 my $tskf = "$path$usr.tsk";
@@ -34,9 +34,9 @@ if($pingTime-$t > 9) {
   print "This popup is ", ($pingTime-$t), " seconds late.\n";
   print
 "Either you were busy answering a previous ping when this tried to pop up,\n";
-  print "or your tagtime daemon (timepied.pl) stopped running.\n";
+  print "or your tagtime daemon (tagtimed.pl) stopped running.\n";
   print "Or there's a bug.  ",
-    "Just in case it's a bug, please let dreeves know about this.\n";
+    "Just in case it's a bug, please report it on github.\n";
   print divider(""), "\n\n";
 }
 
@@ -63,7 +63,7 @@ if(-e $tskf) {  # show pending tasks
 
 my($s,$m,$h,$d) = localtime($t);
 $s = dd($s); $m = dd($m); $h = dd($h); $d = dd($d);
-print "This is the TagTime autopinger.  ",
+print "It's tag time!  ",
   "What are you doing RIGHT NOW ($h:$m:$s)?\n\n";
 my($resp, $tagstr, $comments, $a);
 do {
@@ -104,7 +104,7 @@ if(!$private && $resp !~ /^\s*$/) {
              "$usr\@yootles.com:/var/www/html/kibotzer/data/$usr.log");
 }
 
-# SCHDEL:
+# SCHDEL:  (SCHDEL = scheduled for deletion)
 #if(-e $tskf) {
 #  print divider(" checking your log and task file into subversion "), "\n";
 #  $ret = system("$SVN ci $logf $tskf -m \"AUTO-CHECKIN of $usr's log and task file\"");

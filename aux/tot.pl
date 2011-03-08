@@ -2,7 +2,7 @@
 # Compute amount of time spent on the tag passed as an argument.
 # Second argument must be the name of a log file.
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 
 # Hours per day, as computed for vacation time.

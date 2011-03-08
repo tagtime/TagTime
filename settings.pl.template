@@ -1,6 +1,6 @@
 # Settings for TagTime.
-# This file must be in your home directory, called .timepierc
-# NB: restart the daemon (timepied.pl) if you change this file.
+# This file must be in your home directory, called .tagtimerc
+# NB: restart the daemon (tagtimed.pl) if you change this file.
 
 # Ideas for other settings to include here:
 # * $pause = "30*60 afk presentation" would mean don't ping me for the

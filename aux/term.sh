@@ -6,7 +6,7 @@ tell application \"Terminal\"
     do script \"sleep 5\"
     set background color to \"red\"
     set cursor color to \"blue\"
-    set custom title to \"TimePie\"
+    set custom title to \"TagTime\"
     repeat while busy
       delay 1
     end repeat
@@ -19,7 +19,7 @@ end tell"
 #    do script \"$*; exit\"
 #    set background color to \"red\"
 #    set cursor color to \"blue\"
-#    set custom title to \"TimePie\"
+#    set custom title to \"TagTime\"
 #    set win_id to id
 #  end tell
 #

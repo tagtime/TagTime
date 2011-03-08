@@ -5,16 +5,13 @@
 # After each ping it also runs launch.pl (with the 'quiet' arg since
 #   this is already doing the beeping) which launches popups or an editor
 #   for any overdue pings.
-# TODO: watch ~/.timepierc (aka settings.pl) for changes a la watching.pl
-#       so that we don't have to restart this daemon when settings change.
-#       (does it suffice to just re-require it?)
-# TODO: occasionally we hear 2 beeps for one ping if this is running as well
-#       as launch.pl being called every minute as a cron job.
-#       At least I think that's the reason for the occasional double-ping.
+# Might be nice to watch ~/.tagtimerc (aka settings.pl) for changes a la 
+#   watching.pl so that we don't have to restart this daemon when settings 
+#   change. (does it suffice to just re-require it?)
 
 $launchTime = time();
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 
 #check if X11 is already running, and if not, start it

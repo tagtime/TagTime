@@ -3,7 +3,7 @@
 # (Also shares your own -- uploads it to yootles.com whenever it changes.)
 # Specify their tagtime username on the command line.
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 
 if(scalar(@ARGV)==0) { 

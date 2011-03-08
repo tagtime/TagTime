@@ -81,7 +81,7 @@ map - gg/----<cr>O
 
 "---------------------------------------------------------------
 "could put the following in a file and do, eg, source syntax.vim
-" Vim syntax file for TimePie task editor
+" Vim syntax file for TagTime task editor
 
 if version < 600
   syntax clear
@@ -124,7 +124,7 @@ HiLink tpTS2   Comment
 HiLink tpPaus  Comment
 HiLink tpElap  String
 
-let b:current_syntax = "timepie"
+let b:current_syntax = "tagtime"
 
 delcommand HiLink
 

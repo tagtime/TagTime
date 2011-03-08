@@ -18,7 +18,7 @@
 # The input is also re-sorted so tasks checked as done move to the bottom.
 # See template.tsk for further instructions.
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 #require "${path}util.pl";
 
 chdir($path);

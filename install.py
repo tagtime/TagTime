@@ -36,7 +36,7 @@ globals().update(vals)
 
 infile = open("settings.pl.template",'r')
 outfile = open("settings.pl",'w')
-symlink = os.path.join(HOME,".timepierc")
+symlink = os.path.join(HOME,".tagtimerc")
 target = os.path.join(PATH,"settings.pl")
 
 

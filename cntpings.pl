@@ -1,14 +1,14 @@
 #!/usr/bin/env perl
 # Count the number of a pings with given tags in the given time period.
 # Related scripts:
-#  contest.pl -- for chrock contests
-#  frask.pl -- a different kind of chrock contest
-#  tot.pl -- customized for keeping track of yahoo job pings
-#  showpie.pl -- this one is just wrong given how we currently use tagtime 
-#  showvenn.pl -- not sure about this one
+#  aux/contest.pl -- for chrock contests
+#  aux/frask.pl -- a different kind of chrock contest
+#  aux/tot.pl -- customized for keeping track of yahoo job pings
+#  aux/showpie.pl -- this one is just wrong given how we currently use tagtime 
+#  aux/showvenn.pl -- not sure about this one
 #  ../kibo/timepiekib.pl -- converts tagtime log to kib file 
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 use Getopt::Long qw(:config bundling);
 

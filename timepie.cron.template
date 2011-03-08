@@ -1,5 +1,0 @@
-# do crontab <this filename> after editting this file
-# template:  minute hour day month day-of-week  command
-#
-# The following has launch.pl check for pings every minute:
-* * * * * /Users/alice/timepie/launch.pl &  # CHANGEME to your path

@@ -9,7 +9,7 @@
 # TODO: with --keep foo it should strip out foo so you can see subtags
 # TODO: for --ago, specify number of weeks to include, like frask.pl does.
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 use Getopt::Long; # command line options module.
 
@@ -125,7 +125,7 @@ if ($pie==1) {
   open(HTML, ">$html");
   print HTML "<html>
   <header>
-  <title>${username}'s timepie</title>
+  <title>${username}'s time pie</title>
   <style type='text/css'>
     body {font-family: 'Times New Roman', Times, Palatino, serif;
           background:#229; text-align:center;}
@@ -135,7 +135,7 @@ if ($pie==1) {
   </header>
   <body>
     <div id='container'>
-    <h1>${username}'s timepie</h1>
+    <h1>${username}'s time pie</h1>
     <pre>$globalStats</pre>
     <img src='pie-$username.png';
     <pre>$toprint</pre>

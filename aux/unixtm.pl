@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Convert time strings to unix time and vice versa.
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 
 print "Enter date/times in YMDHMS order, or unix timestamps, one per line.\n";

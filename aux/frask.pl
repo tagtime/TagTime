@@ -3,7 +3,7 @@
 # and (2) do not contain the smk tag) for our frask contests.
 
 use Getopt::Long; # command line options module.
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 
 my $target = 1/2;  # target frask.
@@ -13,7 +13,7 @@ GetOptions("ago=i" => \$ago, "weeks=i" => \$weeks);
 
 # WARNING: this code to compute $start and $end copied from showpie.pl:
 # TODO: make a function in util.pl:  drange(ago, weeks)
-# that gives start and end for a date range where 'ago' is how many timepie
+# that gives start and end for a date range where 'ago' is how many tagtime
 # weeks ago to start (always starts on saturday night midnight) and weeks is 
 # how many weeks to include.
 # Compute start and end to be last saturday night to right now (if $ago==0).

@@ -2,7 +2,7 @@
 # COPIED FROM cntpings.pl
 # Grep for pings matching an expression (or disjunction of expressions).
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 use Getopt::Long qw(:config bundling);
 

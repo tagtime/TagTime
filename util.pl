@@ -1,10 +1,10 @@
 # Utility functions for tagtime.
-# This uses settings from ~/.timepierc so that must have been loaded first.
+# This uses settings from ~/.tagtimerc so that must have been loaded first.
 
 use Fcntl qw(:DEFAULT :flock);
 use Time::Local;  # more sophisticated packages are Date::Calc and Date::Manip
 
-$lockf = "${path}timepie.lock";
+$lockf = "${path}tagtime.lock";
 
 $| = 1;  # autoflush STDOUT.
 
@@ -12,7 +12,7 @@ my $IA = 16807;       # constant used for RNG (see p37 of Simulation by Ross).
 my $IM = 2147483647;  # constant used for RNG (2^31-1).
 
 # $seed is a global variable that is really the state of the RNG.
-# Should be set in .timepierc but set to a default value here if not.
+# Should be set in .tagtimerc but set to a default value here if not.
 if(!defined($seed)) { $seed = 666; }
 my $initseed = $seed;
 
@@ -102,7 +102,7 @@ sub lockb {
   my $okFlag = 1;  # false if we had to override the lock or something.
   if($cygwin) {  # stupid windows
     while(-e $lockf) {
-      print "TimePie is locked.  Waiting 30 seconds...\n";
+      print "TagTime is locked.  Waiting 30 seconds...\n";
       sleep(30);
       $okFlag = 0;
     }
@@ -110,7 +110,7 @@ sub lockb {
   } else {  # nice unix (including mac)
     sysopen(LF, $lockf, O_RDONLY | O_CREAT) or die "Can't open lock file: $!";
     if(!flock(LF, LOCK_EX | LOCK_NB)) {  # exclusive, nonblocking lock.
-      print "TimePie is locked.  Waiting...";
+      print "TagTime is locked.  Waiting...";
       flock(LF, LOCK_EX) or die "Can't lock $lockf: $!";
       print " ready!\n\n";
       $okFlag = 0;

@@ -24,7 +24,7 @@
 #   includes only pings matching given regexp.
 #   example: --keep='job'  (excludes all pings unless they include job tag)
 
-require "$ENV{HOME}/.timepierc";
+require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 use Getopt::Long; # command line options module.
 use Algorithm::Combinatorics qw(combinations);
@@ -140,7 +140,7 @@ if ($pie==1) {
   open(HTML, ">$html");
   print HTML "<html>
   <header>
-  <title>${username}'s timepie</title>
+  <title>${username}'s time pie</title>
   <style type='text/css'>
     body {font-family: 'Times New Roman', Times, Palatino, serif;
           background:#229; text-align:center;}
@@ -150,7 +150,7 @@ if ($pie==1) {
   </header>
   <body>
     <div id='container'>
-    <h1>${username}'s timepie</h1>
+    <h1>${username}'s time pie</h1>
     <pre>$globalStats</pre>
     <img src='pie-$username.png';
     <pre>$toprint</pre>
@@ -203,7 +203,7 @@ if ($venn==1) {
   open(HTML, ">$html");
   print HTML "<html>
   <header>
-  <title>${username}'s timepie</title>
+  <title>${username}'s time pie</title>
   <style type='text/css'>
     body {font-family: 'Times New Roman', Times, Palatino, serif;
           background:#229; text-align:center;}
@@ -213,7 +213,7 @@ if ($venn==1) {
   </header>
   <body>
     <div id='container'>
-    <h1>${username}'s timepie</h1>
+    <h1>${username}'s time pie</h1>
     <pre>$globalStats</pre>
     <img src='pie-$username.png';
     <pre>$toprint</pre>
