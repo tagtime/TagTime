@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+
+
+	<TextView android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="Save your data:" />
+	<Button android:text="Save to SD" android:id="@+id/export_sd"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content">
+	</Button>
+	<LinearLayout android:orientation="horizontal"
+	android:layout_height="wrap_content"
+	android:layout_width="fill_parent">
+	<Button android:text="Attach to email" 
+	android:id="@+id/export_eml"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content">
+	</Button>
+	<TextView
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="(Beta. Works >= 2.0) "
+	/>
+	</LinearLayout>
+	<TextView android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="Delete your data:" />
+	<Button android:text="Delete saved logs" android:id="@+id/delete_logs"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content">
+	</Button>
+	<Button android:text="Delete all data" android:id="@+id/delete_data"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content">
+	</Button>
+		
+</LinearLayout>

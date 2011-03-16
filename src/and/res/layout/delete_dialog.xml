@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:gravity="center_vertical|center_horizontal">
+
+	<TextView android:id="@+id/txt_save"
+		android:layout_width="fill_parent" 
+		android:layout_height="wrap_content"
+		android:text="Exporting your timepie log..." />
+
+	<LinearLayout android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		<Button android:text="Cancel" android:id="@+id/btn_cancel"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+		<Button android:text="Do it!" android:id="@+id/btn_doit"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+	</LinearLayout>
+</LinearLayout>
