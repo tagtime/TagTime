@@ -2,8 +2,8 @@
 # Check if it's time (or past time) to ping, or if the ~/.nextping file is
 # missing.  If all's well just exit, otherwise catch up on missed pings
 # and/or launch ping.pl for the current ping.
-# This can be invoked as a cron job every minute or be called every time a
-# ping is due.  The daemon (tagtimed.pl) currently does the latter.
+# This can be invoked as a cron job every minute (not recommended) or be called 
+# every time a ping is due.  The daemon (tagtimed.pl) does the latter.
 # Note: if this were built into the daemon itself then the .nextping
 #       file would be superfluous when since we use a universal ping
 #       schedule that is recomputed afresh when the daemon starts.

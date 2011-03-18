@@ -1,4 +1,4 @@
-Core Perl implementation of TagTime itself is in the following files:
+The core Perl implementation of TagTime itself is in the following files:
 
 * tagtimed.pl -- the TagTime daemon
 * launch.pl -- launches the pinger by popping up an xterm
@@ -18,9 +18,11 @@ In addtion are the following files:
 
 * merge.pl -- just a stub, for fixing/merging tagtime logs
 
-The aux directory contains various scripts we've used, like for various games
-and contests and commitment contracts and whatnot. Basically, incentive schemes
-for getting ourselves to procrastinate less.
+The aux directory contains various scripts we've used, like for various games and contests and commitment contracts and whatnot. 
+Basically, incentive schemes for getting ourselves to procrastinate less.
+
+The src directory currently contains Python code contributed by Jonathan Chang for a new back-end for TagTime. It hasn't yet been integrated.
+It also contains the source for an Android app by Bethany Soule (bsoule).
 
 For install instructions and other info about this project, see 
-http://padm.us/timepie
+<http://padm.us/timepie>

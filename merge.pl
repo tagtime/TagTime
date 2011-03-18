@@ -16,7 +16,7 @@
 # on a different ping schedule and it doesn't make sense to do a merge.)
 #
 # Note that if only one log file is given this just fills in any missing pings
-# with MIA tags.
+# with MIA tags (and marks pings that shouldn't be there as UNSCHED).
 # If you use tagtime on multiple computers this should be a simple way to merge
 # the disparate log files.
 
