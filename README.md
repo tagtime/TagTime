@@ -18,11 +18,13 @@ In addtion are the following files:
 
 * merge.pl -- just a stub, for fixing/merging tagtime logs
 
-The aux directory contains various scripts we've used, like for various games and contests and commitment contracts and whatnot. 
+The scripts directory contains various scripts we've used, like for various games and contests and commitment contracts and whatnot. 
 Basically, incentive schemes for getting ourselves to procrastinate less.
 
 The src directory currently contains Python code contributed by Jonathan Chang for a new back-end for TagTime. It hasn't yet been integrated.
 It also contains the source for an Android app by Bethany Soule (bsoule).
+
+Thanks also to Jesse Aldridge, Kevin Lochner, and Rob Felty for contributions.
 
 For install instructions and other info about this project, see 
 <http://padm.us/timepie>
