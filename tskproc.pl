@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-#use strict;
 # Process (rearrange and annotate) the tasks file (taken as stdin).
 # See tskedit.pl for editing your task file and what this file does.
 # Would be nice to annotate the tasks with number of tagtime pings but that 
@@ -12,7 +11,8 @@ require "${path}util.pl";
 
 my $i = 0;  # counter for invalid lines.
 my %h; # hash to keep track of which task numbers were seen.
-my @t; # list of active task lines.
+my @t; # list of active task lines, including blank separator lines.
+my $tc = 0; # number of actual active tasks.
 my @i; # list of invalid lines.
 my @di; # indices of divider lines.
 my @x; # completed task lines.
@@ -41,12 +41,12 @@ while(my $a = <STDIN>) {
     $i++;
   }
   elsif(checked($a)) {
-    if(!started($a)) { push(@t, adde("$a\n")); }
+    if(!started($a)) { push(@t, adde("$a\n"));  $tc++; }
     elsif(ended($a)) { push(@x, "$a\n"); }
     else { push(@x, adde(stamp2($a))); }
   }
-  elsif(started($a)) { push(@t, adde("$a\n")); }
-  else { push(@t, adde(stamp1("$a\n"))); }
+  elsif(started($a)) { push(@t, adde("$a\n"));  $tc++; }
+  else { push(@t, adde(stamp1("$a\n")));  $tc++; }
 }
 
 if($ARGV[0] eq "-sort") { @t = sort {$a <=> $b} @t; }
@@ -90,7 +90,7 @@ if($i>0 && $di[0]>0 || $i>1 && $di[-1] < $i-1) { # not already first and last.
 # stick in the total estimated time of active tasks
 for(@t) { $etot += estim($_); }
 for(@x) { $dtot += estim($_); }
-$i[0]  =~ s/^(\-{3,}.*?)\(.*?\)/"$1\(".scalar(@t)." tasks: ".ss($etot)."\)"/eg;
+$i[0]  =~ s/^(\-{3,}.*?)\(.*?\)/"$1\($tc tasks: ".ss($etot)."\)"/eg;
 $i[-1] =~ s/^(\-{3,}.*?)\(.*?\)/"$1\(".scalar(@x)." tasks: ".ss($dtot)."\)"/eg;
 
 for(@i) { print; }  # invalid lines (see valid() function below).

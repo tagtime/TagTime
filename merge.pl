@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Take a log file as the first command line argument and optionally an
 # additional log file. Modify the first log file to fill in any missing pings.
 # We start with the timestamp of the first ping in the first log file and walk
