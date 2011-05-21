@@ -274,23 +274,25 @@ public class PingsDbAdapter {
 	}
 
 	public String fetchTagString(long ping_id) throws Exception {
-		Cursor c = mDb.query(TAG_PING_TABLE, new String[] {KEY_PID, KEY_TID}, 
+		Cursor c = mDb.query(TAG_PING_TABLE, new String[] {KEY_PID, KEY_TID},
 				KEY_PID + "=" + ping_id, null, null, null, null);
-
 		String s = "";
-		c.moveToFirst();
-		int idx = c.getColumnIndex(KEY_TID);
-		while (!c.isAfterLast()) {
-			long tid = c.getLong(idx);
-			String t = getTag(tid);
-			if (t.equals("")) {
-				Exception e = new Exception("Could not find tag with id="+tid);
-				throw e;
+		try {
+			c.moveToFirst();
+			int idx = c.getColumnIndex(KEY_TID);
+			while (!c.isAfterLast()) {
+				long tid = c.getLong(idx);
+				String t = getTag(tid);
+				if (t.equals("")) {
+					Exception e = new Exception("Could not find tag with id="+tid);
+					throw e;
+				}
+				s += t+" ";
+				c.moveToNext();
 			}
-			s += t+" ";
-			c.moveToNext();
+		} finally {
+			c.close();
 		}
-		c.close();
 		return s;
 	}
 
@@ -359,6 +361,9 @@ public class PingsDbAdapter {
 		// Remove all the old tags.
 		mDb.delete(TAG_PING_TABLE, KEY_PID + "=" + pingId, null);
 		for (String t : newTags) {
+			if (t.trim() == "") {
+				continue;
+			}
 			long tid = getOrMakeNewTID(t);
 			if (tid == -1) {
 				Log.e(TAG, "ERROR: about to insert tid -1");

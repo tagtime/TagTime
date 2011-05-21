@@ -43,7 +43,7 @@ public class EditPing extends Activity {
 
 	private boolean landscape;
 	private List<String> mCurrentTags;
-	private static final String TAG = "***************EditPing:";
+	private static final String TAG = "EditPing";
 
 	public static int LAUNCH_VIEW = 0;
 	public static int LAUNCH_NOTE = 1;
@@ -91,9 +91,7 @@ public class EditPing extends Activity {
 	}
 
 	private void populateFields() {
-		//Log.i(TAG,"populateFields()");
 		if (mRowId != null) {
-
 			Cursor note = mPingsDB.fetchPing(mRowId);
 			startManagingCursor(note);
 			try {
@@ -108,7 +106,6 @@ public class EditPing extends Activity {
 				} else {
 					mTagsEdit.setText(TextUtils.join(" ", mCurrentTags));
 				}
-
 			} catch (Exception e) {
 				Log.i(TAG, "caught an exception in populateFields():");
 				Log.i(TAG, "    "+e.getLocalizedMessage());
@@ -172,6 +169,7 @@ public class EditPing extends Activity {
 	protected void onPause() {
 		super.onPause();
 		saveState();
+		Log.i(TAG, "Was paused...");
 	}
 
 	@Override
@@ -179,10 +177,10 @@ public class EditPing extends Activity {
 		super.onResume();
 		if ( findViewById(R.id.tags_editText) == null ) {
 			landscape = false;
-			Log.i(TAG, "PORTRAIT");
+			Log.i(TAG, "Resuming in PORTRAIT");
 		} else {
 			landscape = true;
-			Log.i(TAG, "LANDSCAPE");
+			Log.i(TAG, "Resuming in LANDSCAPE");
 		}
 		populateFields();
 	}
@@ -191,10 +189,9 @@ public class EditPing extends Activity {
 		if (landscape) {
 			String[] newtagstrings = mTagsEdit.getText().toString().split("\\s+");
 			mPingsDB.updateTaggings(mRowId, Arrays.asList(newtagstrings));
-			try {
-				mCurrentTags = mPingsDB.fetchTagsForPing(mRowId);
-			} catch (Exception e) {
-				Log.e(TAG, "Can't fetch tags!");
+		} else {
+			if (mCurrentTags != null) {
+				mPingsDB.updateTaggings(mRowId, mCurrentTags);
 			}
 		}
 	}
@@ -219,19 +216,16 @@ public class EditPing extends Activity {
 	};
 	
 	private OnClickListener mTogListener = new OnClickListener() {
-
 		public void onClick(View v) {
 			TagToggle tog = (TagToggle) v;
 			if (tog.isSelected()) {
 				Log.i(TAG,"toggle selected");
 				try {
-					mPingsDB.newTagPing(mRowId,tog.getTId());
 					mCurrentTags.add(tog.getText().toString());
 				} catch (Exception e) {
 					Log.e(TAG,"error inserting newTagPing()");
 				}
 			} else {
-				mPingsDB.deleteTagPing(mRowId,tog.getTId());
 				mCurrentTags.remove(tog.getText().toString());
 			}
 		}

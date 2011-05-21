@@ -240,10 +240,8 @@ public class Export extends Activity {
 		while (!pings.isAfterLast()) {
 			try {
 				long pt = pings.getLong(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_PING));
-				String ns = pings.getString(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_NOTES));
-				ns = ns.equals("") ? ns : "("+ns+")";
 				String tags = mDb.fetchTagString(pings.getLong(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_ROWID)));
-				log.append(pt+" "+tags+" "+ns+" "+SDF.format(new Date(pt*1000))+"\n");
+				log.append(pt+" "+tags+" "+SDF.format(new Date(pt*1000))+"\n");
 			} catch (Exception e) {
 				Log.e(TAG, "&&&&&&&&&&&& getLogString: "+e.getMessage());
 			}
