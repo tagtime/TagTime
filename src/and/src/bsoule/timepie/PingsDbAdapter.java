@@ -1,5 +1,7 @@
 package bsoule.timepie;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -292,7 +294,33 @@ public class PingsDbAdapter {
 		return s;
 	}
 
+	/**
+	 * Fetch a list of the tags as strings, because it should be faster than
+	 * manipulating the string all the time.
+	 *
+	 * @param ping_id the ID of the ping
+	 * @return a list of the tags
+	 */
+	public List<String> fetchTagsForPing(long ping_id) throws Exception {
+		Cursor c = mDb.query(TAG_PING_TABLE, new String[] {KEY_PID, KEY_TID},
+				KEY_PID + "=" + ping_id, null, null, null, null);
 
+		List<String> ret = new ArrayList<String>();
+		c.moveToFirst();
+		int idx = c.getColumnIndex(KEY_TID);
+		while (!c.isAfterLast()) {
+			long tid = c.getLong(idx);
+			String t = getTag(tid);
+			if (t.equals("")) {
+				Exception e = new Exception("Could not find tag with id="+tid);
+				throw e;
+			}
+			ret.add(t);
+			c.moveToNext();
+		}
+		c.close();
+		return ret;
+	}
 
 	/**
 	 * Update the note using the details provided. The note to be updated is
@@ -324,6 +352,24 @@ public class PingsDbAdapter {
 		ContentValues args = new ContentValues();
 		args.put(KEY_TAG, newtag);
 		return mDb.update(TAGS_TABLE, args, KEY_ROWID + "=" + tid, null) > 0;
+	}
+
+	public boolean updateTaggings(long pingId, List<String> newTags) {
+		Log.i(TAG, "updateTaggings() improved");
+		// Remove all the old tags.
+		mDb.delete(TAG_PING_TABLE, KEY_PID + "=" + pingId, null);
+		for (String t : newTags) {
+			long tid = getOrMakeNewTID(t);
+			if (tid == -1) {
+				Log.e(TAG, "ERROR: about to insert tid -1");
+			}
+			try {
+				newTagPing(pingId, tid);
+			} catch (Exception e) {
+				Log.i(TAG,"error inserting newTagPing("+pingId+","+tid+") in updateTaggings()");
+			}
+		}
+		return true;
 	}
 
 	public boolean updateTaggings(long pingId, String origTags, String editTags) {
