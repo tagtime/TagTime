@@ -35,5 +35,10 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content">
 	</Button>
-		
+	<TextView android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="Manage tags:" />
+	<Button android:text="Remove unused tags" android:id="@+id/cleanup_tags"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content">
+	</Button>
 </LinearLayout>

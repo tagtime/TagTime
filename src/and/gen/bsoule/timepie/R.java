@@ -31,11 +31,12 @@ public final class R {
         public static final int tplg=0x7f020011;
     }
     public static final class id {
-        public static final int ExportLink=0x7f050010;
-        public static final int Viewlog=0x7f05000f;
-        public static final int btnTog=0x7f05000e;
+        public static final int ExportLink=0x7f050011;
+        public static final int Viewlog=0x7f050010;
+        public static final int btnTog=0x7f05000f;
         public static final int btn_cancel=0x7f050001;
         public static final int btn_doit=0x7f050002;
+        public static final int cleanup_tags=0x7f05000d;
         public static final int confirm=0x7f050003;
         public static final int delete_data=0x7f05000c;
         public static final int delete_logs=0x7f05000b;
@@ -44,13 +45,13 @@ public final class R {
         public static final int lintags=0x7f050007;
         public static final int parent=0x7f050005;
         public static final int pingtime=0x7f050006;
-        public static final int row1=0x7f050011;
+        public static final int row1=0x7f050012;
         public static final int tag_button=0x7f050004;
         public static final int tags_editText=0x7f050008;
-        public static final int tpStat=0x7f05000d;
+        public static final int tpStat=0x7f05000e;
         public static final int txt_save=0x7f050000;
-        public static final int viewlog_row_tags=0x7f050013;
-        public static final int viewlog_row_time=0x7f050012;
+        public static final int viewlog_row_tags=0x7f050014;
+        public static final int viewlog_row_time=0x7f050013;
     }
     public static final class layout {
         public static final int delete_dialog=0x7f030000;

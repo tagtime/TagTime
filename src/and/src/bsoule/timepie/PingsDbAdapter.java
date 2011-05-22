@@ -364,4 +364,23 @@ public class PingsDbAdapter {
 		}
 		return true;
 	}
+	public void cleanupUnusedTags() {
+		Cursor c = fetchAllTags();
+		c.moveToFirst();
+		int idx = c.getColumnIndex(KEY_ROWID);
+		int tagIdx = c.getColumnIndex(KEY_TAG);
+		while (!c.isAfterLast()) {
+			long tid = c.getLong(idx);
+			Cursor tids = mDb.query(TAG_PING_TABLE, new String[] {KEY_ROWID}, KEY_TID + "=" + tid, null, null, null, null);
+			int usecount = tids.getCount();
+			tids.close();
+			Log.i(TAG, "tag " + c.getString(tagIdx) + " is used " + usecount + " times");
+			if (usecount == 0) {
+				Log.i(TAG, "removing tag " + c.getString(tagIdx) + " noone is using it.");
+				mDb.delete(TAGS_TABLE, KEY_ROWID + "=" + tid, null);
+			}
+			c.moveToNext();
+		}
+		c.close();
+	}
 }
