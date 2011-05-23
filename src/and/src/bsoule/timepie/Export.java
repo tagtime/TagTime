@@ -38,6 +38,7 @@ public class Export extends Activity {
 	private static final int DIALOG_DONE = 4;
 	private static final int DIALOG_DELETE_DATA = 5;
 	private static final int DIALOG_REALLY = 6;
+	private static final int DIALOG_CLEANUP_TAGS = 7;
 	private static final String FNAME = "timepie.log";
 
 	SharedPreferences mPrefs;
@@ -80,6 +81,12 @@ public class Export extends Activity {
 		doDeleteData.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				showDialog(DIALOG_DELETE_DATA);
+			}
+		});
+		Button doCleanupTags = (Button) findViewById(R.id.cleanup_tags);
+		doCleanupTags.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				showDialog(DIALOG_CLEANUP_TAGS);
 			}
 		});
 	}
@@ -127,6 +134,15 @@ public class Export extends Activity {
 					showDialog(DIALOG_DONE);
 				}
 			}).create();
+		case DIALOG_CLEANUP_TAGS:
+			return new AlertDialog.Builder(Export.this)
+			.setTitle("Clean up unused tags?")
+			.setPositiveButton("Clean", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+					cleanupUnusedTags();
+					showDialog(DIALOG_DONE);
+				}
+			}).create();
 		}
 		AlertDialog.Builder adb = new AlertDialog.Builder(Export.this);
 		adb.setTitle(title);
@@ -136,6 +152,7 @@ public class Export extends Activity {
 		}).create();
 
 	}
+
 	private void deleteLogs() {
 		File log;
 		// delete log file from SD card provided it is mounted and file exists
@@ -166,6 +183,10 @@ public class Export extends Activity {
 		ed.remove(PingService.KEY_NEXT);
 		ed.remove(PingService.KEY_SEED);
 		ed.commit();
+	}
+
+	private void cleanupUnusedTags() {
+		mDb.cleanupUnusedTags();
 	}
 
 	private Dialog progressDialog() {
