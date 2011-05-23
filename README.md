@@ -77,14 +77,11 @@ A handy vim macro for duplicating the previous line's tags in the tagtime log:
 
 # The Math
 
-The math:
-
 If your tagtime gap is g minutes then the probability of at least one ping
 in any x minute window is 1-exp(-x/g).
 The window corresponding to probability p is -g*ln(1-p).
 For example, with g=45, there's a 10% chance of getting pinged in any window
-of duration 4:44.47.  There's a 50% chance of getting pinged within 31:11.50.
-There's a 99% chance of a ping within 3:27:14.
-The probability of waiting 10 hours and 22 minutes for a ping is 
-one in a million.
+of duration 4 minutes 44 seconds.  There's a 50% chance of getting pinged within 31 minutes.
+There's a 99% chance of a ping within 3.5 hours.
+The probability of waiting over 10 hours for a ping is one in a million.
 
