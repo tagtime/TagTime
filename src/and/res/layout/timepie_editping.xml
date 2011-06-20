@@ -31,7 +31,6 @@
 	<Button android:id="@+id/confirm" 
 	  android:text="@string/confirm"
 	  android:textSize="18px"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content" />
+		android:layout_height="wrap_content" android:layout_width="fill_parent"/>
 
 </LinearLayout>

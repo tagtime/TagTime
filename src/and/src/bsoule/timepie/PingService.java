@@ -1,7 +1,9 @@
 package bsoule.timepie;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import android.app.AlarmManager;
@@ -96,8 +98,7 @@ public class PingService extends Service {
 		// First, if we missed any pings by more than $retrothresh seconds for no
 		// apparent reason, then assume the computer was off and auto-log them.
 		while(NEXT < launchTime-RETROTHRESH) {
-			//logPing(NEXT, "NEXT < launchTime-RETROTHRESH", "OFF");
-			logPing(NEXT, "", "OFF");
+			logPing(NEXT, "", Arrays.asList(new String[]{"OFF"}));
 			NEXT = nextping(NEXT);
 			editorFlag = true;
 		}
@@ -106,17 +107,15 @@ public class PingService extends Service {
 			while(NEXT <= time()) {
 				if(NEXT < time()-RETROTHRESH) {
 					editorFlag = true;
-					//logPing(NEXT, "NEXT < time()-RETROTHRESH", "OFF");
-					logPing(NEXT, "", "OFF");
+					logPing(NEXT, "", Arrays.asList(new String[]{"OFF"}));
 				} else {
 					String tag = (mNotify) ? "" : "OFF";
-					//long rowID = logPing(NEXT, "time() > NEXT > time()-RETROTHRES", tag);
-					long rowID = logPing(NEXT, "", tag);
-					sendNote(NEXT,editorFlag,rowID);  
+					long rowID = logPing(NEXT, "", Arrays.asList(new String[]{tag}));
+					sendNote(NEXT,editorFlag,rowID);
 				}
 				NEXT = nextping(NEXT);
 			}
-		} while(NEXT <= time());
+		} while (NEXT <= time());
 
 		SharedPreferences.Editor editor = mPrefs.edit();
 		editor.putLong(KEY_NEXT, NEXT);
@@ -129,7 +128,7 @@ public class PingService extends Service {
 		this.stopSelf();
 	}
 
-	private long logPing(long time, String notes, String tags) {
+	private long logPing(long time, String notes, List<String> tags) {
 		Log.i(TAG,"logPing("+tags+")");
 		return pingsDB.createPing(time, notes, tags);
 	}

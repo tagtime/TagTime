@@ -19,6 +19,7 @@ public class PingsDbAdapter {
 	public static final String KEY_PING = "ping";
 	public static final String KEY_NOTES = "notes";
 	public static final String KEY_TAG = "tag";
+	public static final String KEY_USED_CACHE = "used_cache";
 	public static final String KEY_TAGPING = "tag_ping";
 	public static final String KEY_ROWID = "_id";
 	public static final String KEY_PID = "ping_id";
@@ -39,19 +40,18 @@ public class PingsDbAdapter {
 	// a tag is just a string (no spaces)
 	private static final String CREATE_TAGS = 
 		"create table tags (_id integer primary key autoincrement, "
-		+ "tag text not null, UNIQUE (tag));";
+		+ "tag text not null, used_cache integer, UNIQUE (tag));";
 	// a tagging is a ping and a tag
 	private static final String CREATE_TAGPINGS = 
 		"create table tag_ping (_id integer primary key autoincrement, "
 		+ "ping_id integer not null, tag_id integer not null," 
 		+ "UNIQUE (ping_id, tag_id));";
 
-
 	private static final String DATABASE_NAME = "timepiedata";
 	private static final String PINGS_TABLE = "pings";
 	private static final String TAGS_TABLE = "tags";
 	private static final String TAG_PING_TABLE = "tag_ping";
-	private static final int DATABASE_VERSION = 4;
+	private static final int DATABASE_VERSION = 5;
 
 	private final Context mCtx;
 
@@ -70,12 +70,42 @@ public class PingsDbAdapter {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
-					+ newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS pings");
-			db.execSQL("DROP TABLE IF EXISTS tags");
-			db.execSQL("DROP TABLE IF EXISTS tag_ping");
-			onCreate(db);
+			if (oldVersion < 4) {
+				Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
+						+ newVersion + ", which will destroy all old data");
+				db.execSQL("DROP TABLE IF EXISTS pings");
+				db.execSQL("DROP TABLE IF EXISTS tags");
+				db.execSQL("DROP TABLE IF EXISTS tag_ping");
+				onCreate(db);
+			}
+			if (oldVersion < 5 && newVersion >= 5) {
+				Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
+						+ newVersion + " calculating caches..");
+				db.execSQL("ALTER TABLE tags ADD COLUMN used_cache integer");
+				db.beginTransaction();
+				try {
+					// Calculate the first cache.
+					Cursor all_tags = db.query(TAGS_TABLE, new String[] {KEY_ROWID,KEY_TAG},
+												null, null, null, null, null);
+					Integer current_tag_id = 0;
+					ContentValues uses_values = new ContentValues();
+
+					all_tags.moveToFirst();
+					while (!all_tags.isAfterLast()) {
+						current_tag_id = all_tags.getInt(0);
+						Cursor count_cr = db.rawQuery("SELECT COUNT(_id) FROM tag_ping WHERE tag_id = ?", new String[]{current_tag_id.toString()});
+						count_cr.moveToFirst();
+						uses_values.put(KEY_USED_CACHE, count_cr.getInt(0));
+						Log.i(TAG, "upgrading the tag entry cache - " + all_tags.getString(1) + " has "
+								+ uses_values.getAsString(KEY_USED_CACHE));
+						db.update(TAGS_TABLE, uses_values, "_id = ?", new String[]{current_tag_id.toString()});
+						all_tags.moveToNext();
+					}
+					db.setTransactionSuccessful();
+				} finally {
+					db.endTransaction();
+				}
+			}
 		}
 	}
 
@@ -89,7 +119,7 @@ public class PingsDbAdapter {
 		this.mCtx = ctx;
 	}
 	protected void deleteAllData() {
-		mDbHelper.onUpgrade(mDb, DATABASE_VERSION, DATABASE_VERSION);
+		mDbHelper.onUpgrade(mDb, 1, DATABASE_VERSION);
 	}
 
 	/**
@@ -111,14 +141,11 @@ public class PingsDbAdapter {
 		mDbHelper.close();
 	}
 
-	public long createPing(long pingtime, String notes, String tags) {
+	public long createPing(long pingtime, String notes, List<String> tags) {
 		Log.i(TAG,"createPing()");
-		long pid = newPing(pingtime,notes);
-		//Log.i(TAG,"got pingId="+pid);
-		if (!updateTaggings(pid, "", tags)) {
+		long pid = newPing(pingtime, notes);
+		if (!updateTaggings(pid, tags)) {
 			Log.e(TAG, "error creating the tag-ping entries");
-		} else {
-			//	Log.i(TAG,"updated tag-ping entries: "+tags+" "+loctag);
 		}
 		return pid;
 	}
@@ -134,8 +161,10 @@ public class PingsDbAdapter {
 		Log.i(TAG,"newTag("+tag+")");
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(KEY_TAG, tag);
+		initialValues.put(KEY_USED_CACHE, 0);
 		return mDb.insertOrThrow(TAGS_TABLE, null, initialValues);
 	}
+
 	public long newTagPing(long ping_id, long tag_id) throws Exception {
 		ContentValues init = new ContentValues();
 		init.put(KEY_PID, ping_id);
@@ -143,10 +172,8 @@ public class PingsDbAdapter {
 		return mDb.insertOrThrow(TAG_PING_TABLE, null, init);
 	}
 
-	public String getTag(long tid) {
+	public String getTagName(long tid) {
 		String ret = "";
-		//TODO: will this work? to return only the tag column when I'm matching
-		//      against a different (ID) column?
 		Cursor c = mDb.query(TAGS_TABLE, new String[] {KEY_TAG}, 
 				KEY_ROWID+"="+tid, null, null, null, null);
 		if (c.getCount()>0) {
@@ -160,6 +187,7 @@ public class PingsDbAdapter {
 	public static double round5(double d) {
 		return (java.lang.Math.round(d*100000))/100000.0;
 	}
+
 	private long getOrMakeNewTID(String tag) {
 		long tid;
 		try {
@@ -169,7 +197,6 @@ public class PingsDbAdapter {
 		}
 		return tid;
 	}
-
 
 	/**
 	 * Delete the note with the given rowId
@@ -213,10 +240,9 @@ public class PingsDbAdapter {
 	}
 
 	public boolean deleteTagPing(long pingId, String tag) {
-		String query = KEY_PID + "=" + pingId + " AND "+ KEY_TID 
-		+ "=" + getTID(tag);
-		return mDb.delete(TAG_PING_TABLE, query, null) > 0;
+		return deleteTagPing(pingId, getTID(tag));
 	}
+
 	public boolean deleteTagPing(long pingId, long tagId) {
 		String query = KEY_PID + "=" + pingId + " AND " +
 		KEY_TID + "=" + tagId;
@@ -250,7 +276,7 @@ public class PingsDbAdapter {
 
 	public Cursor fetchAllTags() {
 		return mDb.query(TAGS_TABLE, new String[] {KEY_ROWID, KEY_TAG}, 
-				null, null, null, null, null);
+				null, null, null, null, KEY_USED_CACHE + " DESC");
 	}
 
 	/**
@@ -261,7 +287,6 @@ public class PingsDbAdapter {
 	 * @throws SQLException if note could not be found/retrieved
 	 */
 	public Cursor fetchPing(long rowId) throws SQLException {
-
 		Cursor pCursor =
 			mDb.query(true, PINGS_TABLE, new String[] {KEY_ROWID,
 					KEY_PING, KEY_NOTES}, KEY_ROWID + "=" + rowId, null,
@@ -282,7 +307,7 @@ public class PingsDbAdapter {
 			int idx = c.getColumnIndex(KEY_TID);
 			while (!c.isAfterLast()) {
 				long tid = c.getLong(idx);
-				String t = getTag(tid);
+				String t = getTagName(tid);
 				if (t.equals("")) {
 					Exception e = new Exception("Could not find tag with id="+tid);
 					throw e;
@@ -304,15 +329,13 @@ public class PingsDbAdapter {
 	 * @return a list of the tags
 	 */
 	public List<String> fetchTagsForPing(long ping_id) throws Exception {
-		Cursor c = mDb.query(TAG_PING_TABLE, new String[] {KEY_PID, KEY_TID},
-				KEY_PID + "=" + ping_id, null, null, null, null);
-
+		Cursor c = fetchTaggings(ping_id, KEY_PID);
 		List<String> ret = new ArrayList<String>();
 		c.moveToFirst();
 		int idx = c.getColumnIndex(KEY_TID);
 		while (!c.isAfterLast()) {
 			long tid = c.getLong(idx);
-			String t = getTag(tid);
+			String t = getTagName(tid);
 			if (t.equals("")) {
 				Exception e = new Exception("Could not find tag with id="+tid);
 				throw e;
@@ -356,9 +379,61 @@ public class PingsDbAdapter {
 		return mDb.update(TAGS_TABLE, args, KEY_ROWID + "=" + tid, null) > 0;
 	}
 
+	/**
+	 * Get an array of all the tag IDs
+	 * @return an array of tag IDs
+	 */
+	public long[] getAllTagIds() {
+		Cursor all_tids = mDb.query(TAGS_TABLE, new String[]{"_id"}, null, null, null, null, null);
+		long[] res = new long[all_tids.getCount()];
+		int index = 0;
+		all_tids.moveToFirst();
+		while(!all_tids.isAfterLast()) {
+			res[index++] = all_tids.getLong(0);
+			all_tids.moveToNext();
+		}
+		all_tids.close();
+		return res;
+	}
+
+	public void updateTagCache(long tid) {
+		Cursor count_cr = mDb.rawQuery("SELECT COUNT(_id) FROM tag_ping WHERE tag_id = ?",
+                                       new String[]{Long.toString(tid)});
+		count_cr.moveToFirst();
+		ContentValues uses_values = new ContentValues();
+		uses_values.put(KEY_USED_CACHE, count_cr.getInt(0));
+		count_cr.close();
+		mDb.update(TAGS_TABLE, uses_values, "_id = ?", new String[]{Long.toString(tid)});
+	}
+
+	/**
+	 * Update all the uses_caches of the tags.
+	 * @return nothing
+	 */
+	public void updateTagCaches() {
+		long[] tagIds = getAllTagIds();
+		for (long tid : tagIds) {
+			updateTagCache(tid);
+		}
+	}
+
+	/**
+	 * Updates the taggings of the ping pingId to be equal to newTags.
+	 * @param pingId
+	 * @param newTags
+	 * @return true
+	 */
 	public boolean updateTaggings(long pingId, List<String> newTags) {
 		Log.i(TAG, "updateTaggings() improved");
 		// Remove all the old tags.
+		List<String> cacheUpdates = new ArrayList<String>();
+		try {
+			cacheUpdates = fetchTagsForPing(pingId);
+		} catch (Exception e) {
+			Log.i(TAG, "Some problem getting tags for this ping!");
+			e.printStackTrace();
+		}
+		cacheUpdates.addAll(newTags);
 		mDb.delete(TAG_PING_TABLE, KEY_PID + "=" + pingId, null);
 		for (String t : newTags) {
 			if (t.trim() == "") {
@@ -374,44 +449,8 @@ public class PingsDbAdapter {
 				Log.i(TAG,"error inserting newTagPing("+pingId+","+tid+") in updateTaggings()");
 			}
 		}
-		return true;
-	}
-
-	public boolean updateTaggings(long pingId, String origTags, String editTags) {
-		Log.i(TAG, "updateTaggings()");
-		String[] tags = editTags.split(" ");
-		for (String t : tags) {
-			if (!t.equals("")) {
-				// first need to compare against original tag string:
-				Pattern pt = Pattern.compile("(^|\\s)"+t+"(\\s|$)");
-				Matcher mm = pt.matcher(origTags);
-				// if t is not in origTags need to get TID and add a tagping for it
-				if (!mm.find()) { // t is not in origTags
-					Log.i(TAG,"!mm.find()");
-					// first get tag_id
-					long tid = getOrMakeNewTID(t);
-					if (tid == -1) {
-						Log.e(TAG,"ERROR: about to insert tid -1");
-					}
-					try {
-						newTagPing(pingId, tid);
-					} catch (Exception e) {
-						Log.i(TAG,"error inserting newTagPing("+pingId+","+tid+") in updateTaggings()");
-					}
-				}
-				origTags = origTags.replace(t,""); // remove this tag from original string
-			}
-		}
-		// that took care of all the tags in the editTag string, now the remaining origTags
-		// should be any tags that were removed on edit, so need to go through and remove their
-		// tag-ping entry.
-		// x in orig not in edit..
-		//Log.i(TAG,"FINISHED adding tagpings");
-		String[] dels = origTags.split(" ");
-		for (String dtag : dels) {
-			if (!dtag.equals("")) {
-				deleteTagPing(pingId,dtag);
-			}
+		for (String tag : cacheUpdates) {
+			updateTagCache(getTID(tag));
 		}
 		return true;
 	}
