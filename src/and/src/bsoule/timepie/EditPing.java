@@ -79,7 +79,7 @@ public class EditPing extends Activity {
 		mTaggings = mPingsDB.fetchTaggings(mRowId,PingsDbAdapter.KEY_PID);
 		startManagingCursor(mTaggings);
 
-		//Set confirm button behaviour:
+		// Set confirm button behaviour
 		Button confirm = (Button) findViewById(R.id.confirm);
 		confirm.setOnClickListener(	new OnClickListener() {
 			public void onClick(View v) {
