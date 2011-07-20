@@ -87,7 +87,10 @@ do {
   $tagstr .= $autotags;
   $tagstr =~ s/\s+/\ /g;
   $a = annotime("$t $tagstr $comments", $t)."\n";
-} while($enforcenums && $tagstr ne "" && ($tagstr !~ /\b(\d+|non$d|afk)\b/));
+} while($enforcenums && $tagstr ne "" && 
+        #($tagstr !~ /\b(\d+|non$d|afk)\b/)  # include day of month
+        ($tagstr !~ /\b(\d+|non|afk)\b/)
+       );
 print $a;
 slog($a);
 

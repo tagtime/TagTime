@@ -37,7 +37,9 @@ if (-e $npfile) {
   $nxtping = <NXT>;
   close(NXT);
   if ($nxtping > $launchTime) { 
-    print "[Next ping time is in the future.]\n" unless ($quiet || $recalc);
+    if (!$quiet && !$recalc) { 
+      print "[Next ping time is in the future. No old pings to catch up on.]\n";
+    }
     exit(0); 
   }
 }

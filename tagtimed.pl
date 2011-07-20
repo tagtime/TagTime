@@ -37,6 +37,7 @@ system("${path}launch.pl recalc"); # Recalc .nextping in case settings changed.
 print STDERR "TagTime is watching you! Last ping would've been ",
   ss(time()-$lstping), " ago.\n";
 
+my $start = time();
 my $i = 1;
 while(1) {
   # sleep till next ping but check again in at most a few seconds in
@@ -51,9 +52,11 @@ while(1) {
     # invokes popup for this ping plus additional popups if there were more
     #   pings while answering this one:
     system("${path}launch.pl quiet &");
-    print STDERR annotime(padl($i++," ",4).": PING! gap = ".
-			  ss($nxtping-$lstping), $nxtping, 45), "\n";
+    print STDERR annotime(padl($i," ",4).": PING! gap ".
+			  ss($nxtping-$lstping)."  avg ".
+                          ss((0.0+$now-$start)/$i), $nxtping, 55), "\n";
     $lstping = $nxtping;
     $nxtping = nextping($nxtping);
+    $i++;
   }
 }

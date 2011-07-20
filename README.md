@@ -29,7 +29,7 @@ In addtion are the following files:
 
 * merge.pl -- just a stub, for fixing/merging tagtime logs
 
-The scripts directory contains various scripts we've used, like for various games and contests and commitment contracts and whatnot. 
+The script directory contains various scripts we've used, like for various games and contests and commitment contracts and whatnot. 
 Basically, incentive schemes for getting ourselves to procrastinate less.
 
 The src directory currently contains Python code contributed by Jonathan Chang for a new back-end for TagTime. It hasn't yet been integrated.
