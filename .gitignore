@@ -4,6 +4,3 @@ settings.pl
 tasks.vim
 tmp
 .*.swp
-*.class
-src/and/bin
-src/and/gen
