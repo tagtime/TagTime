@@ -1,0 +1,16 @@
+# files which say in them, don't check them in.
+build.xml
+local.properties
+
+# apk files
+*.apk
+*.ap_
+
+# files for the dex VM
+*.dex
+
+# compiled class files
+*.class
+
+# generated GUI files
+*R.java
