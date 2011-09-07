@@ -13,7 +13,6 @@
   <PreferenceCategory android:title="Ping Notification Settings">
 	  <RingtonePreference
 		  android:key="pingRingtonePref"
-	    android:summary="Plays when pinged"
 	    android:title="Ringtone"
 	    android:showDefault="true"
 	    android:showSilent="true"
@@ -21,11 +20,10 @@
 	  />
 	  <CheckBoxPreference
 	    android:key="pingVibrate"
-	    android:name="Vibrate on Ping"
 	    android:title="Vibrate"
 	    android:defaultValue="true"
 	    android:summaryOff="No Vibration"
-	    android:summaryOn="Vibrates on Ping"
+	    android:summaryOn="Vibration on Ping"
 	  />
   </PreferenceCategory>
 </PreferenceScreen>

@@ -1,5 +1,7 @@
 package bsoule.timepie;
 
+import java.util.Arrays;
+
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -16,18 +18,12 @@ public class Preferences extends PreferenceActivity {
 
 		order.setSummary(order.getEntry());
 
+		// Set the summary text of the order when it changes
 		order.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
 			public boolean onPreferenceChange(Preference preference, Object newValue) {
 				ListPreference x = (ListPreference) preference;
-				CharSequence[] entries = x.getEntries();
-				CharSequence[] entryValues = x.getEntryValues();
-				CharSequence ourEntry = "";
-				for (int i = 0; i < entryValues.length; i++) {
-					if (newValue.equals(entryValues[i])) {
-						ourEntry = entries[i];
-					}
-				}
-				preference.setSummary(ourEntry);
+				int index = Arrays.asList(x.getEntryValues()).indexOf(newValue);
+				preference.setSummary(x.getEntries()[index]);
 				return true;
 			}
 		});
