@@ -29,7 +29,11 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
 
 # System settings follow...
 
-$private = 1; # CHANGEME (and svn add your log file) to share your log file.
+# CHANGEME: add entries for each beeminder graph you want to auto-update:
+@beeminder = (
+  #"alice/work job",    # all "job" pings get added to bmndr.com/alice/work
+  #"bob/play fun whee", # pings with "fun" and/or "whee" added to bob/play
+);
 
 # Pings from more than this many seconds ago get autologged with tags
 # "afk" and "RETRO".  (Pings can be overdue either because the

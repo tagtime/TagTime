@@ -94,16 +94,17 @@ do {
 print $a;
 slog($a);
 
-# Send your tagtime log to Beeminder if user has $private = 0.
+# Send your tagtime log to Beeminder if user has @beeminder list non-empty.
 #   (maybe should do this after retropings too but launch.pl would do that).
-if(!$private && $resp !~ /^\s*$/) {
+if($resp !~ /^\s*$/) {
   #print divider(""), "\n";
-  #print "Showing your pie while your tagtime log gets uploaded...\n";
+  #print "Showing your pie while your tagtime data uploads...\n";
   #print divider(""), "\n";
   #system("${path}showpie.pl $logf");
   # We could show historical stats on the tags for the current ping here.
   print divider(" sending your tagtime data to beeminder "), "\n";
-  # CHANGEME: add entries for each beeminder graph you want to auto-update:
+  for(@beeminder) { bm($_); }
+  # SCHDEL: add entries for each beeminder graph you want to auto-update:
   #bm("alice/work job"); # all "job" pings get added to bmndr.com/alice/work
   #bm("bob/play fun whee"); # pings with "fun" and/or "whee" added to bob/play
 }
