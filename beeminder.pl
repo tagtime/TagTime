@@ -9,9 +9,11 @@
 # Exception / special case: if the graph is called "nafk" then count pings 
 # that *don't* match. (That's for tracking time at the computer, ie, not afk.)
 
-$ping = .75;  # number of hours per ping.
+require "$ENV{HOME}/.tagtimerc";
 
-die "usage: ./ttproc.pl tagtimelog user/slug <tags>" if (@ARGV < 3);
+$ping = ($gap+0.0)/3600;  # number of hours per ping.
+
+die "usage: ./beeminder.pl tagtimelog user/slug <tags>" if (@ARGV < 3);
 
 $tplf = shift;  # tagtime log filename.
 $usrslug = shift;
@@ -74,7 +76,7 @@ for(sort(keys(%pinghash))) {
 
 if($beedata0 ne $beedata1) {
   #print "DEBUG: calling beemapi tagtime_update tgt $usr $slug\n";
-  open(G, "|./beemapi.rb tagtime_update tgt $usr $slug") or die;
+  open(G, "|${path}beemapi.rb tagtime_update tgt $usr $slug") or die;
   print G "$beedata1";
   close(G);
   open(K, ">$beef") or die "Can't open $beef: $!";
