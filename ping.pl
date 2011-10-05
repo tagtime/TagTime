@@ -104,28 +104,8 @@ if(!$private && $resp !~ /^\s*$/) {
   # We could show historical stats on the tags for the current ping here.
   print divider(" sending your tagtime data to beeminder "), "\n";
   # CHANGEME: add entries for each beeminder graph you want to auto-update:
-  #bm("d/meta kib");
-  #bm("laur/meta lau");
-  #bm("d/mp mp");
-  #bm("d/hn hn");
-  #bm("d/gnx gnx");
-  #bm("d/mm mes");
-  #bm("d/smk smk");
-  #bm("d/ontask tsk");
-  #bm("d/tt ths");
-  #bm("d/nafk afk"); # special-cased to count NON-afk pings
-  #bm("d/job job jobt kib ang gnx mp tr wrk dev mes"); # ag?
-  #bm("d/sleep slp");
-  #bm("d/bab bab f c");
-  #bm("b/job job jbs fdl kib kibo KIBO atp bmndr");  # int res pship ytd
-  #bm("b/nafk afk"); # special-cased to count NON-afk pings
-  #bm("b/tt atp tt tp ths");
-  #bm("b/tp ths");
-  #bm("b/meta kib kibo KIBO bmndr yc");
-  #bm("b/fdl fdl");
-  #bm("b/smk smk");
-  #bm("b/bab bab");
-  #bm("a/job work WORK"); 
+  #bm("alice/work job"); # all "job" pings get added to bmndr.com/alice/work
+  #bm("bob/play fun whee"); # pings with "fun" and/or "whee" added to bob/play
 }
 
 # send pings with the given tags to beeminder, eg, passing "alice/foo bar baz" 
