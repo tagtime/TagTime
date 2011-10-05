@@ -111,7 +111,7 @@ if(!$private && $resp !~ /^\s*$/) {
 # send pings with the given tags to beeminder, eg, passing "alice/foo bar baz" 
 # sends all pings with tags bar and/or baz to bmndr.com/alice/foo
 sub bm { my($s) = @_;
-  system("${path}ttproc.pl ${path}$usr.log $s");
+  system("${path}beeminder.pl ${path}$usr.log $s");
 }
 
 # SCHDEL:  (SCHDEL = scheduled for deletion)
