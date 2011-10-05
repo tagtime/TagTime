@@ -29,6 +29,9 @@ In addtion are the following files:
 
 * merge.pl -- just a stub, for fixing/merging tagtime logs
 
+* beeminder.pl -- sends your tagtime data to your beeminder graph
+* beemapi.rb -- crude command line interface to the nascent beeminder api
+
 The script directory contains various scripts we've used, like for various games and contests and commitment contracts and whatnot. 
 Basically, incentive schemes for getting ourselves to procrastinate less.
 

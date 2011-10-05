@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
-# Command line interface to the Beeminder API.
-# This is a mess right now after a harried debugging session.
+# Crude command line interface to the Beeminder API.
 
 require 'net/http'
 

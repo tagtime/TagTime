@@ -104,9 +104,6 @@ if($resp !~ /^\s*$/) {
   # We could show historical stats on the tags for the current ping here.
   print divider(" sending your tagtime data to beeminder "), "\n";
   for(@beeminder) { bm($_); }
-  # SCHDEL: add entries for each beeminder graph you want to auto-update:
-  #bm("alice/work job"); # all "job" pings get added to bmndr.com/alice/work
-  #bm("bob/play fun whee"); # pings with "fun" and/or "whee" added to bob/play
 }
 
 # send pings with the given tags to beeminder, eg, passing "alice/foo bar baz" 
@@ -115,25 +112,3 @@ sub bm { my($s) = @_;
   system("${path}beeminder.pl ${path}$usr.log $s");
 }
 
-# SCHDEL:  (SCHDEL = scheduled for deletion)
-#if(-e $tskf) {
-#  print divider(" checking your log and task file into subversion "), "\n";
-#  $ret = system("$SVN ci $logf $tskf -m \"AUTO-CHECKIN of $usr's log and task file\"");
-#} else {
-#  print divider(" checking your log into subversion "), "\n";
-#  $ret = system("$SVN ci $logf -m \"AUTO-CHECKIN of $usr's log\"");
-#}
-#if($ret) {
-#  print
-#    "ERROR: could not check in your tagtime log! (no network connection?)\n";
-#  print
-#    "  (This does not affect tagtime, just others' ability to see your latest pie.)\n";
-#  print
-#    "Please cut and paste the above and send it to dreeves\@yootles.com\n";
-#  print "[This message will self-destruct in 90 seconds...]\n";
-#  sleep(90);
-#}
-
-  #SCHDEL:
-  #system("scp ${path}$usr.log " . 
-  #           "$usr\@yootles.com:/var/www/html/kibotzer/data/$usr.log");
