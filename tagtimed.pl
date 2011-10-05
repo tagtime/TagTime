@@ -54,7 +54,8 @@ while(1) {
     system("${path}launch.pl quiet &");
     print STDERR annotime(padl($i," ",4).": PING! gap ".
 			  ss($nxtping-$lstping)."  avg ".
-                          ss((0.0+$now-$start)/$i), $nxtping, 55), "\n";
+                          ss((0.0+time()-$start)/$i). " tot ".
+                          ss(0.0+time()-$start), $nxtping, 72), "\n";
     $lstping = $nxtping;
     $nxtping = nextping($nxtping);
     $i++;

@@ -102,9 +102,36 @@ if(!$private && $resp !~ /^\s*$/) {
   #print divider(""), "\n";
   #system("${path}showpie.pl $logf");
   # We could show historical stats on the tags for the current ping here.
-  print divider(" sending your log file to beeminder "), "\n";
-  system("scp ${path}$usr.log " . 
-             "$usr\@yootles.com:/var/www/html/kibotzer/data/$usr.log");
+  print divider(" sending your tagtime data to beeminder "), "\n";
+  # CHANGEME: add entries for each beeminder graph you want to auto-update:
+  #bm("d/meta kib");
+  #bm("laur/meta lau");
+  #bm("d/mp mp");
+  #bm("d/hn hn");
+  #bm("d/gnx gnx");
+  #bm("d/mm mes");
+  #bm("d/smk smk");
+  #bm("d/ontask tsk");
+  #bm("d/tt ths");
+  #bm("d/nafk afk"); # special-cased to count NON-afk pings
+  #bm("d/job job jobt kib ang gnx mp tr wrk dev mes"); # ag?
+  #bm("d/sleep slp");
+  #bm("d/bab bab f c");
+  #bm("b/job job jbs fdl kib kibo KIBO atp bmndr");  # int res pship ytd
+  #bm("b/nafk afk"); # special-cased to count NON-afk pings
+  #bm("b/tt atp tt tp ths");
+  #bm("b/tp ths");
+  #bm("b/meta kib kibo KIBO bmndr yc");
+  #bm("b/fdl fdl");
+  #bm("b/smk smk");
+  #bm("b/bab bab");
+  #bm("a/job work WORK"); 
+}
+
+# send pings with the given tags to beeminder, eg, passing "alice/foo bar baz" 
+# sends all pings with tags bar and/or baz to bmndr.com/alice/foo
+sub bm { my($s) = @_;
+  system("${path}ttproc.pl ${path}$usr.log $s");
 }
 
 # SCHDEL:  (SCHDEL = scheduled for deletion)
@@ -126,3 +153,6 @@ if(!$private && $resp !~ /^\s*$/) {
 #  sleep(90);
 #}
 
+  #SCHDEL:
+  #system("scp ${path}$usr.log " . 
+  #           "$usr\@yootles.com:/var/www/html/kibotzer/data/$usr.log");
