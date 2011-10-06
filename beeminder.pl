@@ -26,24 +26,26 @@ $beedata0 = "";  # original bee data.
 $beedata1 = "";  # new bee data.
 
 if(-e $beef) {
-  #$beedata0 = do {local (@ARGV,$/) = $beef; <>}; # slurp file into string
-  open(B, $beef) or die;
-  while(<B>) { $beedata0 .= $_; }
-  close(B);
+  $beedata0 = do {local (@ARGV,$/) = $beef; <>}; # slurp file into string
+  # SCHDEL: (above is a more concise way to slurp a file in perl)
+  #open(B, $beef) or die;
+  #while(<B>) { $beedata0 .= $_; }
+  #close(B);
 }
 
+# SCHDEL: (scheduled for deletion; this hack shouldn't be needed anymore)
 # kludge for timezones: add your offset from server time in hours, ie, from NYC
-%tz = { 'd/meta' => -1,
-        'd/ontask' => -1,
-        'b/meta' => -1,
-        'b/job' => -1,
-      };
+#%tz = { 'd/meta' => -1,
+#        'd/ontask' => -1,
+#        'b/meta' => -1,
+#        'b/job' => -1,
+#      };
 
 open(T, $tplf) or die;
 $i = 0;
 while(<T>) {
   if(!/^(\d+)\s*(.*)$/) { die; }
-  my $ts = $1 + $tz{"$usr/$slug"}*3600;
+  my $ts = $1;  # SCHDEL: + $tz{"$usr/$slug"}*3600;
   my $stuff = $2;
   my $tags = strip($stuff);
 
@@ -69,7 +71,7 @@ for(sort(keys(%pinghash))) {
                splur($pinghash{$_},"ping").   
                # this makes the bee file change every time, which means 
                #   unneccesary regenerating of graphs:
-               #($i==$n ? " @ ".ts(time + $tz{"$usr/$slug"}*3600) : "").
+               #($i==$n ? " @ ".ts(time) : "").
                ": ".$stuffhash{$_}."\"\n";
   $i++;
 }
@@ -79,9 +81,9 @@ if($beedata0 ne $beedata1) {
   open(G, "|${path}beemapi.rb tagtime_update tgt $usr $slug") or die;
   print G "$beedata1";
   close(G);
-  open(K, ">$beef") or die "Can't open $beef: $!";
-  print K $beedata1;
-  close(K);
+  open(K, ">$beef") or die "Can't open $beef: $!"; # spew the string
+  print K $beedata1;                               # $beedata1 to
+  close(K);                                        # the file $beef
 }
 
 print "Pings with", ($slug eq "nafk" ? "OUT" : ""), 

@@ -103,7 +103,7 @@ if($resp !~ /^\s*$/) {
   #system("${path}showpie.pl $logf");
   # We could show historical stats on the tags for the current ping here.
   print divider(" sending your tagtime data to beeminder "), "\n";
-  for(@beeminder) { bm($_); }
+  for(@beeminder) { print "$_: "; bm($_); }
 }
 
 # send pings with the given tags to beeminder, eg, passing "alice/foo bar baz" 
