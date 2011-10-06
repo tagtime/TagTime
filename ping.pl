@@ -96,7 +96,7 @@ slog($a);
 
 # Send your tagtime log to Beeminder if user has @beeminder list non-empty.
 #   (maybe should do this after retropings too but launch.pl would do that).
-if($resp !~ /^\s*$/) {
+if(@beeminder && $resp !~ /^\s*$/) {
   #print divider(""), "\n";
   #print "Showing your pie while your tagtime data uploads...\n";
   #print divider(""), "\n";

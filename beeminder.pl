@@ -27,25 +27,13 @@ $beedata1 = "";  # new bee data.
 
 if(-e $beef) {
   $beedata0 = do {local (@ARGV,$/) = $beef; <>}; # slurp file into string
-  # SCHDEL: (above is a more concise way to slurp a file in perl)
-  #open(B, $beef) or die;
-  #while(<B>) { $beedata0 .= $_; }
-  #close(B);
 }
-
-# SCHDEL: (scheduled for deletion; this hack shouldn't be needed anymore)
-# kludge for timezones: add your offset from server time in hours, ie, from NYC
-#%tz = { 'd/meta' => -1,
-#        'd/ontask' => -1,
-#        'b/meta' => -1,
-#        'b/job' => -1,
-#      };
 
 open(T, $tplf) or die;
 $i = 0;
 while(<T>) {
   if(!/^(\d+)\s*(.*)$/) { die; }
-  my $ts = $1;  # SCHDEL: + $tz{"$usr/$slug"}*3600;
+  my $ts = $1;
   my $stuff = $2;
   my $tags = strip($stuff);
 
