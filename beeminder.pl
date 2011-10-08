@@ -51,7 +51,7 @@ while(<T>) {
 close(T);
 
 $n = scalar(keys(%pinghash));
-$i = 1;
+$i = 0;
 for(sort(keys(%pinghash))) {
   ($yr, $mo, $d) = /^(\d+)\-(\d+)\-(\d+)$/;
   $stuffhash{$_} =~ s/\s*(\||\,)\s*$//;
