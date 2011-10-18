@@ -34,10 +34,9 @@ public class Preferences extends PreferenceActivity {
 
 		vibrate.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
 			public boolean onPreferenceChange(Preference preference, Object newValue) {
-				CheckBoxPreference x = (CheckBoxPreference) preference;
-				if (x.isChecked()) {
+				if ((Boolean) newValue) {
 					Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-					v.vibrate(100);
+					v.vibrate(25);
 				}
 				return true;
 			}
