@@ -113,7 +113,7 @@ public class TPController extends Activity {
 				Toast.makeText(TPController.this, "Pings ON", Toast.LENGTH_SHORT).show();
 				mRunning = true;
 				editor.putBoolean(KEY_RUNNING, mRunning);
-				setAlarm();				
+				setAlarm();
 			} else {
 				Toast.makeText(TPController.this, "Pings OFF", Toast.LENGTH_SHORT).show();
 				mRunning = false;

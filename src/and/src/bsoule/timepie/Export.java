@@ -5,12 +5,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -87,6 +89,17 @@ public class Export extends Activity {
 		doCleanupTags.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				showDialog(DIALOG_CLEANUP_TAGS);
+			}
+		});
+
+		Button doPingNow = (Button) findViewById(R.id.ping_now);
+		doPingNow.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				PingService x = PingService.getInstance();
+				if (x != null) {
+					long timex = System.currentTimeMillis()/1000;
+					x.sendNote(timex, false, mDb.createPing(timex, "", Arrays.asList(new String[]{""})));
+				}
 			}
 		});
 	}
