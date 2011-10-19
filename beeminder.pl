@@ -1,19 +1,17 @@
 #!/usr/bin/env perl
-# Given a tagtime log file, a Beeminder graph to update, and the list of tagtime
-# tags to include in the beeminder graph (only tagtime pings with one of those 
-# tags will be included), call the Beeminder API to update the graph.
-# As a side effect, generate a .bee file from a tagtime log and existing bee 
-# file, if any. (The .bee file is used as a cache to avoid calling the Beeminder
-# API if the tagtime log changed but it did not entail any changes relevant to 
-# the given Beeminder graph.
-# Exception / special case: if the graph is called "nafk" then count pings 
-# that *don't* match. (That's for tracking time at the computer, ie, not afk.)
+# Given a tagtime log file, and a Beeminder graph to update, call the Beeminder
+# API to update the graph.
+#
+# As a side effect, generate a .bee file from a tagtime log and existing bee
+# file, if any. (The .bee file is used as a cache to avoid calling the
+# Beeminder API if the tagtime log changed but it did not entail any changes
+# relevant to the given Beeminder graph.
 
 require "$ENV{HOME}/.tagtimerc";
 
 $ping = ($gap+0.0)/3600;  # number of hours per ping.
 
-die "usage: ./beeminder.pl tagtimelog user/slug <tags>" if (@ARGV < 3);
+die "usage: ./beeminder.pl tagtimelog user/slug" if (@ARGV != 2);
 
 $tplf = shift;  # tagtime log filename.
 $usrslug = shift;
