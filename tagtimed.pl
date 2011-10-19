@@ -31,8 +31,10 @@ my $nxtping = nextping($lstping);
 
 if($cygwin) { unlock(); }  # on cygwin may have stray lock files around.
 
-system("${path}launch.pl");        # Catch up on any old pings.
-system("${path}launch.pl recalc"); # Recalc .nextping in case settings changed.
+$cmd = "${path}launch.pl";        # Catch up on any old pings.
+system($cmd) == 0 or print "SYSERR: $cmd\n";
+$cmd = "${path}launch.pl recalc"; # Recalc .nextping in case settings changed.
+system($cmd) == 0 or print "SYSERR: $cmd\n";
 
 print STDERR "TagTime is watching you! Last ping would've been ",
   ss(time()-$lstping), " ago.\n";
@@ -47,11 +49,12 @@ while(1) {
   if($nxtping <= $now) {
     if($catchup || $nxtping > $now-$retrothresh) {
       if(!defined($playsound)) { print STDERR "\a"; }
-      else { system("$playsound"); }
+      else { system("$playsound") == 0 or print "SYSERR: $playsound\n"; }
     }
     # invokes popup for this ping plus additional popups if there were more
     #   pings while answering this one:
-    system("${path}launch.pl quiet &");
+    $cmd = "${path}launch.pl quiet &";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
     print STDERR annotime(padl($i," ",4).": PING! gap ".
 			  ss($nxtping-$lstping)."  avg ".
                           ss((0.0+time()-$start)/$i). " tot ".

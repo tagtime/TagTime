@@ -106,7 +106,8 @@ sub lockb {
       sleep(30);
       $okFlag = 0;
     }
-    system("usr/bin/touch $lockf");
+    $cmd = "usr/bin/touch $lockf";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
   } else {  # nice unix (including mac)
     sysopen(LF, $lockf, O_RDONLY | O_CREAT) or die "Can't open lock file: $!";
     if(!flock(LF, LOCK_EX | LOCK_NB)) {  # exclusive, nonblocking lock.
@@ -123,7 +124,8 @@ sub lockb {
 sub lockn {
   if($cygwin) {  # stupid windows
     if(-e $lockf) { return 0; }
-    system("/usr/bin/touch $lockf");
+    $cmd = "/usr/bin/touch $lockf";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
   } else {  # nice unix (including mac)
     sysopen(LF, $lockf, O_RDONLY | O_CREAT) or die "Can't open lock file: $!";
     # Don't wait if we can't get the lock, the next cron'd version'll get it
@@ -136,7 +138,8 @@ sub lockn {
 # Release the lock.
 sub unlock {
   if($cygwin) {  # stupid windows
-    system("/bin/rm -f $lockf");
+    $cmd = "/bin/rm -f $lockf";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
   } else {  # nice unix
     close(LF);  # release the lock.
   }
