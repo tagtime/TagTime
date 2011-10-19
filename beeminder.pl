@@ -38,8 +38,7 @@ while(<T>) {
   my $tags = strip($stuff);
 
   for my $t (@tag) {
-    if($ts>=$start && ($slug ne "nafk" && $tags=~/\b$t\b/ || 
-                       $slug eq "nafk" && $tags!~/\b$t\b/)) {
+    if($ts>=$start && $tags=~/\b$t\b/) {
       my($yr,$mo,$d,$h,$m,$s) = dt($ts);
       $pinghash{"$yr-$mo-$d"} += 1; 
       $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
