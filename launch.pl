@@ -17,6 +17,10 @@
 #       assuming ~/.nextping specifies a time in the future.
 
 $launchTime = time();
+
+require "$ENV{HOME}/.tagtimerc";
+require "${path}util.pl";
+
 $npfile = "$ENV{HOME}/.nextping";  # contains next ping time and RNG seed.
 
 my $args = join(' ', @ARGV); # supported arguments: test, recalc, quiet
@@ -32,22 +36,22 @@ if($test) {  # just pop up the editor and exit; mainly for testing.
 }
 
 # First do a quick check to see if next ping is still in the future...
-if (-e $npfile) {
+if(-e $npfile) {
   open(NXT, $npfile) or die "Can't read $npfile: $!";
-  $nxtping = <NXT>;
+  $nxtping = <NXT>;  chomp($nxtping);
+  $seed    = <NXT>;  chomp($seed);
+  $oldgap  = <NXT>;  chomp($oldgap);
   close(NXT);
-  if ($nxtping > $launchTime) { 
-    if (!$quiet && !$recalc) { 
+  $recalc ||= ($oldgap != $gap); # $gap changed so recalc next ping
+  if ($nxtping > $launchTime && !$recalc) { 
+    if(!$quiet) { 
       print "[Next ping time is in the future. No old pings to catch up on.]\n";
     }
-    exit(0); 
+    exit(0);
   }
 }
 
 # If we make it here then it's time to do something ---------------------
-
-require "$ENV{HOME}/.tagtimerc";
-require "${path}util.pl";
 
 if(!lockn()) { 
   print "Can't get lock. Exiting.\n" unless $quiet; 
@@ -60,8 +64,9 @@ if (!-e $npfile || $recalc) {
 }
 
 open(NXT, $npfile) or die "Can't read $npfile: $!";
-$nxtping = <NXT>; chomp($nxtping);
-$seed = <NXT>; chomp($seed);
+$nxtping = <NXT>;  chomp($nxtping);
+$seed    = <NXT>;  chomp($seed);
+$oldgap  = <NXT>;  chomp($oldgap);
 close(NXT);
 
 my $editorFlag = 0;
@@ -133,7 +138,7 @@ sub lastln {
 sub update {
   my($nxtping, $seed) = @_;
   open(NXT, ">$npfile") or die "ERROR-update: Can't write to $npfile: $!";
-  print NXT "$nxtping\n$seed\n";
+  print NXT "$nxtping\n$seed\n$gap\n";
   close(NXT);
 }
 
@@ -157,7 +162,7 @@ sub launch {
 sub editor {
   my($f, $t) = @_;
   $ENV{DISPLAY} = ":0.0";  # have to set this explicitly if invoked by cron.
-  if (!defined($EDIT_COMMAND)) {
+  if(!defined($EDIT_COMMAND)) {
     $cmd = "$XT -T '$t' -fg white -bg red -cr MidnightBlue -bc -rw -e $ED $f";
     system($cmd) == 0 or print "SYSERR: $cmd\n";
     #system("${path}term.sh $ED $f");
