@@ -71,8 +71,7 @@ if($beedata0 ne $beedata1) {
   close(K);                                        # the file $beef
 }
 
-print "Pings with", ($slug eq "nafk" ? "OUT" : ""), 
-  " tags {", join(", ", @tag), "}: $i.\n";
+print "Pings for $user/$slug: $i.\n";
 
 # Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
 #   Eg: splur(3, "boy") -> "3 boys"
