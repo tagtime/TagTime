@@ -19,10 +19,10 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
 # CHANGEME: add entries for each beeminder graph you want to auto-update:
 %beeminder = {
   # all "job" pings get added to bmndr.com/alice/work
-  #"alice/work" => ("job", ), 
+  #"alice/work" => ["job"],
 
   # pings with "fun" and/or "whee" added to bob/play
-  #"bob/play" => ("fun", "whee"),     
+  #"bob/play" => ["fun", "whee"],     
 };
 
 # Pings from more than this many seconds ago get autologged with tags
