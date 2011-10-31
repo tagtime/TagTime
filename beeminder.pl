@@ -18,7 +18,7 @@ $usrslug = shift;
 $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
 $beef = "$usr+$slug.bee"; # beef = bee file
-@tag = %beeminder{$usrslug} or die "I don't know which tags match $usrslug";
+@tag = $beeminder{$usrslug} or die "I don't know which tags match $usrslug";
 
 $beedata0 = "";  # original bee data.
 $beedata1 = "";  # new bee data.
@@ -71,7 +71,7 @@ if($beedata0 ne $beedata1) {
   close(K);                                        # the file $beef
 }
 
-print "Pings for $user/$slug: $i.\n";
+print "Pings for $usr/$slug: $i.\n";
 
 # Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
 #   Eg: splur(3, "boy") -> "3 boys"
