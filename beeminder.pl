@@ -47,15 +47,15 @@ close(T);
 sub tag_matcher {
   my $tags = shift();
   my $crit = shift();
-  if (ref($crit) == "ARRAY") {
+  if (ref($crit) eq "ARRAY") {
     for my $t (@$crit) {
       if ($tags =~ /\b$t\b/) {
         return 1;
       }
     }
-  } elsif (ref($crit) == "CODE") {
+  } elsif (ref($crit) eq "CODE") {
     return $crit($tags);
-  } elsif (ref($crit) == "Regexp") {
+  } elsif (ref($crit) eq "Regexp") {
     return $tags =~ $crit;
   } else {
     die "Unknown tag matching criterion $crit";
