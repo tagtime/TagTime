@@ -2,4 +2,4 @@ Run ./tryall.sh to hear all the sounds in this directory, 3 times each.
 
 The playsound executable included here was compiled for mac.  To recompile it (which will only work on macs, where it's unnecessary to recompile it anyway), just do: make playsound.
 
-Linux should have a program "play" built in that does this.
+Linux should have a program "play" or "playsound" built in that does this.

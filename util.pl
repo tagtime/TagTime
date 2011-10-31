@@ -106,7 +106,8 @@ sub lockb {
       sleep(30);
       $okFlag = 0;
     }
-    system("usr/bin/touch $lockf");
+    $cmd = "/usr/bin/touch $lockf";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
   } else {  # nice unix (including mac)
     sysopen(LF, $lockf, O_RDONLY | O_CREAT) or die "Can't open lock file: $!";
     if(!flock(LF, LOCK_EX | LOCK_NB)) {  # exclusive, nonblocking lock.
@@ -123,7 +124,8 @@ sub lockb {
 sub lockn {
   if($cygwin) {  # stupid windows
     if(-e $lockf) { return 0; }
-    system("/usr/bin/touch $lockf");
+    $cmd = "/usr/bin/touch $lockf";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
   } else {  # nice unix (including mac)
     sysopen(LF, $lockf, O_RDONLY | O_CREAT) or die "Can't open lock file: $!";
     # Don't wait if we can't get the lock, the next cron'd version'll get it
@@ -136,7 +138,8 @@ sub lockn {
 # Release the lock.
 sub unlock {
   if($cygwin) {  # stupid windows
-    system("/bin/rm -f $lockf");
+    $cmd = "/bin/rm -f $lockf";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
   } else {  # nice unix
     close(LF);  # release the lock.
   }
@@ -204,14 +207,14 @@ sub dd { my($n) = @_;  return padl($n, "0", 2); }
 # pad left: returns string x but with p's prepended so it has width w
 sub padl {
   my($x,$p,$w)= @_;
-  if (length($x) >= $w) { return substr($x,0,$w); }
+  if(length($x) >= $w) { return substr($x,0,$w); }
   return $p x ($w-length($x)) . $x;
 }
 
 # pad right: returns string x but with p's appended so it has width w
 sub padr {
   my($x,$p,$w)= @_;
-  if (length($x) >= $w) { return substr($x,0,$w); }
+  if(length($x) >= $w) { return substr($x,0,$w); }
   return $x . $p x ($w-length($x));
 }
 
@@ -255,16 +258,16 @@ sub ss { my($s) = @_;
   my($d,$h,$m);
   my $incl = "s";
 
-  if ($s < 0) { return "-".ss(-$s); }
+  if($s < 0) { return "-".ss(-$s); }
 
   $m = int($s/60);
-  if ($m > 0) { $incl = "ms"; }
+  if($m > 0) { $incl = "ms"; }
   $s %= 60;
   $h = int($m/60);
-  if ($h > 0) { $incl = "hms"; }
+  if($h > 0) { $incl = "hms"; }
   $m %= 60;
   $d = int($h/24);
-  if ($d > 0) { $incl = "dhms"; }
+  if($d > 0) { $incl = "dhms"; }
   $h %= 24;
 
   return ($incl=~"d" ? "$d"."d" : "").
@@ -278,13 +281,13 @@ sub ss2 { my($s) = @_;
   my($d,$h,$m);
   my $incl = "s";
 
-  if ($s < 0) { return "-".ss2(-$s); }
+  if($s < 0) { return "-".ss2(-$s); }
 
   $m = int($s/60);
-  if ($m > 0) { $incl = "ms"; }
+  if($m > 0) { $incl = "ms"; }
   $s %= 60;
   $h = int($m/60);
-  if ($h > 0) { $incl = "hms"; }
+  if($h > 0) { $incl = "hms"; }
   $m %= 60;
 
   return ($incl=~"h" ? $h."h" : "").

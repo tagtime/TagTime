@@ -22,4 +22,5 @@ require "$ENV{HOME}/.tagtimerc";
 #require "${path}util.pl";
 
 chdir($path);
-system("vim -c \"source tasks.vim\" $usr.tsk");
+$cmd = "vim -c \"source tasks.vim\" $usr.tsk";
+system($cmd) == 0 or print "SYSERR: $cmd\n";

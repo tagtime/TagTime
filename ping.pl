@@ -107,6 +107,7 @@ if(%beeminder && $resp !~ /^\s*$/) {
 # Send pings to the given beeminder goal, e.g. passing "alice/foo" sends
 # appropriate (as defined in .tagtimerc) pings to bmndr.com/alice/foo
 sub bm { my($s) = @_;
-  system("${path}beeminder.pl ${path}$usr.log $s");
+  $cmd = "${path}beeminder.pl ${path}$usr.log $s";
+  system($cmd) == 0 or print "SYSERR: $cmd\n";
 }
 
