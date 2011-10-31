@@ -21,8 +21,19 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
   # all "job" pings get added to bmndr.com/alice/work
   #"alice/work" => ["job"],
 
-  # pings with "fun" and/or "whee" added to bob/play
+  # pings with "fun" and/or "whee" get added to bob/play
   #"bob/play" => ["fun", "whee"],     
+
+  # ADVANCED USAGE: regular expressions
+  # pings with tags like "eat_apple", "eat_banana" "eat_chocolate" get added to
+  # charlie/food
+  #"charlie/food" => qr/\beat_\a+\b/,
+
+  # ADVANCED USAGE: plug-in function
+  # pings with "workout" will get added to diane/tuesday_workouts, but only on tuesdays.
+  #"diane/workouts" => sub() {my @now = localtime();
+  #return shift() =~/\bworkout\b/ && $now[6] == 2;
+  #}
 };
 
 # Pings from more than this many seconds ago get autologged with tags
