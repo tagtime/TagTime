@@ -18,7 +18,7 @@ $usrslug = shift;
 $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
 $beef = "$usr+$slug.bee"; # beef = bee file
-@tag = $beeminder{$usrslug} or die "I don't know which tags match $usrslug";
+$crit = $beeminder{$usrslug} or die "I don't know which tags match $usrslug";
 
 $beedata0 = "";  # original bee data.
 $beedata1 = "";  # new bee data.
@@ -34,18 +34,34 @@ while(<T>) {
   my $ts = $1;
   my $stuff = $2;
   my $tags = strip($stuff);
-
-  for my $t (@tag) {
-    if($ts>=$start && $tags=~/\b$t\b/) {
-      my($yr,$mo,$d,$h,$m,$s) = dt($ts);
-      $pinghash{"$yr-$mo-$d"} += 1; 
-      $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
-      $i++;
-      last;  
-    }
+  if($ts>=$start && tag_matcher($tags, $crit)) {
+    my($yr,$mo,$d,$h,$m,$s) = dt($ts);
+    $pinghash{"$yr-$mo-$d"} += 1; 
+    $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
+    $i++;
+    last;  
   }
 }
 close(T);
+
+sub tag_matcher {
+  my $tags = shift();
+  my $crit = shift();
+  if (ref($crit) == "ARRAY") {
+    for my $t (@$crit) {
+      if ($tags =~ /\b$t\b/) {
+        return 1;
+      }
+    }
+  } elsif (ref($crit) == "CODE") {
+    return $crit($tags);
+  } elsif (ref($crit) == "Regexp") {
+    return $tags =~ $crit;
+  } else {
+    die "Unknown tag matching criterion $crit";
+  }
+  return 0;
+}
 
 $n = scalar(keys(%pinghash));
 $i = 1;
