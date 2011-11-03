@@ -1,68 +1,42 @@
 #!/usr/bin/perl
-# Check if it's time (or past time) to ping, or if the ~/.nextping file is
-# missing.  If all's well just exit, otherwise catch up on missed pings
+# Check if it's time (or past time) to ping. If so, catch up on missed pings
 # and/or launch ping.pl for the current ping.
-# This can be invoked as a cron job every minute (not recommended) or be called 
-# every time a ping is due.  The daemon (tagtimed.pl) does the latter.
-# Note: if this were built into the daemon itself then the .nextping
-#       file would be superfluous when since we use a universal ping
-#       schedule that is recomputed afresh when the daemon starts.
-#       (but then this has to look at the log to see which pings are
-#        already pung.)
-# Is there a standard way for daemons to determine when they are
-# already running?  (See notes in README)
-# Note: If you change $gap in settings this will ignore it and stick
-#       with the next scheduled ping time stored in ~/.nextping.
-#       Passing the 'recalc' arg will regenerate the ~/.nextping file,
-#       assuming ~/.nextping specifies a time in the future.
+# This should be called by the daemon (tagtimed.pl) every time a ping is due.
 
 $launchTime = time();
-$npfile = "$ENV{HOME}/.nextping";  # contains next ping time and RNG seed.
 
-my $args = join(' ', @ARGV); # supported arguments: test, recalc, quiet
+require "$ENV{HOME}/.tagtimerc";
+require "${path}util.pl";
+
+my $args = join(' ', @ARGV); # supported arguments: test, quiet
 my $test =   ($args =~ /\btest\b/);
-my $recalc = ($args =~ /\brecalc\b/);
 my $quiet =  ($args =~ /\bquiet\b/);
 
 if($test) {  # just pop up the editor and exit; mainly for testing.
-  require "$ENV{HOME}/.tagtimerc";
-  require "${path}util.pl";
   editor($logf, "TagTime Log Editor (invoked explicitly with \"test\" arg)");
   exit(0);
 }
 
-# First do a quick check to see if next ping is still in the future...
-if (-e $npfile) {
-  open(NXT, $npfile) or die "Can't read $npfile: $!";
-  $nxtping = <NXT>;
-  close(NXT);
-  if ($nxtping > $launchTime) { 
-    if (!$quiet && !$recalc) { 
-      print "[Next ping time is in the future. No old pings to catch up on.]\n";
-    }
-    exit(0); 
+# figure out the next ping after the last one that's in the log file
+if(-e $logf) {
+  $lll = `tail -1 $logf`;  # last log line
+  $lll =~ /^\s*(\d+)/; # parse out the timestamp for the last line, which better
+  $lstping = $1;       # be equal to nextping@prevping of itself.
+  $tmp = nextping(prevping($lstping)); # NB: must call prevping before nextping
+  if($lstping == $tmp) {
+    $nxtping = nextping($lstping);
+  } else {
+    print "TagTime log file ($logf) has bad last line:\n$lll";
+    $nxtping = prevping($launchTime);
   }
+} else {
+  $nxtping = prevping($launchTime);
 }
-
-# If we make it here then it's time to do something ---------------------
-
-require "$ENV{HOME}/.tagtimerc";
-require "${path}util.pl";
 
 if(!lockn()) { 
   print "Can't get lock. Exiting.\n" unless $quiet; 
   exit(1); 
 } # Don't wait if we can't get the lock.
-
-if (!-e $npfile || $recalc) {
-  $nxtping = nextping(prevping($launchTime));
-  update($nxtping, $seed);
-}
-
-open(NXT, $npfile) or die "Can't read $npfile: $!";
-$nxtping = <NXT>; chomp($nxtping);
-$seed = <NXT>; chomp($seed);
-close(NXT);
 
 my $editorFlag = 0;
 
@@ -113,8 +87,6 @@ do {
   }
 } while($nxtping <= time());
 
-update($nxtping, $seed);
-
 unlock();
 
 
@@ -129,14 +101,6 @@ sub lastln {
   return ($1,$2);
 }
 
-# Write npfile which consists of: next ping time, state of the RNG
-sub update {
-  my($nxtping, $seed) = @_;
-  open(NXT, ">$npfile") or die "ERROR-update: Can't write to $npfile: $!";
-  print NXT "$nxtping\n$seed\n";
-  close(NXT);
-}
-
 # Launch the tagtime pinger for the given time (in unix time).
 sub launch {
   my($t) = @_;
@@ -145,10 +109,11 @@ sub launch {
   #$ENV{DISPLAY} = ":0.0";  # have to set this explicitly if invoked by cron.
   if(!$quiet) {
     if(!defined($playsound)) { print STDERR "\a"; }
-    else { system("$playsound"); }
+    else { system("$playsound") == 0 or print "SYSERR: $playsound\n"; }
   }
-  system("$XT -T 'TagTime ${hour}:${min}:${sec}' " .
-     "-fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl $t");
+  $cmd = "$XT -T 'TagTime ${hour}:${min}:${sec}' " .
+    "-fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl $t";
+  system($cmd) == 0 or print "SYSERR: $cmd\n";
   #system("${path}term.sh ${path}ping.pl $t");
 }
 
@@ -156,17 +121,18 @@ sub launch {
 sub editor {
   my($f, $t) = @_;
   $ENV{DISPLAY} = ":0.0";  # have to set this explicitly if invoked by cron.
-  if (!defined($EDIT_COMMAND)) {
-    system("$XT -T '$t' -fg white -bg red -cr MidnightBlue -bc -rw -e $ED $f");
+  if(!defined($EDIT_COMMAND)) {
+    $cmd = "$XT -T '$t' -fg white -bg red -cr MidnightBlue -bc -rw -e $ED $f";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
     #system("${path}term.sh $ED $f");
   } else {
-    system("$EDIT_COMMAND $f");
+    $cmd = "$EDIT_COMMAND $f";
+    system($cmd) == 0 or print "SYSERR: $cmd\n";
   }
 }
 
 
-# SCHEDULED FOR DELETION (discussion and code for artificial gaps):
-#
+# SCHDEL (SCHEDULED FOR DELETION): (discussion and code for artificial gaps)
 # It can happen that 2 pings can both occur since we last checked (a minute
 # ago if using cron) which means that this script would notice them both *now*
 # and ping you twice in a row with zero gap.  That's bad.

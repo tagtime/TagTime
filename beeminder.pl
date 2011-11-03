@@ -51,7 +51,7 @@ while(<T>) {
 close(T);
 
 $n = scalar(keys(%pinghash));
-$i = 1;
+$i = 0;
 for(sort(keys(%pinghash))) {
   ($yr, $mo, $d) = /^(\d+)\-(\d+)\-(\d+)$/;
   $stuffhash{$_} =~ s/\s*(\||\,)\s*$//;
@@ -143,7 +143,7 @@ sub dd { my($n) = @_;  return padl($n, "0", 2); }
 # pad left: returns string x but with p's prepended so it has width w
 sub padl {
   my($x,$p,$w)= @_;
-  if (length($x) >= $w) { return substr($x,0,$w); }
+  if(length($x) >= $w) { return substr($x,0,$w); }
   return $p x ($w-length($x)) . $x;
 }
 
