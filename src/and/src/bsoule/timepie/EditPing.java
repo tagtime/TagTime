@@ -9,8 +9,10 @@ import java.util.Arrays;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -75,7 +77,10 @@ public class EditPing extends Activity {
 
 		mPingsDB = new PingsDbAdapter(this);
 		mPingsDB.open();
-		mTagsCursor = mPingsDB.fetchAllTags();
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		String ordering = prefs.getString("sortOrderPref", "FREQ");
+		Log.w(TAG, "Getting Tags with order: " + ordering);
+		mTagsCursor = mPingsDB.fetchAllTags(ordering);
 		startManagingCursor(mTagsCursor);
 		mTaggings = mPingsDB.fetchTaggings(mRowId,PingsDbAdapter.KEY_PID);
 		startManagingCursor(mTaggings);

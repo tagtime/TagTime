@@ -25,5 +25,12 @@
 	    android:summaryOff="No Vibration"
 	    android:summaryOn="Vibration on Ping"
 	  />
+	  <CheckBoxPreference
+	    android:key="pingLedFlash"
+	    android:title="Flash LED"
+	    android:defaultValue="false"
+	    android:summaryOff="No flashing"
+	    android:summaryOn="LED will flash"
+	   /> 
   </PreferenceCategory>
 </PreferenceScreen>

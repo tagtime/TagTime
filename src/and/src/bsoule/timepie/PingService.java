@@ -60,7 +60,6 @@ public class PingService extends Service {
 	public void onCreate() {
 		Log.i(TAG,"PingService.onCreate");
 		sInstance = this;
-		GAP = TPController.DEBUG ? 2*60 : 45*60; 
 		PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
 		PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "pingservice");
 		wl.acquire();
@@ -184,6 +183,13 @@ public class PingService extends Service {
 		} else {
 			note.defaults |= Notification.DEFAULT_SOUND;
 		}
+	
+		if (mPrefs.getBoolean("pingLedFlash", false)) {
+			note.ledARGB = 0xff0033ff;
+			note.ledOffMS = 1000;
+			note.ledOnMS = 200;
+			note.flags |= Notification.FLAG_SHOW_LIGHTS;
+		}
 
 		// And finally, send the notification. The PING_NOTES const is a unique id 
 		// that gets assigned to the notification (we happen to pull it from a layout id
@@ -197,15 +203,13 @@ public class PingService extends Service {
 		AlarmManager alarum = (AlarmManager) getSystemService(ALARM_SERVICE);
 		Intent alit = new Intent(this, TPStartUp.class);
 		alit.putExtra("ThisIntentIsTPStartUpClass", true);
-		alarum.set(alarum.RTC_WAKEUP, PING*1000, 
+		alarum.set(AlarmManager.RTC_WAKEUP, PING*1000, 
 				PendingIntent.getBroadcast(this, 0, alit, 0));
 	}
 
 	private static final long IA = 16807;
 	private static final long IM = 2147483647;
 	private static final long INITSEED = 666;
-	//private static final long GAP = 45*60;
-	private static long GAP;
 
 	/* *********************** *
 	 * Random number generator *
@@ -223,7 +227,7 @@ public class PingService extends Service {
 
 	// Returns a random number drawn from an exponential
 	// distribution with mean gap
-	public static double exprand() { return -1 * GAP * Math.log(ran01()); }
+	public static double exprand() { return -1 * Constant.GAP * Math.log(ran01()); }
 
 	// Takes previous ping time, returns random next ping time (unix time).
 	// NB: this has the side effect of changing the RNG state ($seed)

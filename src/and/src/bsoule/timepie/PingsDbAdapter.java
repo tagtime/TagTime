@@ -7,11 +7,13 @@ import java.util.regex.Pattern;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class PingsDbAdapter {
@@ -20,6 +22,7 @@ public class PingsDbAdapter {
 	public static final String KEY_NOTES = "notes";
 	public static final String KEY_TAG = "tag";
 	public static final String KEY_USED_CACHE = "used_cache";
+	public static final String KEY_TIME_CACHE = "time_cache";
 	public static final String KEY_TAGPING = "tag_ping";
 	public static final String KEY_ROWID = "_id";
 	public static final String KEY_PID = "ping_id";
@@ -29,9 +32,7 @@ public class PingsDbAdapter {
 	private DatabaseHelper mDbHelper;
 	private SQLiteDatabase mDb;
 
-	/**
-	 * Database creation sql statement
-	 */
+	/** Database creation sql statement */
 
 	// a ping is a timestamp with optional notes
 	private static final String CREATE_PINGS =
@@ -275,8 +276,17 @@ public class PingsDbAdapter {
 	}
 
 	public Cursor fetchAllTags() {
-		return mDb.query(TAGS_TABLE, new String[] {KEY_ROWID, KEY_TAG}, 
-				null, null, null, null, KEY_USED_CACHE + " DESC");
+		return fetchAllTags("FREQ");
+	}
+	
+	public Cursor fetchAllTags(String ordering) {
+		String sort_key = KEY_TAG + " COLLATE NOCASE";
+		if (ordering.equals("FREQ")) {
+		  sort_key = KEY_USED_CACHE + " DESC";
+		} else if (ordering.equals("ALPHA")) {
+		  sort_key = KEY_TAG + " COLLATE NOCASE";
+		}
+		return mDb.query(TAGS_TABLE, new String[] {KEY_ROWID, KEY_TAG}, null, null, null, null, sort_key);
 	}
 
 	/**

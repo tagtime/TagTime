@@ -3,11 +3,9 @@
     <string-array name="sortOrders">
       <item>Frequency</item>
       <item>Alphabetical</item>
-      <item>Total Time</item>
     </string-array>
     <string-array name="sortValues">
       <item>FREQ</item>
       <item>ALPHA</item>
-      <item>TIME</item>
     </string-array>
 </resources>
