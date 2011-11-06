@@ -17,7 +17,7 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
 # System settings follow...
 
 # CHANGEME: add entries for each beeminder graph you want to auto-update:
-%beeminder = {
+%beeminder = (
   # all "job" pings get added to bmndr.com/alice/work
   #"alice/work" => ["job"],
 
@@ -34,7 +34,7 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
   #"diane/workouts" => sub() {my @now = localtime();
   #return shift() =~/\bworkout\b/ && $now[6] == 2;
   #}
-};
+);
 
 # Pings from more than this many seconds ago get autologged with tags
 # "afk" and "RETRO".  (Pings can be overdue either because the
