@@ -96,18 +96,16 @@ slog($a);
 
 # Send your tagtime log to Beeminder if user has @beeminder list non-empty.
 #   (maybe should do this after retropings too but launch.pl would do that).
-if(@beeminder && $resp !~ /^\s*$/) {
-  #print divider(""), "\n";
-  #print "Showing your pie while your tagtime data uploads...\n";
-  #print divider(""), "\n";
-  #system("${path}showpie.pl $logf");
+if(%beeminder && $resp !~ /^\s*$/) {
   # We could show historical stats on the tags for the current ping here.
   print divider(" sending your tagtime data to beeminder "), "\n";
-  for(@beeminder) { print "$_: "; bm($_); }
+  for(keys(%beeminder)) {
+    print "$_: "; bm($_);
+  }
 }
 
-# send pings with the given tags to beeminder, eg, passing "alice/foo bar baz" 
-# sends all pings with tags bar and/or baz to bmndr.com/alice/foo
+# Send pings to the given beeminder goal, e.g. passing "alice/foo" sends
+# appropriate (as defined in .tagtimerc) pings to bmndr.com/alice/foo
 sub bm { my($s) = @_;
   $cmd = "${path}beeminder.pl ${path}$usr.log $s";
   system($cmd) == 0 or print "SYSERR: $cmd\n";

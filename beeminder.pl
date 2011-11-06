@@ -1,26 +1,24 @@
 #!/usr/bin/env perl
-# Given a tagtime log file, a Beeminder graph to update, and the list of tagtime
-# tags to include in the beeminder graph (only tagtime pings with one of those 
-# tags will be included), call the Beeminder API to update the graph.
-# As a side effect, generate a .bee file from a tagtime log and existing bee 
-# file, if any. (The .bee file is used as a cache to avoid calling the Beeminder
-# API if the tagtime log changed but it did not entail any changes relevant to 
-# the given Beeminder graph.
-# Exception / special case: if the graph is called "nafk" then count pings 
-# that *don't* match. (That's for tracking time at the computer, ie, not afk.)
+# Given a tagtime log file, and a Beeminder graph to update, call the Beeminder
+# API to update the graph.
+#
+# As a side effect, generate a .bee file from a tagtime log and existing bee
+# file, if any. (The .bee file is used as a cache to avoid calling the
+# Beeminder API if the tagtime log changed but it did not entail any changes
+# relevant to the given Beeminder graph.
 
 require "$ENV{HOME}/.tagtimerc";
 
 $ping = ($gap+0.0)/3600;  # number of hours per ping.
 
-die "usage: ./beeminder.pl tagtimelog user/slug <tags>" if (@ARGV < 3);
+die "usage: ./beeminder.pl tagtimelog user/slug" if (@ARGV != 2);
 
 $tplf = shift;  # tagtime log filename.
 $usrslug = shift;
 $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
 $beef = "$usr+$slug.bee"; # beef = bee file
-@tag = @ARGV;
+$crit = $beeminder{$usrslug} or die "I don't know which tags match $usrslug";
 
 $beedata0 = "";  # original bee data.
 $beedata1 = "";  # new bee data.
@@ -36,19 +34,34 @@ while(<T>) {
   my $ts = $1;
   my $stuff = $2;
   my $tags = strip($stuff);
-
-  for my $t (@tag) {
-    if($ts>=$start && ($slug ne "nafk" && $tags=~/\b$t\b/ || 
-                       $slug eq "nafk" && $tags!~/\b$t\b/)) {
-      my($yr,$mo,$d,$h,$m,$s) = dt($ts);
-      $pinghash{"$yr-$mo-$d"} += 1; 
-      $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
-      $i++;
-      last;  
-    }
+  if($ts>=$start && tag_matcher($tags, $crit)) {
+    my($yr,$mo,$d,$h,$m,$s) = dt($ts);
+    $pinghash{"$yr-$mo-$d"} += 1; 
+    $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
+    $i++;
+    last;  
   }
 }
 close(T);
+
+sub tag_matcher {
+  my $tags = shift();
+  my $crit = shift();
+  if (ref($crit) eq "ARRAY") {
+    for my $t (@$crit) {
+      if ($tags =~ /\b$t\b/) {
+        return 1;
+      }
+    }
+  } elsif (ref($crit) eq "CODE") {
+    return $crit($tags);
+  } elsif (ref($crit) eq "Regexp") {
+    return $tags =~ $crit;
+  } else {
+    die "Unknown tag matching criterion $crit";
+  }
+  return 0;
+}
 
 $n = scalar(keys(%pinghash));
 $i = 0;
@@ -74,8 +87,7 @@ if($beedata0 ne $beedata1) {
   close(K);                                        # the file $beef
 }
 
-print "Pings with", ($slug eq "nafk" ? "OUT" : ""), 
-  " tags {", join(", ", @tag), "}: $i.\n";
+print "Pings for $usr/$slug: $i.\n";
 
 # Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
 #   Eg: splur(3, "boy") -> "3 boys"
