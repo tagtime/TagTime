@@ -18,21 +18,17 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
 
 # CHANGEME: add entries for each beeminder graph you want to auto-update:
 %beeminder = (
-  # all "job" pings get added to bmndr.com/alice/work
-  #"alice/work" => ["job"],
-
-  # pings with "fun" and/or "whee" get added to bob/play
-  #"bob/play" => ["fun", "whee"],     
+  #"alice/work" => ["job"],  # all "job" pings get added to bmndr.com/alice/work
+  #"bob/play" => ["fun","whee"], # pings w/ "fun" and/or "whee" sent to bob/play
 
   # ADVANCED USAGE: regular expressions
-  # pings with tags like "eat_apple", "eat_banana" "eat_chocolate" get added to
-  # charlie/food
-  #"charlie/food" => qr/\beat_\a+\b/,
+  # pings tagged like "eat1", "eat2", "eat3" get added to carol/food
+  #"carol/food" => qr/\beat\d+\b/,
 
-  # ADVANCED USAGE: plug-in function
-  # pings with "workout" will get added to diane/tuesday_workouts, but only on tuesdays.
-  #"diane/workouts" => sub() {my @now = localtime();
-  #return shift() =~/\bworkout\b/ && $now[6] == 2;
+  # ADVANCED USAGE: plug-in functions
+  # pings tagged "workout" get added to dave/tueworkouts, but only on tuesdays
+  #"dave/tueworkouts" => sub() { my @now = localtime();
+  # return shift() =~/\bworkout\b/ && $now[6] == 2;
   #}
 );
 

@@ -18,6 +18,14 @@ $usrslug = shift;
 $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
 $beef = "$usr+$slug.bee"; # beef = bee file
+
+if(defined(@beeminder)) { # for backward compatibility
+  for(@beeminder) {
+    @stuff = split(/\s+/, $_); # usrslug and tags
+    $us = shift(@stuff);
+    $beeminder{$us} = [@stuff];
+  }
+}
 $crit = $beeminder{$usrslug} or die "I don't know which tags match $usrslug";
 
 $beedata0 = "";  # original bee data.
@@ -39,7 +47,7 @@ while(<T>) {
     $pinghash{"$yr-$mo-$d"} += 1; 
     $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
     $i++;
-    last;  
+    #last;  # leaving this here was the bug, i believe!
   }
 }
 close(T);
@@ -47,15 +55,15 @@ close(T);
 sub tag_matcher {
   my $tags = shift();
   my $crit = shift();
-  if (ref($crit) eq "ARRAY") {
+  if(ref($crit) eq "ARRAY") {
     for my $t (@$crit) {
-      if ($tags =~ /\b$t\b/) {
+      if($tags =~ /\b$t\b/) {
         return 1;
       }
     }
-  } elsif (ref($crit) eq "CODE") {
+  } elsif(ref($crit) eq "CODE") {
     return $crit($tags);
-  } elsif (ref($crit) eq "Regexp") {
+  } elsif(ref($crit) eq "Regexp") {
     return $tags =~ $crit;
   } else {
     die "Unknown tag matching criterion $crit";
@@ -78,7 +86,7 @@ for(sort(keys(%pinghash))) {
 }
 
 if($beedata0 ne $beedata1) {
-  #print "DEBUG: calling beemapi tagtime_update tgt $usr $slug\n";
+  print "DEBUG: calling beemapi tagtime_update tgt $usr $slug\n";
   open(G, "|${path}beemapi.rb tagtime_update tgt $usr $slug") or die;
   print G "$beedata1";
   close(G);
@@ -88,6 +96,8 @@ if($beedata0 ne $beedata1) {
 }
 
 print "Pings for $usr/$slug: $i.\n";
+#print "Pings with", ($slug eq "nafk" ? "OUT" : ""), 
+# " tags {", join(", ", @tag), "}: $i.\n";     
 
 # Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
 #   Eg: splur(3, "boy") -> "3 boys"
