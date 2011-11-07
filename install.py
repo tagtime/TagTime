@@ -20,7 +20,6 @@ vals = {}
 vals["USER"] = sys.argv[1]
 vals["PATH"] = os.getcwd()+"/";
 vals["HOME"] = os.environ["HOME"]+"/"
-vals["SVN"]  = findcmd("svn")
 vals["ED"]   = findcmd("vi")
 vals["XT"]   = findcmd("xterm")
 vals["CYGWIN"]  = ('0','1')[os.popen("uname").readline().find("CYGWIN") != -1] 

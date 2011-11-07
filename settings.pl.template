@@ -10,7 +10,6 @@ $logf = "$path$usr.log";  # log file for pings
 # If you're using windows, you'll need cygwin and to set this flag to 1:
 $cygwin = __CYGWIN__;  # CHANGEME to 1 if you're using windows/cygwin.
 
-$SVN = "__SVN__";  # path to subversion -- possibly CHANGEME
 $ED = "__ED__ +";  # CHANGEME if you don't like vi (eg: /usr/bin/pico)
 $XT = "__XT__";  # path to xterm -- possibly CHANGEME
 
