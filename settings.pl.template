@@ -22,11 +22,13 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
   #"bob/play" => ["fun","whee"], # pings w/ "fun" and/or "whee" sent to bob/play
 
   # ADVANCED USAGE: regular expressions
-  # pings tagged like "eat1", "eat2", "eat3" get added to carol/food
+  # pings tagged like "eat1", "eat2", "eat3" get added to carol/food:
   #"carol/food" => qr/\beat\d+\b/,
 
   # ADVANCED USAGE: plug-in functions
-  # pings tagged "workout" get added to dave/tueworkouts, but only on tuesdays
+  # pings tagged anything except "afk" get added to "dan/nafk":
+  #"dan/nafk" => sub() { return shift() !~ /\bafk\b/; }
+  # pings tagged "workout" get added to dave/tueworkouts, but only on tuesdays:
   #"dave/tueworkouts" => sub() { my @now = localtime();
   # return shift() =~/\bworkout\b/ && $now[6] == 2;
   #}

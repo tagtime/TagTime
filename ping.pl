@@ -32,11 +32,10 @@ if($pingTime-$t > 9) {
   print divider(" WARNING "x8), "\n";
   print divider(""), "\n";
   print "This popup is ", ($pingTime-$t), " seconds late.\n";
-  print
-"Either you were busy answering a previous ping when this tried to pop up,\n";
-  print "or your tagtime daemon (tagtimed.pl) stopped running.\n";
-  print "Or there's a bug.  ",
-    "Just in case it's a bug, please report it on github.\n";
+  print <<EOS;
+Either you were answering a previous ping when this tried to pop up, or you just
+started the tagtime daemon (tagtimed.pl), or your computer's extremely sluggish.
+EOS
   print divider(""), "\n\n";
 }
 
