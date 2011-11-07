@@ -96,11 +96,13 @@ slog($a);
 
 # Send your tagtime log to Beeminder if user has @beeminder list non-empty.
 #   (maybe should do this after retropings too but launch.pl would do that).
-if(%beeminder && $resp !~ /^\s*$/) {
+if((%beeminder || @beeminder) && $resp !~ /^\s*$/) {
   # We could show historical stats on the tags for the current ping here.
   print divider(" sending your tagtime data to beeminder "), "\n";
-  for(keys(%beeminder)) {
-    print "$_: "; bm($_);
+  if(@beeminder) {  # for backward compatibility
+    for(@beeminder) { print "$_: "; @tmp = split(/\s+/, $_); bm($tmp[0]); }
+  } else {
+    for(keys(%beeminder)) { print "$_: "; bm($_); }
   }
 }
 

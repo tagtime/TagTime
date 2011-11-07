@@ -38,11 +38,11 @@ if(-e $beef) {
 open(T, $tplf) or die;
 $i = 0;
 while(<T>) {
-  if(!/^(\d+)\s*(.*)$/) { die; }
+  if(!/^(\d+)\s*(.*)$/) { die "Bad line in tagtime log file."; }
   my $ts = $1;
   my $stuff = $2;
   my $tags = strip($stuff);
-  if($ts>=$start && tag_matcher($tags, $crit)) {
+  if(tag_matcher($tags, $crit)) {   # && $ts>=$start
     my($yr,$mo,$d,$h,$m,$s) = dt($ts);
     $pinghash{"$yr-$mo-$d"} += 1; 
     $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
@@ -56,11 +56,7 @@ sub tag_matcher {
   my $tags = shift();
   my $crit = shift();
   if(ref($crit) eq "ARRAY") {
-    for my $t (@$crit) {
-      if($tags =~ /\b$t\b/) {
-        return 1;
-      }
-    }
+    for my $t (@$crit) { return 1 if $tags =~ /\b$t\b/; }
   } elsif(ref($crit) eq "CODE") {
     return $crit($tags);
   } elsif(ref($crit) eq "Regexp") {
@@ -72,7 +68,7 @@ sub tag_matcher {
 }
 
 $n = scalar(keys(%pinghash));
-$i = 0;
+$j = 0;
 for(sort(keys(%pinghash))) {
   ($yr, $mo, $d) = /^(\d+)\-(\d+)\-(\d+)$/;
   $stuffhash{$_} =~ s/\s*(\||\,)\s*$//;
@@ -80,13 +76,13 @@ for(sort(keys(%pinghash))) {
                splur($pinghash{$_},"ping").   
                # this makes the bee file change every time, which means 
                #   unneccesary regenerating of graphs:
-               #($i==$n ? " @ ".ts(time) : "").
+               #($j==$n ? " @ ".ts(time) : "").
                ": ".$stuffhash{$_}."\"\n";
-  $i++;
+  $j++;
 }
 
 if($beedata0 ne $beedata1) {
-  print "DEBUG: calling beemapi tagtime_update tgt $usr $slug\n";
+  #print "DEBUG: calling beemapi tagtime_update tgt $usr $slug\n";
   open(G, "|${path}beemapi.rb tagtime_update tgt $usr $slug") or die;
   print G "$beedata1";
   close(G);
@@ -95,9 +91,12 @@ if($beedata0 ne $beedata1) {
   close(K);                                        # the file $beef
 }
 
-print "Pings for $usr/$slug: $i.\n";
-#print "Pings with", ($slug eq "nafk" ? "OUT" : ""), 
-# " tags {", join(", ", @tag), "}: $i.\n";     
+if(ref($crit) eq "ARRAY") {
+  print splur($i,"ping")," (",join(",",@$crit),") on ",splur($j,"day"),".\n";
+  #($slug eq "nafk" ? "OUT" : ""), 
+} else {
+  print splur($i, "ping"), " on ", splur($j, "day"), ".\n";
+}
 
 # Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
 #   Eg: splur(3, "boy") -> "3 boys"
