@@ -58,7 +58,7 @@ sub tag_matcher {
   if(ref($crit) eq "ARRAY") {
     for my $t (@$crit) { return 1 if $tags =~ /\b$t\b/; }
   } elsif(ref($crit) eq "CODE") {
-    return $crit($tags);
+    return &$crit($tags);
   } elsif(ref($crit) eq "Regexp") {
     return $tags =~ $crit;
   } else {
