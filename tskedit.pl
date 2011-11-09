@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Launch vim with certain macros for editing your task file.
 # (looks best with black background, eg: xterm -fg SkyBlue -bg black -cr red)
 # For instructions on using tskedit, see template.tsk

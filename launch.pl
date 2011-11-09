@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Check if it's time (or past time) to ping. If so, catch up on missed pings
 # and/or launch ping.pl for the current ping.
 # This should be called by the daemon (tagtimed.pl) every time a ping is due.

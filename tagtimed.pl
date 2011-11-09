@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # TagTime daemon: this figures out from scratch when to beep and does so, 
 #   continuously, even when the previous ping is still unanswered.
 # After each ping it also runs launch.pl (with the 'quiet' arg since

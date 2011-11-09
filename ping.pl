@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Prompt for what you're doing RIGHT NOW.  In the future this should show
 # a cool pie chart that lets you click on the appropriate pie slice,
 # making that slice grow slightly.  And the slice boundaries could be fuzzy

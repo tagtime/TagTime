@@ -16,7 +16,7 @@ my $IM = 2147483647;  # constant used for RNG (2^31-1).
 if(!defined($seed)) { $seed = 666; }
 my $initseed = $seed;
 
-if(!defined($linelen)) { $linelen = 79; }  # default line length.
+if(!defined($linelen)) { $linelen = 80; }  # default line length.
 
 # Returns a random integer in [1,$IM-1]; changes $seed, ie, RNG state.
 # (This is ran0 from Numerical Recipes and has a period of ~2 billion.)
