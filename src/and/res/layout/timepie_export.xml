@@ -2,9 +2,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:orientation="vertical" android:layout_width="fill_parent"
 	android:layout_height="fill_parent">
-
-
-
 	<TextView android:layout_width="fill_parent"
 		android:layout_height="wrap_content" android:text="Save your data:" />
 	<Button android:text="Save to SD" android:id="@+id/export_sd"
@@ -41,4 +38,8 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content">
 	</Button>
+	<TextView android:text="Debugging"
+	  android:layout_width="fill_parent" android:layout_height="wrap_content" />
+	<Button android:text="Ping Now" android:id="@+id/ping_now"
+	  android:layout_width="wrap_content" android:layout_height="wrap_content" />
 </LinearLayout>

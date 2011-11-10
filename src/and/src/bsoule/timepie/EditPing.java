@@ -2,15 +2,18 @@ package bsoule.timepie;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Arrays;
 
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -41,8 +44,8 @@ public class EditPing extends Activity {
 	private ViewTreeObserver vto;
 
 	private boolean landscape;
-	private String mTagstring;
-	private static final String TAG = "***************EditPing:";
+	private List<String> mCurrentTags;
+	private static final String TAG = "EditPing";
 
 	public static int LAUNCH_VIEW = 0;
 	public static int LAUNCH_NOTE = 1;
@@ -74,7 +77,10 @@ public class EditPing extends Activity {
 
 		mPingsDB = new PingsDbAdapter(this);
 		mPingsDB.open();
-		mTagsCursor = mPingsDB.fetchAllTags();
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		String ordering = prefs.getString("sortOrderPref", "FREQ");
+		Log.w(TAG, "Getting Tags with order: " + ordering);
+		mTagsCursor = mPingsDB.fetchAllTags(ordering);
 		startManagingCursor(mTagsCursor);
 		mTaggings = mPingsDB.fetchTaggings(mRowId,PingsDbAdapter.KEY_PID);
 		startManagingCursor(mTaggings);
@@ -90,9 +96,7 @@ public class EditPing extends Activity {
 	}
 
 	private void populateFields() {
-		//Log.i(TAG,"populateFields()");
 		if (mRowId != null) {
-
 			Cursor note = mPingsDB.fetchPing(mRowId);
 			startManagingCursor(note);
 			try {
@@ -101,18 +105,12 @@ public class EditPing extends Activity {
 				SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());		
 				mPingTitle.setText(SDF.format(new Date(mPingUTC*1000)));
 				// get tags
-				mTagstring = mPingsDB.fetchTagString(mRowId); 
-					//note.getString(note.getColumnIndexOrThrow(PingsDbAdapter.KEY_TAG_STRING));
+				mCurrentTags = mPingsDB.fetchTagsForPing(mRowId);
 				if (!landscape) {
 					loadTags();
-//					mNotesText.setText(note.getString(
-//							note.getColumnIndexOrThrow(PingsDbAdapter.KEY_NOTES)));
 				} else {
-					mTagsEdit.setText(mTagstring);
+					mTagsEdit.setText(TextUtils.join(" ", mCurrentTags));
 				}
-				//mNotesEdit.setText(note.getString(
-				//		note.getColumnIndexOrThrow(PingsDbAdapter.KEY_NOTES)));
-
 			} catch (Exception e) {
 				Log.i(TAG, "caught an exception in populateFields():");
 				Log.i(TAG, "    "+e.getLocalizedMessage());
@@ -136,9 +134,7 @@ public class EditPing extends Activity {
 					mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_TAG));
 			long id = mTagsCursor.getLong(
 					mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_ROWID));
-			Pattern ps = Pattern.compile("(^|\\s+)"+tag+"(\\s+|$)");
-			Matcher ms = ps.matcher(mTagstring);
-			boolean on = ms.find();
+			boolean on = mCurrentTags.contains(tag);
 			TagToggle tog = new TagToggle(this, tag, id, on);
 			tog.setOnClickListener(mTogListener);
 			ll.addView(tog);
@@ -178,6 +174,7 @@ public class EditPing extends Activity {
 	protected void onPause() {
 		super.onPause();
 		saveState();
+		Log.i(TAG, "Was paused...");
 	}
 
 	@Override
@@ -185,26 +182,22 @@ public class EditPing extends Activity {
 		super.onResume();
 		if ( findViewById(R.id.tags_editText) == null ) {
 			landscape = false;
-			Log.i(TAG, "PORTRAIT");
+			Log.i(TAG, "Resuming in PORTRAIT");
 		} else {
 			landscape = true;
-			Log.i(TAG, "LANDSCAPE");
+			Log.i(TAG, "Resuming in LANDSCAPE");
 		}
 		populateFields();
 	}
 
 	private void saveState() {
-		//String pingnotes = mNotesEdit.getText().toString();
 		if (landscape) {
-			String newtagstring = mTagsEdit.getText().toString();
-			//mPingsDB.updatePing(mRowId, pingnotes);
-			if (!mTagstring.equals(newtagstring)) {
-				mPingsDB.updateTaggings(mRowId,mTagstring,newtagstring);
-				mTagstring = newtagstring;
-			}
+			String[] newtagstrings = mTagsEdit.getText().toString().split("\\s+");
+			mPingsDB.updateTaggings(mRowId, Arrays.asList(newtagstrings));
 		} else {
-			//String pingnotes = mNotesText.getText().toString();
-			//mPingsDB.updatePing(mRowId,pingnotes);
+			if (mCurrentTags != null) {
+				mPingsDB.updateTaggings(mRowId, mCurrentTags);
+			}
 		}
 	}
 
@@ -228,22 +221,17 @@ public class EditPing extends Activity {
 	};
 	
 	private OnClickListener mTogListener = new OnClickListener() {
-
 		public void onClick(View v) {
 			TagToggle tog = (TagToggle) v;
 			if (tog.isSelected()) {
 				Log.i(TAG,"toggle selected");
 				try {
-					mPingsDB.newTagPing(mRowId,tog.getTId());
-					mTagstring += " " + tog.getText().toString();
+					mCurrentTags.add(tog.getText().toString());
 				} catch (Exception e) {
 					Log.e(TAG,"error inserting newTagPing()");
 				}
 			} else {
-				mPingsDB.deleteTagPing(mRowId,tog.getTId());
-				mTagstring = mTagstring.replace(tog.getText(), "");
-				mTagstring = mTagstring.replaceAll("\\s{2,}", " ");
-				mTagstring = mTagstring.replaceAll("(\\s+$)|(^\\s+)", "");
+				mCurrentTags.remove(tog.getText().toString());
 			}
 		}
 		

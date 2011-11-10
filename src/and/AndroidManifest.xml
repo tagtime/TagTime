@@ -25,6 +25,7 @@
 		<activity android:name=".EditPing" />
 		<activity android:name=".ViewLog" />
 		<activity android:name=".Export" />
+		<activity android:name=".Preferences" />
 		
 		<service android:name=".PingService" />
 		<receiver android:name=".TPStartUp" android:enabled="true"
@@ -34,6 +35,7 @@
 					android:name="android.intent.action.BOOT_COMPLETED" />
 			</intent-filter>
 		</receiver>
+
 
 	</application>
 	<uses-sdk android:minSdkVersion="2" />

@@ -66,6 +66,13 @@ public class TPController extends Activity {
 					startExport();
 			}
 		});
+		TextView pref = (TextView) findViewById(R.id.PreferencesLink);
+		pref.setClickable(true);
+		pref.setOnClickListener(new OnClickListener() {
+			public void onClick(View arg0) {
+				startPreferences();
+			}
+		});
 
 	}
 	
@@ -79,6 +86,12 @@ public class TPController extends Activity {
 		Intent log = new Intent();
 		log.setClass(this,ViewLog.class);
 		startActivity(log);
+	}
+
+	public void startPreferences() {
+		Intent pref = new Intent();
+		pref.setClass(this, Preferences.class);
+		startActivity(pref);
 	}
 
 	public void setAlarm() {
@@ -97,17 +110,15 @@ public class TPController extends Activity {
 
 			// Perform action on clicks
 			if (tog.isChecked()) {
-				Toast.makeText(TPController.this, "ON", Toast.LENGTH_SHORT).show();
+				Toast.makeText(TPController.this, "Pings ON", Toast.LENGTH_SHORT).show();
 				mRunning = true;
 				editor.putBoolean(KEY_RUNNING, mRunning);
-				setAlarm();				
+				setAlarm();
 			} else {
-				Toast.makeText(TPController.this, "OFF", Toast.LENGTH_SHORT).show();
+				Toast.makeText(TPController.this, "Pings OFF", Toast.LENGTH_SHORT).show();
 				mRunning = false;
 				editor.putBoolean(KEY_RUNNING, mRunning);
 				cancelAlarm();
-				//editor.putLong(PingService.KEY_NEXT,-1);
-				//editor.putLong(PingService.KEY_SEED,-1);
 			}
 			editor.commit();
 		}
