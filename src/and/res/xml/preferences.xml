@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+  xmlns:android="http://schemas.android.com/apk/res/android">
+  <PreferenceCategory android:title="Editing Pings">
+   <ListPreference
+     android:title="Tag Order"
+     android:summary=""
+     android:key="sortOrderPref"
+     android:defaultValue="FREQ"
+     android:entries="@array/sortOrders"
+     android:entryValues="@array/sortValues" />
+  </PreferenceCategory>
+  <PreferenceCategory android:title="Ping Notification Settings">
+	  <RingtonePreference
+		  android:key="pingRingtonePref"
+	    android:title="Ringtone"
+	    android:showDefault="true"
+	    android:showSilent="true"
+	    android:ringtoneType="notification"
+	  />
+	  <CheckBoxPreference
+	    android:key="pingVibrate"
+	    android:title="Vibrate"
+	    android:defaultValue="true"
+	    android:summaryOff="No Vibration"
+	    android:summaryOn="Vibration on Ping"
+	  />
+	  <CheckBoxPreference
+	    android:key="pingLedFlash"
+	    android:title="Flash LED"
+	    android:defaultValue="false"
+	    android:summaryOff="No flashing"
+	    android:summaryOn="LED will flash"
+	   /> 
+  </PreferenceCategory>
+</PreferenceScreen>

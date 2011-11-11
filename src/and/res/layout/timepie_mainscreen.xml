@@ -48,6 +48,7 @@
 			android:textSize="20sp" 
 			android:text="View Log" 
 					android:layout_gravity="center_horizontal"/>
+
 		<View android:layout_height="1px" 
 		android:layout_width="fill_parent"
 		android:layout_marginTop="5dip" 
@@ -61,6 +62,21 @@
 			android:textSize="20sp" 
 			android:text="Manage Data" 
 					android:layout_gravity="center_horizontal"/>
+
+		<View android:layout_height="1px"
+		android:layout_width="fill_parent"
+		android:layout_marginTop="5dip"
+		android:layout_marginBottom="5dip"
+		android:background="#DFDFDF" />
+
+		<TextView android:id="@+id/PreferencesLink"
+		  android:layout_width="wrap_content"
+		  android:layout_height="wrap_content"
+		  android:layout_margin="5dip"
+		  android:textSize="20sp"
+		  android:text="Preferences"
+		  android:layout_gravity="center_horizontal"
+		  />
 	</LinearLayout>
 
 		<ImageView

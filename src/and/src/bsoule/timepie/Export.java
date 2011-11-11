@@ -5,12 +5,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -87,6 +89,17 @@ public class Export extends Activity {
 		doCleanupTags.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				showDialog(DIALOG_CLEANUP_TAGS);
+			}
+		});
+
+		Button doPingNow = (Button) findViewById(R.id.ping_now);
+		doPingNow.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				PingService x = PingService.getInstance();
+				if (x != null) {
+					long timex = System.currentTimeMillis()/1000;
+					x.sendNote(timex, false, mDb.createPing(timex, "", Arrays.asList(new String[]{""})));
+				}
 			}
 		});
 	}
@@ -240,10 +253,8 @@ public class Export extends Activity {
 		while (!pings.isAfterLast()) {
 			try {
 				long pt = pings.getLong(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_PING));
-				String ns = pings.getString(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_NOTES));
-				ns = ns.equals("") ? ns : "("+ns+")";
 				String tags = mDb.fetchTagString(pings.getLong(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_ROWID)));
-				log.append(pt+" "+tags+" "+ns+" "+SDF.format(new Date(pt*1000))+"\n");
+				log.append(pt+" "+tags+" "+SDF.format(new Date(pt*1000))+"\n");
 			} catch (Exception e) {
 				Log.e(TAG, "&&&&&&&&&&&& getLogString: "+e.getMessage());
 			}
