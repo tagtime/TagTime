@@ -1,4 +1,4 @@
-package bsoule.timepie;
+package bsoule.tagtime;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -12,7 +12,6 @@ import java.util.Locale;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -49,7 +48,7 @@ public class Export extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.timepie_export);
+		setContentView(R.layout.tagtime_export);
 		mDb = new PingsDbAdapter(this);
 		mDb.open();
 		mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -180,7 +179,7 @@ public class Export extends Activity {
 			}
 		}
 		// delete local(data) log if exists
-		log = new File("data/data/bsoule.timepie/files/"+FNAME);
+		log = new File("data/data/bsoule.tagtime/files/"+FNAME);
 		if (log.exists()) {
 			if (log.delete())
 				Log.i(TAG,"deleted data/log");
@@ -229,7 +228,7 @@ public class Export extends Activity {
 		emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Timepie: your timepie log");
 		//emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, "This is a test "+new Date().getTime());
 		//emailIntent.putExtra(android.content.Intent.EXTRA_STREAM, Uri.parse("file:///sdcard/"+FNAME));
-		emailIntent.putExtra(android.content.Intent.EXTRA_STREAM, Uri.parse("file:///data/data/bsoule.timepie/files/"+FNAME));
+		emailIntent.putExtra(android.content.Intent.EXTRA_STREAM, Uri.parse("file:///data/data/bsoule.tagtime/files/"+FNAME));
 		//emailIntent.setType("text/plain");
 		emailIntent.setType("application/octet-stream");		
 		

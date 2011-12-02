@@ -1,4 +1,4 @@
-package bsoule.timepie;
+package bsoule.tagtime;
 
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -37,7 +37,7 @@ public class PingService extends Service {
 
 	// this gives a layout id which is a unique id
 	private static final String TAG = "PingService";
-	private static int PING_NOTES = R.layout.timepie_editping; 
+	private static int PING_NOTES = R.layout.tagtime_editping; 
 	public static final String KEY_NEXT = "nextping";
 	public static final String KEY_SEED = "RNG_seed";
 	private static final long MINTIME = 5*60*1000; 

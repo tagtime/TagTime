@@ -1,4 +1,4 @@
-package bsoule.timepie;
+package bsoule.tagtime;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,7 +40,7 @@ public class EditPing extends Activity {
 	private LinearLayout tagParent;
 	private Cursor mTagsCursor;
 	private Cursor mTaggings;
-	private int FIXTAGS = R.layout.timepie_editping;
+	private int FIXTAGS = R.layout.tagtime_editping;
 	private ViewTreeObserver vto;
 
 	private boolean landscape;
@@ -53,7 +53,7 @@ public class EditPing extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.timepie_editping);
+		setContentView(R.layout.tagtime_editping);
 		//mNotesEdit = (EditText) findViewById(R.id.notes);
 		
 		View v = findViewById(R.id.tags_editText);
@@ -69,7 +69,7 @@ public class EditPing extends Activity {
 		// cancel the notification
 		// TODO: only cancel note if it is for same ping as we are editing
 		NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-		nm.cancel(R.layout.timepie_editping);
+		nm.cancel(R.layout.tagtime_editping);
 
 		// set up editor:
 		mPingTitle = (TextView) findViewById(R.id.pingtime);

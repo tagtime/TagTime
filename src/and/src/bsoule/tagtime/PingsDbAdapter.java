@@ -1,19 +1,14 @@
-package bsoule.timepie;
+package bsoule.tagtime;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.location.Location;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class PingsDbAdapter {
@@ -71,7 +66,7 @@ public class PingsDbAdapter {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			if (oldVersion < 4) {
+			if (oldVersion < 2) {
 				Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
 						+ newVersion + ", which will destroy all old data");
 				db.execSQL("DROP TABLE IF EXISTS pings");

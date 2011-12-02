@@ -1,6 +1,4 @@
-package bsoule.timepie;
-
-import java.util.Map;
+package bsoule.tagtime;
 
 import android.content.Context;
 import android.util.AttributeSet;

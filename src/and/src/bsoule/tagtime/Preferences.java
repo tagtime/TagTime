@@ -1,4 +1,4 @@
-package bsoule.timepie;
+package bsoule.tagtime;
 
 import java.util.Arrays;
 

@@ -7,7 +7,7 @@
 	<TextView android:id="@+id/txt_save"
 		android:layout_width="fill_parent" 
 		android:layout_height="wrap_content"
-		android:text="Exporting your timepie log..." />
+		android:text="Exporting your tagtime log..." />
 
 	<LinearLayout android:layout_width="fill_parent"
 		android:layout_height="wrap_content">

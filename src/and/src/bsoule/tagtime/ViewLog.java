@@ -1,7 +1,6 @@
-package bsoule.timepie;
+package bsoule.tagtime;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -29,7 +28,7 @@ public class ViewLog extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.timepie_viewlog);
+		setContentView(R.layout.tagtime_viewlog);
 		mDbHelper = new PingsDbAdapter(this);
 		mDbHelper.open();
 		mSDF = new SimpleDateFormat("yyyy.MM.dd'\n'HH:mm:ss", Locale.getDefault());
@@ -45,7 +44,7 @@ public class ViewLog extends ListActivity {
 		int[] to = new int[]{R.id.viewlog_row_time, R.id.viewlog_row_tags};
 		// Now create a simple cursor adapter and set it to display
 		LogCursorAdapter pings =
-			new LogCursorAdapter(this, R.layout.timepie_viewlog_ping_row,
+			new LogCursorAdapter(this, R.layout.tagtime_viewlog_ping_row,
 					pingsCursor, from, to);
 		setListAdapter(pings);
 	}
