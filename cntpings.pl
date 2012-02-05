@@ -8,9 +8,12 @@
 #  aux/showvenn.pl -- not sure about this one
 #  ../kibo/timepiekib.pl -- converts tagtime log to kib file 
 
-require "$ENV{HOME}/.tagtimerc";
-require "${path}util.pl";
+BEGIN { require "$ENV{HOME}/.tagtimerc"; }
+use lib $path, "$path/lib";
+
+require "util.pl";
 use Getopt::Long qw(:config bundling);
+use TagTime qw(match);
 
 my $start = -1;
 my $end = ts(time());
@@ -52,7 +55,7 @@ my $errstr = "";   # concatenation of bad lines from log file.
 
 my $logfile = shift;
 my $expr = '( ' . join(' )|( ', @ARGV) . ' )';
-open(LOG, $logfile) or die;
+open(LOG, $logfile) or die qq{Cannot open logfile "$logfile" - $!\n};
 while(<LOG>) {
   my $line = strip($_);
 
@@ -104,22 +107,3 @@ if($verbose) {
   }
 }
 close(LOG);
-
-
-# returns whether the boolean tag expression is true for the given line 
-# from a log file (assume it's pre-stripped).
-sub match {
-  my($expr, $line) = @_;
-  my %h;
-
-  return 1 if $expr =~ /^\s*\(?\s*\)?\s*$/;
-
-  #$line =~ s/^\d+\s*//;  # remove the timestamp at the beginning of the line.
-  #$line = strip($line);  # strip out stuff in parens and brackets.
-  for(split(/\s+/, $line)) { $h{$_} = 1; }
-  $expr =~ s/([^\|])\|([^\|])/$1\|\|$2/g;
-  $expr =~ s/([^\&])\&([^\&])/$1\&\&$2/g;
-  $expr =~ s/(\w+)/\$h{$1}/g;
-  return eval($expr);
-}
-
