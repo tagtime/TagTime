@@ -10,7 +10,15 @@
 
 $launchTime = time();
 
-require "$ENV{HOME}/.tagtimerc";
+eval {
+    require "$ENV{HOME}/.tagtimerc";
+};
+
+if ($@) {
+    die "$0: $ENV{HOME}/.tagtimerc can't be loaded ($!). Do you need to run install.py?\n"
+}
+
+
 require "${path}util.pl";
 
 my $lstping = prevping($launchTime);
