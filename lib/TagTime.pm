@@ -2,6 +2,9 @@ package TagTime;
 use strict;
 use warnings;
 
+use base qw(Exporter);
+our @EXPORT_OK = qw(match);
+
 =head2 match($expr, $line)
 
 Returns whether the boolean tag expression is true for the given line 
