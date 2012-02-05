@@ -52,7 +52,7 @@ my $errstr = "";   # concatenation of bad lines from log file.
 
 my $logfile = shift;
 my $expr = '( ' . join(' )|( ', @ARGV) . ' )';
-open(LOG, $logfile) or die;
+open(LOG, $logfile) or die qq{Cannot open logfile "$logfile" - $!\n};
 while(<LOG>) {
   my $line = strip($_);
 
