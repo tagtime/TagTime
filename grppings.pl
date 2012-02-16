@@ -2,9 +2,13 @@
 # COPIED FROM cntpings.pl
 # Grep for pings matching an expression (or disjunction of expressions).
 
-require "$ENV{HOME}/.tagtimerc";
-require "${path}util.pl";
+BEGIN { require "$ENV{HOME}/.tagtimerc"; }
+use lib $path, "$path/lib";
+
+require "util.pl";
+
 use Getopt::Long qw(:config bundling);
+use TagTime qw(match);
 
 my $start = -1;
 my $end = ts(time());
@@ -72,22 +76,3 @@ if($e>0) {
   print "\n$errstr";
   exit(1);
 }
-
-
-# returns whether the boolean tag expression is true for the given line 
-# from a log file (assume it's pre-stripped).
-sub match {
-  my($expr, $line) = @_;
-  my %h;
-
-  return 1 if $expr =~ /^\s*\(?\s*\)?\s*$/;
-
-  #$line =~ s/^\d+\s*//;  # remove the timestamp at the beginning of the line.
-  #$line = strip($line);  # strip out stuff in parens and brackets.
-  for(split(/\s+/, $line)) { $h{$_} = 1; }
-  $expr =~ s/([^\|])\|([^\|])/$1\|\|$2/g;
-  $expr =~ s/([^\&])\&([^\&])/$1\&\&$2/g;
-  $expr =~ s/(\w+)/\$h{$1}/g;
-  return eval($expr);
-}
-
