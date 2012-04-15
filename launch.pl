@@ -120,7 +120,7 @@ sub launch {
 # Launch an editor to edit file f, labeling the window with title t.
 sub editor {
   my($f, $t) = @_;
-  $ENV{DISPLAY} = ":0.0";  # have to set this explicitly if invoked by cron.
+  $ENV{DISPLAY} ||= ":0.0";  # have to set this explicitly if invoked by cron.
   if(!defined($EDIT_COMMAND)) {
     $cmd = "$XT -T '$t' -fg white -bg red -cr MidnightBlue -bc -rw -e $ED $f";
     system($cmd) == 0 or print "SYSERR: $cmd\n";
