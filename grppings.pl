@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# COPIED FROM cntpings.pl
+# COPIED FROM cntpings.pl -- should add a cmd line option to cntpings to do this
 # Grep for pings matching an expression (or disjunction of expressions).
 
 BEGIN { require "$ENV{HOME}/.tagtimerc"; }

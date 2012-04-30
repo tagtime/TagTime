@@ -54,7 +54,7 @@ Thanks also to Jesse Aldridge, Kevin Lochner, and Rob Felty for contributions to
 
 # Advanced Usage
 
-TagTime's Task Manager is documented in the file template.tsk
+TagTime's Task Manager is documented in the file template.tsk  
 It's for vim users only.  You don't need it to use TagTime.
 
 Basic ping-tallying: 
