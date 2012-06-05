@@ -9,7 +9,7 @@ from datetime import timedelta
 
 # Returns a stocastically determined next ping time after time t.
 def get_next_ping_time(last_time, interval, **kwargs):
-  delta = expovariate(1.0/interval)
+  delta = max(kwargs.get('min_delta', 0), expovariate(1.0/interval))
   if kwargs['debug']:
     print 'delta: ', timedelta(seconds=round(delta))
   return last_time + delta
@@ -26,4 +26,4 @@ def get_next_ping_times_through(start, end, interval, **kwargs):
   return ping_times
 
 if __name__ == '__main__':
-  print get_next_ping_times_through(100, 200, 20, debug=True)
+  print get_next_ping_times_through(100, 500, 20, min_delta=5, debug=True)
