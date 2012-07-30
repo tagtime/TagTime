@@ -54,7 +54,7 @@ Thanks also to Jesse Aldridge, Kevin Lochner, and Rob Felty for contributions to
 
 # Advanced Usage
 
-TagTime's Task Manager is documented in the file template.tsk
+TagTime's Task Manager is documented in the file template.tsk  
 It's for vim users only.  You don't need it to use TagTime.
 
 Basic ping-tallying: 
@@ -87,4 +87,13 @@ For example, with g=45, there's a 10% chance of getting pinged in any window
 of duration 4 minutes 44 seconds.  There's a 50% chance of getting pinged within 31 minutes.
 There's a 99% chance of a ping within 3.5 hours.
 The probability of waiting over 10 hours for a ping is one in a million.
+
+# Beeminder integration
+
+To set up Tag Time to automatically send reports to [Beeminder](http://www.beeminder.com/), 
+first set up a goal there with the type "Tag Time". Copy the url and plug it into your 
+`settings.pl` file under the Beeminder section. 
+
+Each goal on Beeminder will track a collection of one or more tags on Tag Time. Regular expressions 
+are encouraged! See `settings.pl` for more details. 
 

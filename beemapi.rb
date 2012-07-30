@@ -31,7 +31,7 @@ def beemapi(cmd, origin, usr, graph, data=nil)
 end
 
 if ARGV.length < 3
-  print "USAGE: #{__FILE__} COMMAND usr graph < datapoints\n"
+  print "USAGE: #{__FILE__} COMMAND ORIGIN USR GRAPH < datapoints\n"
   print "  (COMMAND is one of create_all, tagtime_update, query)\n"
   exit(1)
 end
