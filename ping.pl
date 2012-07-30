@@ -68,6 +68,43 @@ my($resp, $tagstr, $comments, $a);
 do {
   $resp = <STDIN>;
 
+  if ($resp =~ /^"\s*/) {
+
+    # Responses for lazy people.  A response string consisting of only
+    # a pair of double-quotes means "ditto", and acts as if we entered
+    # the last thing that was in our tracking file.
+
+    # TODO - This should really be its own function, and we should
+    # write a test case.
+
+    use strict;
+    use warnings;
+
+    our $logf;
+
+    use Tie::File;  # For people too lazy to find the last line. :)
+
+    tie(my @logfile, 'Tie::File', $logf)
+      or die "Can't open $logf for ditto function - $!";
+
+    my $last = $logfile[-1];
+
+    # TODO: Is there a function to parse tagtime lines?  If so, we should
+    # be using it here.
+
+    ($resp) = $last =~ m{
+      ^
+      \d+     # Timestamp
+      \s+     # Spaces after timestamp
+      (\S.*?) # Tag info, but not trailing spaces.
+      \s*     # Trailing spaces
+      \[      # First '[' to begin human readable timestamp.
+    }x;
+
+    $resp or die "Failed to find any tags for ditto function."
+
+  }
+
   # refetch the task numbers from task file; they may have changed.
   if(-e $tskf) {
     open(F, "< $tskf") or die "ERROR-tsk2: $!\n";
