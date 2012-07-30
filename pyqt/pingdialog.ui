@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+<class>PingDialog</class>
+
+<widget class="QWidget" name="PingDialog">
+  <property name="geometry">
+    <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>400</width>
+      <height>150</height>
+    </rect>
+  </property>
+  <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+    </sizepolicy>
+  </property>
+  <property name="windowTitle">
+    <string>TagTime</string>
+  </property>
+  <property name="toolTip">
+    <string>Tag your current activity</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+          <widget class="QLabel" name="label">
+            <property name="text">
+              <string/>
+            </property>
+          </widget>
+        </item>
+        <item>
+          <widget class="QLineEdit" name="tagEdit"/>
+        </item>
+        <item>
+          <widget class="QPushButton" name="tagButton">
+            <property name="text">
+              <string>&amp;Tag</string>
+            </property>
+          </widget>
+        </item>
+      </layout>
+    </item>
+  </layout>
+</widget>
+
+<layoutdefault spacing="6" margin="11"/>
+<resources/>
+<connections/>
+</ui>
