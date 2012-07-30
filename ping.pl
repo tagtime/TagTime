@@ -89,17 +89,16 @@ do {
 
     my $last = $logfile[-1];
 
-    # TODO: Is there a function to parse tagtime lines?  If so, we should
-    # be using it here.
-
     ($resp) = $last =~ m{
       ^
       \d+        # Timestamp
       \s+        # Spaces after timestamp
-      (\S[^[(]*) # Tag info (up until the first paren if present)
+      (.*)       # Om nom nom
     }x;
 
-    $resp or die "Failed to find any tags for ditto function."
+    $resp or die "Failed to find any tags for ditto function.";
+
+    $resp = strip($resp);   # Remove comments and timestamps.
 
   }
 
