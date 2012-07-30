@@ -94,11 +94,9 @@ do {
 
     ($resp) = $last =~ m{
       ^
-      \d+     # Timestamp
-      \s+     # Spaces after timestamp
-      (\S.*?) # Tag info, but not trailing spaces.
-      \s*     # Trailing spaces
-      \[      # First '[' to begin human readable timestamp.
+      \d+        # Timestamp
+      \s+        # Spaces after timestamp
+      (\S[^[(]*) # Tag info (up until the first paren if present)
     }x;
 
     $resp or die "Failed to find any tags for ditto function."
