@@ -38,7 +38,7 @@ Basically, incentive schemes for getting ourselves to procrastinate less.
 The src directory currently contains Python code contributed by Jonathan Chang for a new back-end for TagTime. It hasn't yet been integrated.
 It also contains the source for an Android app by Bethany Soule (bsoule) with contributions by Michael Janssen (jamuraa).
 
-Thanks also to Jesse Aldridge, Kevin Lochner, and Rob Felty for contributions to the code.
+Thanks also to Paul Fenwick, Jesse Aldridge, Kevin Lochner, and Rob Felty for contributions to the code.
 
 # Installation and Quick Start
 
@@ -76,7 +76,15 @@ see README file in sound directory.
 
 A handy vim macro for duplicating the previous line's tags in the tagtime log:
 
+    "replace tags on this tagtime line with those from the prev line.
+    "(warning: must have timestamp in square brackets on both lines)
     map <f4> mzk0el"vy/\([\\|$\)<cr>jd/\([\\|$\)<cr>h"vp`zj
+
+# Extra Features
+
+Editor: If you hit enter instead of answering the ping it will open up the editor.
+
+Ditto: If you enter just a double-quote character (") it will enter whatever pings you entered last time.
 
 # The Math
 
