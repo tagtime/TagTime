@@ -2,10 +2,9 @@
 # Given a tagtime log file, and a Beeminder graph to update, call the Beeminder
 # API to update the graph.
 #
-# As a side effect, generate a .bee file from a tagtime log and existing bee
-# file, if any. (The .bee file is used as a cache to avoid calling the
-# Beeminder API if the tagtime log changed but it did not entail any changes
-# relevant to the given Beeminder graph.
+# As a side effect, generate a .bee file from the tagtime log, used as a cache
+# to avoid calling the Beeminder API if the tagtime log changed but it did not 
+# entail any changes relevant to the given Beeminder graph.
 
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
@@ -200,7 +199,7 @@ my $r = ref($crit);
 if   ($r eq "")       { print "w/ tag $crit";                        }
 elsif($r eq "ARRAY")  { print "w/ tags in {", join(",",@$crit), "}"; }
 elsif($r eq "Regexp") { print "matching $crit";                      }
-elsif($r eq "CODE")   { print "satisfying the lambda fn";            }
+elsif($r eq "CODE")   { print "satisfying lambda";                   }
 else                  { print "(unknown-criterion: $crit)";          }
 print "\n";
 

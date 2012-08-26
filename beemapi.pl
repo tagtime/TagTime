@@ -38,11 +38,11 @@ sub beemfetch { my($u, $g) = @_;
 sub beemcreate { my($u, $g, $t, $v, $c) = @_;
   my $ua = LWP::UserAgent->new;
   my $uri = $beembase."users/$u/goals/$g/datapoints.json?auth_token=$beemauth";
-  my $data = [ timestamp => $t,
+  my $data = { timestamp => $t,
                value     => $v,
-               comment   => $c ];
+               comment   => $c };
   my $resp = $ua->post($uri, Content => $data);
-  beemerr('POST', $uri, {@$data}, $resp);
+  beemerr('POST', $uri, $data, $resp);
   my $x = decode_json($resp->content);
   return $x->{"id"};
 }
@@ -52,17 +52,17 @@ sub beemupdate { my($u, $g, $id, $t, $v, $c) = @_;
   my $ua = LWP::UserAgent->new;
   my $uri = $beembase . 
             "users/$u/goals/$g/datapoints/$id.json?auth_token=$beemauth";
-  my $data = [ timestamp => $t,
+  my $data = { timestamp => $t,
                value     => $v,
-               comment   => $c ];
-  # the following doesn't work for a reason i don't yet understand:
-  #my $resp = $ua->put(...);
-  # for some reason it works to instead make a POST request and change the
-  # method to PUT...
+               comment   => $c };
+  # you'd think the following would work:
+  # my $resp = $ua->put($uri, Content => $data);
+  # but it doesn't so we use the following workaround, courtesy of
+  # http://stackoverflow.com/questions/11202123/how-can-i-make-a-http-put
   my $req = POST($uri, Content => $data);
   $req->method('PUT');
   my $resp = $ua->request($req);
-  beemerr('PUT', $uri, {@$data}, $resp);
+  beemerr('PUT', $uri, $data, $resp);
 }
 
 # Takes request type (GET, POST, etc), uri string, hashref of data arguments, 
