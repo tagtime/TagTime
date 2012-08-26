@@ -39,7 +39,7 @@ sub min { my $min = $_[0]; for(@_) { $min = $_ if ($_ < $min); } $min; }
 
 sub clip { my($x, $a, $b) = @_;  return max($a, min($b, $x)); }
 
-# Takes previous ping time, returns random next ping time (unix time).
+# Takes previous ping time, returns random next ping time (unixtime).
 # NB: this has the side effect of changing the RNG state ($seed)
 #     and so should only be called once per next ping to calculate,
 #     after calling prevping.
@@ -66,15 +66,23 @@ sub prevping {
 # Strips out stuff in parens and brackets; remaining parens/brackets means
 #  they were unmatched.
 sub strip {
-  my($s)=@_;
+  my($s) = @_;
   while($s =~ s/\([^\(\)]*\)//g) {}
   while($s =~ s/\[[^\[\]]*\]//g) {}
   $s;
 }
 
+# Strips out stuff in brackets only; remaining brackets means
+#  they were unmatched.   
+sub stripb {
+  my($s) = @_;
+  while($s =~ s/\s*\[[^\[\]]*\]//g) {}
+  $s;
+}
+
 # Strips out stuff *not* in parens and brackets.
 sub stripc {
-  my($s)=@_;
+  my($s) = @_;
   my $tmp = $s;
   while($tmp =~ s/\([^\(\)]*\)/UNIQUE78DIV/g) {}
   while($tmp =~ s/\[[^\[\]]*\]/UNIQUE78DIV/g) {}
@@ -86,10 +94,25 @@ sub stripc {
   return $s;
 }
 
+# Fetches stuff in parens. Not currently used.
+sub fetchp {
+  my($s) = @_;
+  my $tmp = $s;
+  while($tmp =~ s/\([^\(\)]*\)/UNIQUE78DIV/g) {}
+  my @a = split('UNIQUE78DIV', $tmp);
+  for(@a) {
+    my $i = index($s, $_);
+    substr($s, $i, length($_)) = "";
+  }
+  $s =~ s/^\(//;
+  $s =~ s/\)$//;
+  return $s;
+}
+
 # Extracts tags prepended with colons and returns them space-separated.
 #  Eg: "blah blah :foo blah :bar" --> "foo bar"
 sub gettags {
-  my($s)=@_;
+  my($s) = @_;
   my @t;
   $s = strip($s);
   while($s =~ s/(\s\:([\w\_]+))//) { push(@t, $2); }
@@ -144,6 +167,10 @@ sub unlock {
     close(LF);  # release the lock.
   }
 }
+
+# Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
+#   Eg: splur(3, "boy") -> "3 boys"
+sub splur { my($n, $noun) = @_;  return "$n $noun".($n==1 ? "" : "s"); }
 
 # Trim whitespace from front and back of string s.
 sub trim { my($s) = @_;  $s =~ s/^\s+//;  $s =~ s/\s+$//;  return $s; }
@@ -206,14 +233,14 @@ sub dd { my($n) = @_;  return padl($n, "0", 2); }
 
 # pad left: returns string x but with p's prepended so it has width w
 sub padl {
-  my($x,$p,$w)= @_;
+  my($x,$p,$w) = @_;
   if(length($x) >= $w) { return substr($x,0,$w); }
   return $p x ($w-length($x)) . $x;
 }
 
 # pad right: returns string x but with p's appended so it has width w
 sub padr {
-  my($x,$p,$w)= @_;
+  my($x,$p,$w) = @_;
   if(length($x) >= $w) { return substr($x,0,$w); }
   return $x . $p x ($w-length($x));
 }
@@ -228,8 +255,7 @@ sub round1 { my($x) = @_; return int($x + .5 * ($x <=> 0)); }
 
 # DATE/TIME FUNCTIONS FOLLOW
 
-# Date/time: Takes unix time (seconds since 1970-01-01 00:00:00 GMT) and 
-# returns list of
+# Date/time: Takes unixtime in seconds and returns list of
 #   year, mon, day, hr, min, sec, day-of-week, day-of-year, is-daylight-time
 sub dt { my($t) = @_;
   $t = time unless defined($t);
@@ -240,7 +266,7 @@ sub dt { my($t) = @_;
   return ($year,$mon,$mday,$hour,$min,$sec,$wh{$wday},$yday,$isdst);
 }
 
-# Time string: takes unix time and returns a formated YMD HMS string.
+# Time string: takes unixtime and returns a formated YMD HMS string.
 sub ts { my($t) = @_;
   my($year,$mon,$mday,$hour,$min,$sec,$wday,$yday,$isdst) = dt($t);
   return "$year-$mon-$mday $hour:$min:$sec $wday";
@@ -304,7 +330,7 @@ sub pss { my($s) = @_;
 }
 
 # Parse Date: must be in year, month, day, hour, min, sec order, returns
-#   unix time.
+#   unixtime.
 sub pd { my($s) = @_;
   my($year, $month, $day, $hour, $minute, $second);
 
