@@ -44,6 +44,8 @@ my $end   = 0;     # need to care about when updating beeminder.
 # need to: 1. it doesn't exist; 2. any beeminder IDs are missing from the 
 # cache file; 3. there are multiple datapoints for the same day.
 $bflag = (!-e $beef);
+my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; # why bflag?
+$bf1 = 1 if $bflag;
 undef %remember; # remember which dates we've already seen in the cache file
 if(open(B, "<$beef")) {
   while(my $l = <B>) {
@@ -68,18 +70,41 @@ if(open(B, "<$beef")) {
     my $t = pd("$y $m $d");
     $start = $t if $t < $start;
     $end   = $t if $t > $end;
-    $bflag = 1 if !defined($b) || $b eq "";
-    $bflag = 1 if defined($remember{$ts});
+    if(!defined($b) || $b eq "") {
+      $bflag = 1;
+      $bf2++;
+      if($bf2 == 1) {
+        print "Problem with this line in cache file:\n$l";
+      } elsif($bf2 == 2) {
+        print "Additional problems with cache file, which is expected if this ",
+              "is your first\ntime updating TagTime with the new Bmndr API.\n";
+      }
+    }
+    ($bflag = $bf3 = 1) if defined($remember{$ts});
     $remember{$ts} = 1;
   }
   close(B);
-} else { $bflag = 1; }
+} else { $bflag = 1; $bf4 = 1; }
 
 if($bflag) { # re-slurp all the datapoints from beeminder
+  undef %ph0; undef %sh0; undef %bh;
+  $start = time;  # reset these since who knows what happened to them when we
+  $end   = 0;     # calculated them from the cache file we decided to toss.
+
   my $tmp = $beef;  $tmp =~ s/(?:[^\/]*\/)*//; # strip path from filename
-  print "Recreating Beeminder cache file ($tmp)... ";
+  if($bf1) {
+    print "Cache file missing ($tmp); recreating... ";
+  } elsif($bf2) {
+    print "Cache file doesn't have all the Bmndr IDs; recreating... ";
+  } elsif($bf3) {
+    print "Cache file has duplicate Bmndr IDs; recreating... ";
+  } elsif($bf4) {
+    print "Couldn't read cache file; recreating... ";
+  } else { # this case is impossible
+    print "Recreating Beeminder cache ($tmp)[$bf1$bf2$bf3$bf4]... ";
+  }
   $data = beemfetch($usr, $slug);
-  print "[Beeminder data fetched]\n";
+  print "[Bmndr data fetched]\n";
   
   # take one pass to delete any duplicates on bmndr; must be one datapt per day
   my $i = 0;
@@ -99,8 +124,6 @@ if($bflag) { # re-slurp all the datapoints from beeminder
     $i++;
   }
 
-  $start = time;  # reset these since who knows what happened to them when we
-  $end   = 0;     # calculated them from the cache file we decided to toss.
   for my $x (@$data) { # parse the bmndr data into %ph0, %sh0, %bh
     my($y,$m,$d) = dt($x->{"timestamp"});
     my $ts = "$y-$m-$d";
@@ -146,7 +169,7 @@ my $nchg = 0;  # number of updated datapoints on beeminder
 my $minus = 0; # total number of pings decreased from what's on beeminder
 my $plus = 0;  # total number of pings increased from what's on beeminder
 my $ii = 0;
-for(my $t = daysnap($start); $t <= daysnap($end)+86400; $t += 86400) {
+for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
   my($y,$m,$d) = dt($t);
   my $ts = "$y-$m-$d";
   my $b =  $bh{$ts} || "";
@@ -161,7 +184,7 @@ for(my $t = daysnap($start); $t <= daysnap($end)+86400; $t += 86400) {
   if($b eq "" && $p1 > 0) { # no such datapoint on beeminder: CREATE
     $nadd++;
     $plus += $p1;
-    $b = beemcreate($usr, $slug, $t, $p1*$ping, splur($p1,"Ping").": ".$s1);
+    $bh{$ts} = beemcreate($usr,$slug,$t, $p1*$ping, splur($p1,"ping").": ".$s1);
   } elsif($p0 > 0 && $p1 <= 0) { # on beeminder but not in tagtime log: DELETE
     $ndel++;
     $minus += $p0;
@@ -170,7 +193,7 @@ for(my $t = daysnap($start); $t <= daysnap($end)+86400; $t += 86400) {
     $nchg++;
     if   ($p1 > $p0) { $plus  += ($p1-$p0); } 
     elsif($p1 < $p0) { $minus += ($p0-$p1); }
-    beemupdate($usr, $slug, $b, $t, ($p1*$ping), splur($p1,"Ping").": ".$s1);
+    beemupdate($usr, $slug, $b, $t, ($p1*$ping), splur($p1,"ping").": ".$s1);
   } else {
     print "ERROR: can't tell what to do with this datapoint (old/new):\n";
     print "$y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\"\n";

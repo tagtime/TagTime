@@ -2,7 +2,7 @@ To determine how you spend your time, TagTime literally randomly samples you.
 At random times it pops up and asks what you're doing *right at that moment*.
 You answer with tags.
 
-For more on the idea behind this project, see our blog post at
+For more on the idea behind this project, see 
 [messymatters.com/tagtime](http://messymatters.com/tagtime ).
 
 We're currently auto-tweeting git commits: [@tagtm](http://twitter.com/tagtm ).
@@ -20,25 +20,30 @@ The core Perl implementation of TagTime itself is in the following files:
 In addtion are the following files:
 
 * install.py -- install script
-* grppings.pl -- grep your tagtime log file
+* grppings.pl -- grep your TagTime log file
 * cntpings.pl -- tally pings in your log file matching given criteria
 
 * tskedit.pl -- task editor / to-do list that integrates with TagTime
 * tskproc.pl -- helper script used by tskedit.pl
 * tasks.vim.template -- vim macros needed for the task editor
 
-* merge.pl -- just a stub, for fixing/merging tagtime logs
+* merge.pl -- just a stub, for fixing/merging TagTime logs
 
-* beeminder.pl -- sends your tagtime data to your beeminder graph
-* beemapi.rb -- crude command line interface to the nascent beeminder api
+* beeminder.pl -- sends your TagTime data to your Beeminder graph
+* beemapi.pl -- partial Perl implementation of the Beeminder API
 
-The script directory contains various scripts we've used, like for various games and contests and commitment contracts and whatnot. 
+The script directory contains various scripts we've used, like for various games
+and contests and commitment contracts and whatnot. 
 Basically, incentive schemes for getting ourselves to procrastinate less.
 
-The src directory currently contains Python code contributed by Jonathan Chang for a new back-end for TagTime. It hasn't yet been integrated.
-It also contains the source for an Android app by Bethany Soule (bsoule) with contributions by Michael Janssen (jamuraa).
+The src directory currently contains Python code contributed by Jonathan Chang 
+for a new back-end for TagTime. It hasn't yet been integrated. Same with pyqt
+which was contributed by Arthur Breitman.
+The src directory also contains the source for an Android app by Bethany Soule 
+(bsoule) with contributions by Michael Janssen (jamuraa).
 
-Thanks also to Paul Fenwick, Jesse Aldridge, Kevin Lochner, and Rob Felty for contributions to the code.
+Thanks also to Paul Fenwick, Jesse Aldridge, Kevin Lochner, and Rob Felty for 
+contributions to the code.
 
 # Installation and Quick Start
 
@@ -47,10 +52,18 @@ Thanks also to Paul Fenwick, Jesse Aldridge, Kevin Lochner, and Rob Felty for co
 2. Run: python install.py USERNAME
 3. Verify in settings.pl (wherever it says CHANGEME) that the install
    script filled in everything correctly.
-4. Make sure you have X11 (on Mac) or Cygwin (on Windows) running (not an issue on Linux).
+4. Make sure you have X11 (on Mac) or Cygwin (on Windows) running (not an issue
+   on Linux).
 5. Run: ./tagtimed.pl &
 6. Answer the pings!
    (Always answer with what it caught you at right at that moment.)
+
+# Perl Newbies
+
+1. Run: sudo cpan
+2. At the cpan prompt run: upgrade 
+3. For each thing that TagTime complains about, like 
+   'can't find LWP::UserAgent', run: install LWP::UserAgent
 
 # Advanced Usage
 
@@ -82,9 +95,11 @@ A handy vim macro for duplicating the previous line's tags in the tagtime log:
 
 # Extra Features
 
-Editor: If you hit enter instead of answering the ping it will open up the editor.
+Editor: If you hit enter instead of answering the ping it will open up the 
+editor.
 
-Ditto: If you enter just a double-quote character (") it will enter whatever pings you entered last time.
+Ditto: If you enter just a double-quote character (") it will enter whatever 
+pings you entered last time. (Thanks to Paul Fenwick for implementing that.)
 
 # The Math
 
@@ -92,16 +107,20 @@ If your tagtime gap is g minutes then the probability of at least one ping
 in any x minute window is 1-exp(-x/g).
 The window corresponding to probability p is -g*ln(1-p).
 For example, with g=45, there's a 10% chance of getting pinged in any window
-of duration 4 minutes 44 seconds.  There's a 50% chance of getting pinged within 31 minutes.
+of duration 4 minutes 44 seconds.
+There's a 50% chance of getting pinged within 31 minutes.
 There's a 99% chance of a ping within 3.5 hours.
 The probability of waiting over 10 hours for a ping is one in a million.
 
-# Beeminder integration
+# Beeminder Integration
 
-To set up Tag Time to automatically send reports to [Beeminder](http://www.beeminder.com/), 
-first set up a goal there with the type "Tag Time". Copy the url and plug it into your 
+To set up TagTime to automatically send reports to 
+[Beeminder](http://www.beeminder.com/), 
+first set up a goal there with the type "TagTime". 
+Copy the url and plug it into your 
 `settings.pl` file under the Beeminder section. 
 
-Each goal on Beeminder will track a collection of one or more tags on Tag Time. Regular expressions 
-are encouraged! See `settings.pl` for more details. 
+Each goal on Beeminder will track a collection of one or more tags on TagTime. 
+Regular expressions are encouraged! 
+See `settings.pl` for more details. 
 
