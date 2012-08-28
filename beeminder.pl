@@ -49,19 +49,19 @@ $bf1 = 1 if $bflag;
 undef %remember; # remember which dates we've already seen in the cache file
 if(open(B, "<$beef")) {
   while(my $l = <B>) {
-    my($y,$m,$d,$v,$p,$c,$b) = 
-      ($l =~ /(\d+)\s+          # year
-              (\d+)\s+          # month
-              (\d+)\s+          # day
-              (\S+)\s+          # value
-              \"(\d+)           # number of pings
-                (?:[^\n\"\(]*)  # currently the string " ping(s)"
-                \:\             # the ": " after " pings"
-                ([^\[]*)        # the comment string (no brackets)
-                (?:\[           # if present,
-                  bID\:([^\]]*) # the beeminder ID, in brackets
-                \])?            # end bracket for "[bID:abc123]"
-              \s*\"/x);
+    my($y,$m,$d,$v,$p,$c,$b) = ($l =~ /
+      (\d+)\s+          # year
+      (\d+)\s+          # month
+      (\d+)\s+          # day
+      (\S+)\s+          # value
+      \"(\d+)           # number of pings
+        (?:[^\n\"\(]*)  # currently the string " ping(s)"
+        \:\             # the ": " after " pings"
+        ([^\[]*)        # the comment string (no brackets)
+        (?:\[           # if present,
+          bID\:([^\]]*) # the beeminder ID, in brackets
+        \])?            # end bracket for "[bID:abc123]"
+      \s*\"/x);
     my $ts = "$y-$m-$d";
     $ph0{$ts} = $p;
     $c =~ s/\s+$//;
