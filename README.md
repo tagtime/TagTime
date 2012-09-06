@@ -123,7 +123,7 @@ The probability of waiting over 10 hours for a ping is one in a million.
 
 To set up TagTime to automatically send reports to 
 [Beeminder](http://www.beeminder.com/), 
-first set up a goal there with the type "TagTime". 
+first set up a goal there with the type "Custom". 
 Copy the url and plug it into your 
 `settings.pl` file under the Beeminder section. 
 
