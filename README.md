@@ -134,4 +134,4 @@ See `settings.pl` for more details.
 # Google Group
 
 For discussion and questions: 
-[TagTime Google Group](https://groups.google.com/forum/tagtime ).
+[TagTime Google Group](https://groups.google.com/forum/?fromgroups#!forum/tagtime ).
