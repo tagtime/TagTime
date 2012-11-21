@@ -2,8 +2,8 @@
 # This file must be in your home directory, called .tagtimerc
 # NB: restart the daemon (tagtimed.pl) if you change this file.
 
-$usr = "__USER__";  # your username -- CHANGEME
-$path = "__PATH__";  # path to tagtime -- CHANGEME
+$usr = "__USER__";   # CHANGEME to your username
+$path = "__PATH__";  # CHANGEME to your path to tagtime
         if($path !~ /\/$/) { $path.="/"; }
 $logf = "$path$usr.log";  # log file for pings
 
@@ -11,13 +11,15 @@ $logf = "$path$usr.log";  # log file for pings
 $cygwin = __CYGWIN__;  # CHANGEME to 1 if you're using windows/cygwin.
 
 $ED = "__ED__ +";  # CHANGEME if you don't like vi (eg: /usr/bin/pico)
-$XT = "__XT__";  # path to xterm -- possibly CHANGEME
+$XT = "__XT__";    # CHANGEME to your path to xterm
 
-# System settings follow...
+# Get your personal Beeminder auth token (after signing in) from
+#   https://www.beeminder.com/api/v1/auth_token.json
+$beemauth = "abc123";  # CHANGEME to your personal beeminder auth token
 
-# CHANGEME: add entries for each beeminder graph you want to auto-update:
+# CHANGEME by adding entries for each beeminder graph you want to auto-update:
 %beeminder = (
-  #"alice/work" => ["job"],  # all "job" pings get added to bmndr.com/alice/work
+  #"alice/work" => "job",  # all "job" pings get added to bmndr.com/alice/work
   #"bob/play" => ["fun","whee"], # pings w/ "fun" and/or "whee" sent to bob/play
 
   # ADVANCED USAGE: regular expressions
@@ -33,11 +35,10 @@ $XT = "__XT__";  # path to xterm -- possibly CHANGEME
   #}
 );
 
-# Pings from more than this many seconds ago get autologged with tags
-# "afk" and "RETRO".  (Pings can be overdue either because the
-# computer was off or tagtime was waiting for you to answer a 
-# previous ping.  If the computer was off, the tag "off" is also
-# added.)
+# Pings from more than this many seconds ago get autologged with tags "afk" and 
+# "RETRO". (Pings can be overdue either because the computer was off or tagtime 
+# was waiting for you to answer a previous ping. If the computer was off, the 
+# tag "off" is also added.)
 $retrothresh = 60;
 
 $gap = 45*60; # Average number of seconds between pings (eg, 60*60 = 1 hour).

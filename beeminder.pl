@@ -2,169 +2,251 @@
 # Given a tagtime log file, and a Beeminder graph to update, call the Beeminder
 # API to update the graph.
 #
-# As a side effect, generate a .bee file from a tagtime log and existing bee
-# file, if any. (The .bee file is used as a cache to avoid calling the
-# Beeminder API if the tagtime log changed but it did not entail any changes
-# relevant to the given Beeminder graph.
+# As a side effect, generate a .bee file from the tagtime log, used as a cache
+# to avoid calling the Beeminder API if the tagtime log changed but it did not 
+# entail any changes relevant to the given Beeminder graph.
 
 require "$ENV{HOME}/.tagtimerc";
+require "${path}util.pl";
+require "${path}beemapi.pl";
+use Data::Dumper; $Data::Dumper::Terse = 1;
+$| = 1; # autoflush
+$ping = ($gap+0.0)/3600;  # number of hours per ping
 
-$ping = ($gap+0.0)/3600;  # number of hours per ping.
+if(@ARGV != 2) { print "Usage: ./beeminder.pl tagtimelog user/slug\n"; exit 1; }
 
-die "usage: ./beeminder.pl tagtimelog user/slug" if (@ARGV != 2);
-
-$tplf = shift;  # tagtime log filename.
-$usrslug = shift;
+$ttlf    = shift;  # tagtime log filename
+$usrslug = shift;  # like alice/weight
 $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
-$beef = "$usr+$slug.bee"; # beef = bee file
+$beef = "$usr+$slug.bee"; # beef = bee file (cache of data on bmndr)
 
 if(defined(@beeminder)) { # for backward compatibility
+  print "Deprecation warning: Get your settings file in line!\n";
+  print "Specifically, 'beeminder' should be a hash, not an arry.\n";
   for(@beeminder) {
     @stuff = split(/\s+/, $_); # usrslug and tags
     $us = shift(@stuff);
     $beeminder{$us} = [@stuff];
   }
 }
-$crit = $beeminder{$usrslug} or die "I don't know which tags match $usrslug";
+$crit = $beeminder{$usrslug} or die "Can't determine which tags match $usrslug";
 
-$beedata0 = "";  # original bee data.
-$beedata1 = "";  # new bee data.
+# ph (ping hash) maps "y-m-d" to number of pings on that day.
+# sh (string hash) maps "y-m-d" to the beeminder comment string for that day.
+# bh (beeminder hash) maps "y-m-d" to the bmndr ID of the datapoint on that day.
+# ph1 and sh1 are based on the current tagtime long and
+# ph0 and sh0 are based on the cached .bee file or beeminder-fetched data.
 
-if(-e $beef) {
-  $beedata0 = do {local (@ARGV,$/) = $beef; <>}; # slurp file into string
+my $start = time;  # start and end are the earliest and latest times we will
+my $end   = 0;     # need to care about when updating beeminder.
+# bflag is true if we need to regenerate the beeminder cache file. reasons we'd
+# need to: 1. it doesn't exist; 2. any beeminder IDs are missing from the 
+# cache file; 3. there are multiple datapoints for the same day.
+$bflag = (!-e $beef);
+my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; # why bflag?
+$bf1 = 1 if $bflag;
+undef %remember; # remember which dates we've already seen in the cache file
+if(open(B, "<$beef")) {
+  while(my $l = <B>) {
+    my($y,$m,$d,$v,$p,$c,$b) = ($l =~ /
+      (\d+)\s+          # year
+      (\d+)\s+          # month
+      (\d+)\s+          # day
+      (\S+)\s+          # value
+      \"(\d+)           # number of pings
+        (?:[^\n\"\(]*)  # currently the string " ping(s)"
+        \:\             # the ": " after " pings"
+        ([^\[]*)        # the comment string (no brackets)
+        (?:\[           # if present,
+          bID\:([^\]]*) # the beeminder ID, in brackets
+        \])?            # end bracket for "[bID:abc123]"
+      \s*\"/x);
+    my $ts = "$y-$m-$d";
+    $ph0{$ts} = $p;
+    $c =~ s/\s+$//;
+    $sh0{$ts} = $c;
+    $bh{$ts} = $b;
+    my $t = pd("$y $m $d");
+    $start = $t if $t < $start;
+    $end   = $t if $t > $end;
+    if(!defined($b) || $b eq "") {
+      $bflag = 1;
+      $bf2++;
+      if($bf2 == 1) {
+        print "Problem with this line in cache file:\n$l";
+      } elsif($bf2 == 2) {
+        print "Additional problems with cache file, which is expected if this ",
+              "is your first\ntime updating TagTime with the new Bmndr API.\n";
+      }
+    }
+    ($bflag = $bf3 = 1) if defined($remember{$ts});
+    $remember{$ts} = 1;
+  }
+  close(B);
+} else { $bflag = 1; $bf4 = 1; }
+
+if($bflag) { # re-slurp all the datapoints from beeminder
+  undef %ph0; undef %sh0; undef %bh;
+  $start = time;  # reset these since who knows what happened to them when we
+  $end   = 0;     # calculated them from the cache file we decided to toss.
+
+  my $tmp = $beef;  $tmp =~ s/(?:[^\/]*\/)*//; # strip path from filename
+  if($bf1) {
+    print "Cache file missing ($tmp); recreating... ";
+  } elsif($bf2) {
+    print "Cache file doesn't have all the Bmndr IDs; recreating... ";
+  } elsif($bf3) {
+    print "Cache file has duplicate Bmndr IDs; recreating... ";
+  } elsif($bf4) {
+    print "Couldn't read cache file; recreating... ";
+  } else { # this case is impossible
+    print "Recreating Beeminder cache ($tmp)[$bf1$bf2$bf3$bf4]... ";
+  }
+  $data = beemfetch($usr, $slug);
+  print "[Bmndr data fetched]\n";
+  
+  # take one pass to delete any duplicates on bmndr; must be one datapt per day
+  my $i = 0;
+  undef %remember;
+  for my $x (@$data) {
+    my($y,$m,$d) = dt($x->{"timestamp"});
+    my $ts = "$y-$m-$d";
+    my $b = $x->{"id"};
+    if(defined($remember{$ts})) {
+      print "Beeminder has multiple datapoints for the same day. " , 
+            "Deleting this one:\n";
+      print Dumper $x;
+      beemdelete($usr, $slug, $b);
+      delete $data->[$i];
+    }
+    $remember{$ts} = 1;
+    $i++;
+  }
+
+  for my $x (@$data) { # parse the bmndr data into %ph0, %sh0, %bh
+    my($y,$m,$d) = dt($x->{"timestamp"});
+    my $ts = "$y-$m-$d";
+    my $t = pd($ts);
+    $start = $t if $t < $start;
+    $end   = $t if $t > $end;
+    my $v = $x->{"value"};
+    my $c = $x->{"comment"};
+    my $b = $x->{"id"};
+    $ph0{$ts} = 0+$c; # ping count is first thing in the comment
+    $sh0{$ts} = $c;
+    $sh0{$ts} =~ s/[^\:]*\:\s+//; # drop the "n pings:" comment prefix
+    $bh{$ts} = $b;
+  }
 }
 
-open(T, $tplf) or die;
-$i = 0;
-while(<T>) {
-  if(!/^(\d+)\s*(.*)$/) { die "Bad line in tagtime log file."; }
-  my $ts = $1;
-  my $stuff = $2;
+open(T, $ttlf) or die "Can't open TagTime log file: $ttlf\n";
+$np = 0; # number of lines (pings) in the tagtime log that match
+while(<T>) { # parse the tagtime log file
+  if(!/^(\d+)\s*(.*)$/) { die "Bad line in TagTime log: $_"; }
+  my $t = $1;     # timestamp as parsed from the tagtime log
+  my $stuff = $2; # tags and comments for this line of the log
   my $tags = strip($stuff);
-  if(tag_matcher($tags, $crit)) {   # && $ts>=$start
-    my($yr,$mo,$d,$h,$m,$s) = dt($ts);
-    $pinghash{"$yr-$mo-$d"} += 1; 
-    $stuffhash{"$yr-$mo-$d"} .= stripb($stuff) . ", ";
-    $i++;
-    #last;  # leaving this here was the bug, i believe!
+  if(tagmatch($tags, $crit)) {
+    my($y,$m,$d) = dt($t);
+    $ph1{"$y-$m-$d"} += 1;
+    $sh1{"$y-$m-$d"} .= stripb($stuff) . ", ";
+    $np++;
+    $start = $t if $t < $start;
+    $end   = $t if $t > $end;
   }
 }
 close(T);
+# clean up $sh1: trim trailing commas, pipes, and whitespace
+for(sort(keys(%sh1))) { $sh1{$_} =~ s/\s*(\||\,)\s*$//; }
 
-sub tag_matcher {
-  my $tags = shift();
-  my $crit = shift();
-  if(ref($crit) eq "ARRAY") {
-    for my $t (@$crit) { return 1 if $tags =~ /\b$t\b/; }
-  } elsif(ref($crit) eq "CODE") {
-    return &$crit($tags);
-  } elsif(ref($crit) eq "Regexp") {
-    return $tags =~ $crit;
+#print "Processing datapoints in: ", ts($start), " - ", ts($end), "\n";
+
+my $nquo = 0;  # number of datapoints on beeminder with no changes (status quo)
+my $ndel = 0;  # number of deleted datapoints on beeminder
+my $nadd = 0;  # number of created datapoints on beeminder
+my $nchg = 0;  # number of updated datapoints on beeminder
+my $minus = 0; # total number of pings decreased from what's on beeminder
+my $plus = 0;  # total number of pings increased from what's on beeminder
+my $ii = 0;
+for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
+  my($y,$m,$d) = dt($t);
+  my $ts = "$y-$m-$d";
+  my $b =  $bh{$ts} || "";
+  my $p0 = $ph0{$ts} || 0;
+  my $p1 = $ph1{$ts} || 0;
+  my $s0 = $sh0{$ts} || "";
+  my $s1 = $sh1{$ts} || "";
+  if($p0 eq $p1 && $s0 eq $s1) { # no change to the datapoint on this day
+    $nquo++ if $b;
+    next;
+  } 
+  if($b eq "" && $p1 > 0) { # no such datapoint on beeminder: CREATE
+    $nadd++;
+    $plus += $p1;
+    $bh{$ts} = beemcreate($usr,$slug,$t, $p1*$ping, splur($p1,"ping").": ".$s1);
+  } elsif($p0 > 0 && $p1 <= 0) { # on beeminder but not in tagtime log: DELETE
+    $ndel++;
+    $minus += $p0;
+    beemdelete($usr, $slug, $b);
+  } elsif($p0 != $p1 || $s0 ne $s1) { # bmndr & tagtime log differ: UPDATE
+    $nchg++;
+    if   ($p1 > $p0) { $plus  += ($p1-$p0); } 
+    elsif($p1 < $p0) { $minus += ($p0-$p1); }
+    beemupdate($usr, $slug, $b, $t, ($p1*$ping), splur($p1,"ping").": ".$s1);
   } else {
-    die "Unknown tag matching criterion $crit";
+    print "ERROR: can't tell what to do with this datapoint (old/new):\n";
+    print "$y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\"\n";
+    print "$y $m $d  ",$p1*$ping," \"$p1 pings: $s1\"\n";
   }
+}
+
+open(F, ">$beef") or die;  # generate the new cache file
+for my $ts (sort(keys(%ph1))) {
+  my($y,$m,$d) = split(/\-/, $ts);
+  my $p = $ph1{$ts};
+  my $v = $p*$ping;
+  my $c = $sh1{$ts};
+  my $b = $bh{$ts};
+  print F "$y $m $d  $v \"",splur($p,"ping"),": $c [bID:$b]\"\n";
+}
+close(F);
+
+my $nd = scalar(keys(%ph1)); # number of datapoints
+if($nd != $nquo+$nchg+$nadd) { # sanity check
+  print "\nERROR: total != nquo+nchg+nadd ($nd != $nquo+$nchg+$nadd)\n";
+}
+print "Datapts: $nd (~$nquo *$nchg +$nadd -$ndel), ",
+      "Pings: $np (+$plus -$minus) ";
+my $r = ref($crit);
+if   ($r eq "")       { print "w/ tag $crit";                        }
+elsif($r eq "ARRAY")  { print "w/ tags in {", join(",",@$crit), "}"; }
+elsif($r eq "Regexp") { print "matching $crit";                      }
+elsif($r eq "CODE")   { print "satisfying lambda";                   }
+else                  { print "(unknown-criterion: $crit)";          }
+print "\n";
+
+
+# Whether the given string of space-separated tags matches the given criterion.
+sub tagmatch { my($tags, $crit) = @_;
+  my $r = ref($crit);
+  if   ($r eq "")       { return $tags =~ /\b$crit\b/;                         }
+  elsif($r eq "ARRAY")  { for my $c (@$crit) { return 1 if $tags =~ /\b$c\b/; }}
+  elsif($r eq "CODE")   { return &$crit($tags);                                }
+  elsif($r eq "Regexp") { return $tags =~ $crit;                               }
+  else { die "Criterion $crit is neither string, array, regex, nor lambda!"; }
   return 0;
 }
 
-$n = scalar(keys(%pinghash));
-$j = 0;
-for(sort(keys(%pinghash))) {
-  ($yr, $mo, $d) = /^(\d+)\-(\d+)\-(\d+)$/;
-  $stuffhash{$_} =~ s/\s*(\||\,)\s*$//;
-  $beedata1 .= "$yr $mo $d  ".$pinghash{$_}*$ping." \"".
-               splur($pinghash{$_},"ping").   
-               # this makes the bee file change every time, which means 
-               #   unneccesary regenerating of graphs:
-               #($j==$n ? " @ ".ts(time) : "").
-               ": ".$stuffhash{$_}."\"\n";
-  $j++;
+
+# Convert a timestamp to noon on the same day. 
+# This matters because if you start with some timestamp and try to step 
+# forward 24 hours at a time then daylight savings time can screw you up.
+# You might add 24 hours and still be on the same day. If you start from 
+# noon that you shouldn't have that problem.
+sub daysnap { my($t) = @_;
+  my($sec,$min,$hr, $d,$m,$y) = localtime($t);
+  return timelocal(0,0,12, $d,$m,$y);
 }
 
-if($beedata0 ne $beedata1) {
-  #print "DEBUG: calling beemapi tagtime_update tgt $usr $slug\n";
-  open(G, "|${path}beemapi.rb tagtime_update tgt $usr $slug") or die;
-  print G "$beedata1";
-  close(G);
-  open(K, ">$beef") or die "Can't open $beef: $!"; # spew the string
-  print K $beedata1;                               # $beedata1 to
-  close(K);                                        # the file $beef
-}
-
-if(ref($crit) eq "ARRAY") {
-  print splur($i,"ping")," (",join(",",@$crit),") on ",splur($j,"day"),".\n";
-  #($slug eq "nafk" ? "OUT" : ""), 
-} else {
-  print splur($i, "ping"), " on ", splur($j, "day"), ".\n";
-}
-
-# Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
-#   Eg: splur(3, "boy") -> "3 boys"
-sub splur { my($n, $noun) = @_;  return "$n $noun".($n==1 ? "" : "s"); }
-
-# round to nearest integer.
-sub round1 { my($x) = @_; return int($x + .5 * ($x <=> 0)); }
-sub round3 { my($x) = @_; return round1($x*1000)/1000; }
-
-
-# Strips out stuff in parens and brackets; remaining parens/brackets means
-#  they were unmatched.   
-sub strip {
-  my($s)=@_;
-  while($s =~ s/\([^\(\)]*\)//g) {}
-  while($s =~ s/\[[^\[\]]*\]//g) {}
-  $s;
-}
-
-# Strips out stuff in brackets only; remaining brackets means
-#  they were unmatched.   
-sub stripb {
-  my($s)=@_;
-  while($s =~ s/\s*\[[^\[\]]*\]//g) {}
-  $s;
-}
-
-# Fetches stuff in parens. 
-sub fetchp {
-  my($s)=@_;
-  my $tmp = $s;
-  while($tmp =~ s/\([^\(\)]*\)/UNIQUE78DIV/g) {}
-  my @a = split('UNIQUE78DIV', $tmp);
-  for(@a) {
-    my $i = index($s, $_);
-    substr($s, $i, length($_)) = "";
-  }
-  $s =~ s/^\(//;
-  $s =~ s/\)$//;
-  return $s;
-}
-
-# Date/time: Takes unix time (seconds since 1970-01-01 00:00:00 GMT) and 
-# returns list of
-#   year, mon, day, hr, min, sec, day-of-week, day-of-year, is-daylight-time
-sub dt { my($t) = @_;
-  $t = time unless defined($t);
-  my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t);
-  $year += 1900;  $mon = dd($mon+1);  $mday = dd($mday);
-  $hour = dd($hour);  $min = dd($min); $sec = dd($sec);
-  my %wh = ( 0=>"SUN",1=>"MON",2=>"TUE",3=>"WED",4=>"THU",5=>"FRI",6=>"SAT" );
-  return ($year,$mon,$mday,$hour,$min,$sec,$wh{$wday},$yday,$isdst);
-}
-
-# Time string: takes unix time and returns a formated YMD HMS string.
-sub ts { my($t) = @_;
-  my($year,$mon,$mday,$hour,$min,$sec,$wday,$yday,$isdst) = dt($t);
-  return "$year-$mon-$mday $hour:$min:$sec $wday";
-} 
-
-# double-digit: takes number from 0-99, returns 2-char string eg "03" or "42".
-sub dd { my($n) = @_;  return padl($n, "0", 2); }
-  # simpler but less general version: return ($n<=9 && $n>=0 ? "0".$n : $n)
-
-# pad left: returns string x but with p's prepended so it has width w
-sub padl {
-  my($x,$p,$w)= @_;
-  if(length($x) >= $w) { return substr($x,0,$w); }
-  return $p x ($w-length($x)) . $x;
-}
-
+# $string = do {local (@ARGV,$/) = $file; <>}; # slurp file into string

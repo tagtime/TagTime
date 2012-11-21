@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
-# Prompt for what you're doing RIGHT NOW.  In the future this should show
-# a cool pie chart that lets you click on the appropriate pie slice,
-# making that slice grow slightly.  And the slice boundaries could be fuzzy
-# to indicate the confidence intervals!  Ooh, and you can drag the
-# slices around to change the order so similar things are next to each
-# other and it remembers that order for next time!  That's gonna rock.
+# Prompt for what you're doing RIGHT NOW.
+# In the future this should show a cool pie chart that lets you click on the 
+# appropriate pie slice, making that slice grow slightly. And the slice 
+# boundaries could be fuzzy to indicate the confidence intervals! Ooh, and you 
+# can drag the slices around to change the order so similar things are next to 
+# each other and it remembers that order for next time! That's gonna rock.
 
 my $pingTime = time();
 my $autotags = "";
@@ -14,8 +14,10 @@ require "${path}util.pl";
 
 my $tskf = "$path$usr.tsk";
 
-# if passed a parameter, take that to be timestamp for this ping.
-# if not, then this must not have been called by launch. tag as UNSCHED.
+my $eflag = 0; # if any problems then prompt before exiting
+
+# if passed a parameter, take that to be the timestamp for this ping.
+# if not, then this must not have been called by launch.pl so tag as UNSCHED.
 $t = shift;
 if(!defined($t)) {
   $autotags .= " UNSCHED";
@@ -43,37 +45,38 @@ EOS
 # of tags for each task (capturing in a hash keyed on task number).
 # TODO: have a function that takes a reference to a tasknum->tags hash and a
 # tasknum->fulltaskline hash and populates those hashes, purging them first.
-# that way we we're not duplicating most of this walk through code.  one 
+# that way we we're not duplicating most of this walk through code. one 
 # annoyance: we want to print them in the order they appear in the task file.
 # maybe an optional parameter to the function that says whether to print the
 # tasks to stdout as you encounter them.
 if(-e $tskf) {  # show pending tasks
-  open(F, "< $tskf") or die "ERROR-tsk: $!\n";
-  while(<F>) {
-    if(/^\-{4,}/ || /^x\s/i) { print; last; }
-    if(/^(\d+)\s+\S/) {
-      print;
-      $tags{$1} = gettags($_);  # hash mapping task num to tags string.
-    } else { print; }
+  if(open(F, "<$tskf")) {
+    while(<F>) {
+      if(/^\-{4,}/ || /^x\s/i) { print; last; }
+      if(/^(\d+)\s+\S/) {
+        print;
+        $tags{$1} = gettags($_);  # hash mapping task num to tags string
+      } else { print; }
+    }
+    close(F);
+  } else {
+    print "ERROR: Can't read task file ($tskf)\n";
+    $eflag++;
   }
-  close(F);
   print "\n";
 }
 
 my($s,$m,$h,$d) = localtime($t);
 $s = dd($s); $m = dd($m); $h = dd($h); $d = dd($d);
-print "It's tag time!  ",
-  "What are you doing RIGHT NOW ($h:$m:$s)?\n\n";
+print "It's tag time!  What are you doing RIGHT NOW ($h:$m:$s)?\n\n";
 my($resp, $tagstr, $comments, $a);
 do {
   $resp = <STDIN>;
 
   if ($resp =~ /^"\s*/) {
-
-    # Responses for lazy people.  A response string consisting of only
+    # Responses for lazy people. A response string consisting of only
     # a pair of double-quotes means "ditto", and acts as if we entered
-    # the last thing that was in our tracking file.
-
+    # the last thing that was in our TagTime log file.
     # TODO - This should really be its own function, and we should
     # write a test case.
 
@@ -81,13 +84,15 @@ do {
     use warnings;
 
     our $logf;
-
+    my @loglines;
     use Tie::File;  # For people too lazy to find the last line. :)
 
-    tie(my @logfile, 'Tie::File', $logf)
-      or die "Can't open $logf for ditto function - $!";
+    if(!tie(my @loglines, 'Tie::File', $logf)) {
+      print "ERROR: Can't open $logf for ditto function: $!";
+      $eflag++;
+    }
 
-    my $last = $logfile[-1];
+    my $last = $loglines[-1];
 
     ($resp) = $last =~ m{
       ^
@@ -96,21 +101,27 @@ do {
       (.*)       # Om nom nom
     }x;
 
-    $resp or die "Failed to find any tags for ditto function.";
-
-    $resp = strip($resp);   # Remove comments and timestamps.
-
+    if(!$resp) {
+      print "ERROR: Failed to find any tags for ditto function. ",
+            "Last line in TagTime log:\n", $last;
+      $eflag++;
+    }
+    $resp = strip($resp);  # remove comments and timestamps
   }
 
   # refetch the task numbers from task file; they may have changed.
   if(-e $tskf) {
-    open(F, "< $tskf") or die "ERROR-tsk2: $!\n";
-    %tags = ();  # empty the hash first.
-    while(<F>) {
-      if(/^\-{4,}/ || /^x\s/i) { last; }
-      if(/^(\d+)\s+\S/) { $tags{$1} = gettags($_); } 
+    if(open(F, "<$tskf")) {
+      %tags = ();  # empty the hash first.
+      while(<F>) {
+        if(/^\-{4,}/ || /^x\s/i) { last; }
+        if(/^(\d+)\s+\S/) { $tags{$1} = gettags($_); } 
+      }
+      close(F);
+    } else {
+      print "ERROR: Can't read task file ($tskf) again\n";
+      $eflag++;
     }
-    close(F);
   }
 
   $tagstr = trim(strip($resp));
@@ -120,14 +131,11 @@ do {
   $tagstr .= $autotags;
   $tagstr =~ s/\s+/\ /g;
   $a = annotime("$t $tagstr $comments", $t)."\n";
-} while($enforcenums && $tagstr ne "" && 
-        #($tagstr !~ /\b(\d+|non$d|afk)\b/)  # include day of month
-        ($tagstr !~ /\b(\d+|non|afk)\b/)
-       );
+} while($enforcenums && $tagstr ne "" && ($tagstr !~ /\b(\d+|non|afk)\b/));
 print $a;
 slog($a);
 
-# Send your tagtime log to Beeminder if user has @beeminder list non-empty.
+# Send your TagTime log to Beeminder if user has %beeminder hash non-empty.
 #   (maybe should do this after retropings too but launch.pl would do that).
 if((%beeminder || @beeminder) && $resp !~ /^\s*$/) {
   # We could show historical stats on the tags for the current ping here.
@@ -137,12 +145,19 @@ if((%beeminder || @beeminder) && $resp !~ /^\s*$/) {
   } else {
     for(keys(%beeminder)) { print "$_: "; bm($_); }
   }
+  if($eflag) {
+    print splur($eflag,"error"), ", press enter to dismiss...";
+    my $tmp = <STDIN>;
+  }
 }
 
 # Send pings to the given beeminder goal, e.g. passing "alice/foo" sends
 # appropriate (as defined in .tagtimerc) pings to bmndr.com/alice/foo
 sub bm { my($s) = @_;
   $cmd = "${path}beeminder.pl ${path}$usr.log $s";
-  system($cmd) == 0 or print "SYSERR: $cmd\n";
+  if(system($cmd) != 0) {
+    print "ERROR running command: beeminder.pl $usr.log $s\n";
+    $eflag++;
+  }
 }
 

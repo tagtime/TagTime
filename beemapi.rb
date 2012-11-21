@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# Crude command line interface to the Beeminder API.
+# Crude command line interface to the old Beeminder API.
+# This is deprecated! See beemapi.pl for the new Beeminder API.
 
 require 'net/http'
 
