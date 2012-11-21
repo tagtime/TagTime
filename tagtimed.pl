@@ -8,6 +8,36 @@
 #   watching.pl so that we don't have to restart this daemon when settings 
 #   change. (does it suffice to just re-require it?)
 
+=head1 NAME
+
+tagtimed - Stochastic tagging of your time!
+
+=head1 SYNPOSIS
+
+    $ tagtimed.pl     # Start tagtime
+
+    $ tagtimed.pl -l  # Start tagtime if not already running.
+
+    $ tagtimed.pl -s  # Start tagtime if not already running, be silent otherwise.
+
+=head1 DESCRIPTION
+
+See L<http://messymatters.com/tagtime/>
+
+You can add the following to your C<.bashrc> or equivalent to make sure TagTime starts
+when you open a shell:
+
+    tagtimed.pl -l -s &
+
+=head1 BUGS
+
+The C<-l> switch must be used on all processes for locks to work correctly.
+
+The C<-l> switch will exit Tagtime if it's already running with another user using the C<-l>
+switch.
+
+=cut
+
 {
     use strict;
     use warnings;
