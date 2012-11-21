@@ -8,6 +8,30 @@
 #   watching.pl so that we don't have to restart this daemon when settings 
 #   change. (does it suffice to just re-require it?)
 
+{
+    use strict;
+    use warnings;
+    use Fcntl qw(:flock);
+    use Getopt::Std qw(getopts);
+
+    # Lock our process if required.  For more details, see:
+    # http://perltraining.com.au/tips/2005-08-08.html
+
+    # Note: without the '-l' switch, we won't even try to create a lock.
+
+    my %opts = ( l => 0, s => 0);   # [l]ock and [s]ilent
+
+    getopts('ls',\%opts);
+
+    # Lock process if called with -l switch
+    if ($opts{l} and not flock(DATA,LOCK_EX|LOCK_NB)) {
+
+        # Oops, we're already locked...
+        exit(0) if $opts{s};        # Silent exit on already locked.
+        die "Already running\n";    # Noisy exit otherwise.
+    }
+}
+
 $launchTime = time();
 
 eval {
@@ -78,3 +102,6 @@ sub pingery {
 #	}
 #}
 
+__DATA__
+This section exists to make it trivial to implement the -l (lock)
+feature of tagtimed.
