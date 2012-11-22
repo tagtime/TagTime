@@ -69,7 +69,11 @@ sub strip {
   my($s) = @_;
   while($s =~ s/\([^\(\)]*\)//g) {}
   while($s =~ s/\[[^\[\]]*\]//g) {}
-  $s;
+
+  # Also remove trailing whitespace.
+  $s =~ s/\s*$//;
+
+  return $s;
 }
 
 # Strips out stuff in brackets only; remaining brackets means
