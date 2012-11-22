@@ -6,6 +6,12 @@
 # can drag the slices around to change the order so similar things are next to 
 # each other and it remembers that order for next time! That's gonna rock.
 
+eval {
+  # Load Term::ANSIColor if available.
+  require Term::ANSIColor;
+  Term::ANSIColor->import(':constants');
+};
+
 my $pingTime = time();
 my $autotags = "";
 
@@ -78,7 +84,14 @@ print "It's tag time!  What are you doing RIGHT NOW ($h:$m:$s)?\n";
 my $last_doing = eval { get_last_doing() };
 if ($@) { $eflag++; warn "ERROR: $@" }
 
-print qq{You were last doing: "$last_doing" (type just double-quotes to repeat)\n};
+my $ansi_last_doing = $last_doing;
+
+if ($INC{'Term/ANSIColor.pm'}) {
+  # Yay! We can do fancy formatting
+  $ansi_last_doing = CYAN(). BOLD() . $last_doing . RESET();
+}
+
+print qq{You were last doing: "$ansi_last_doing" (type just double-quotes to repeat)\n};
 
 my($resp, $tagstr, $comments, $a);
 do {
