@@ -68,45 +68,33 @@ if(-e $tskf) {  # show pending tasks
 
 my($s,$m,$h,$d) = localtime($t);
 $s = dd($s); $m = dd($m); $h = dd($h); $d = dd($d);
-print "It's tag time!  What are you doing RIGHT NOW ($h:$m:$s)?\n\n";
+
+
+print "It's tag time!  What are you doing RIGHT NOW ($h:$m:$s)?\n";
+
+# Get what the user was last doing. In the case this fails, set $eflag and
+# print the reason why.
+
+my $last_doing = eval { get_last_doing() };
+if ($@) { $eflag++; warn "ERROR: $@" }
+
+print qq{You were last doing: "$last_doing" (type just double-quotes to repeat)\n};
+
 my($resp, $tagstr, $comments, $a);
 do {
+  use strict;
+  use warnings;
+
+  our (%tags, $t);
+
   $resp = <STDIN>;
 
-  if ($resp =~ /^"\s*/) {
+  if ($resp =~ /^"\s*$/) {
     # Responses for lazy people. A response string consisting of only
     # a pair of double-quotes means "ditto", and acts as if we entered
     # the last thing that was in our TagTime log file.
-    # TODO - This should really be its own function, and we should
-    # write a test case.
 
-    use strict;
-    use warnings;
-
-    our $logf;
-    my @loglines;
-    use Tie::File;  # For people too lazy to find the last line. :)
-
-    if(!tie(my @loglines, 'Tie::File', $logf)) {
-      print "ERROR: Can't open $logf for ditto function: $!";
-      $eflag++;
-    }
-
-    my $last = $loglines[-1];
-
-    ($resp) = $last =~ m{
-      ^
-      \d+        # Timestamp
-      \s+        # Spaces after timestamp
-      (.*)       # Om nom nom
-    }x;
-
-    if(!$resp) {
-      print "ERROR: Failed to find any tags for ditto function. ",
-            "Last line in TagTime log:\n", $last;
-      $eflag++;
-    }
-    $resp = strip($resp);  # remove comments and timestamps
+    $resp = $last_doing;
   }
 
   # refetch the task numbers from task file; they may have changed.
@@ -161,3 +149,32 @@ sub bm { my($s) = @_;
   }
 }
 
+# Returns what the user was last doing by extracting it from their logfile.
+# Timestamps and comments are removed.
+# On error, throws an exception. (You can catch this with Try::Tiny or eval)
+
+sub get_last_doing {
+  use strict;
+  use warnings;
+  use Tie::File;  # For people too lazy to find the last line of a file. :)
+
+  our $logf;
+
+  tie(my @loglines, 'Tie::File', $logf) or die "Can't open $logf for ditto function: $!";
+
+  my $last = $loglines[-1];
+
+  my ($resp) = $last =~ m{
+    ^
+    \d+        # Timestamp
+    \s+        # Spaces after timestamp
+    (.*)       # Om nom nom
+  }x;
+
+  if(not $resp) {
+    die "ERROR: Failed to find any tags for ditto function. " .
+        "Last line in TagTime log:\n" . $last;
+  }
+
+  return strip($resp);   # remove comments and timestamps
+}
