@@ -91,7 +91,7 @@ if ($INC{'Term/ANSIColor.pm'}) {
   $ansi_last_doing = CYAN(). BOLD() . $last_doing . RESET();
 }
 
-print qq{You were last doing: "$ansi_last_doing" (type just double-quotes to repeat)\n\n};
+print qq{You were last doing: "$ansi_last_doing" (ditto ["] to repeat)\n\n};
 
 my($resp, $tagstr, $comments, $a);
 do {

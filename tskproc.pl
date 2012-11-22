@@ -229,7 +229,9 @@ sub elapsed { my($a, $b, $c, $u) = @_;
 	     "d" => 1.0/3600/24,
 	     "w" => 1.0/3600/24/7,
 	     "y" => 1.0/3600/24/365.25,
-	     "c" => 1.0/60/45,  # a chrock is 45 minutes.
+	     "c" => 1.0/60/45,  # a chrock is 45 minutes (deprecated)
+             "t" => 1.0/60/45,  # a tock is 45 minutes
+             "p" => 1.0/60/25,  # a pomodoro (aka a tick) is 25 minutes
 	   );
   if(!defined($uh{$u})) {
     if($s<60) { $u = "s"; }
