@@ -70,8 +70,8 @@ sub strip {
   while($s =~ s/\([^\(\)]*\)//g) {}
   while($s =~ s/\[[^\[\]]*\]//g) {}
 
-  # Also remove trailing whitespace.
-  $s =~ s/\s*$//;
+  # Also remove trailing whitespace? (this breaks cntpings.pl)
+  #$s =~ s/\s*$//;
 
   return $s;
 }

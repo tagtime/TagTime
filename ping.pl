@@ -82,16 +82,17 @@ print "It's tag time!  What are you doing RIGHT NOW ($h:$m:$s)?\n";
 # print the reason why.
 
 my $last_doing = eval { get_last_doing() };
+$last_doing = trim($last_doing);
 if ($@) { $eflag++; warn "ERROR: $@" }
 
 my $ansi_last_doing = $last_doing;
 
 if ($INC{'Term/ANSIColor.pm'}) {
   # Yay! We can do fancy formatting
-  $ansi_last_doing = CYAN(). BOLD() . $last_doing . RESET();
+  $ansi_last_doing = CYAN() . BOLD() . $last_doing . RESET();
 }
 
-print qq{You were last doing: "$ansi_last_doing" (ditto ["] to repeat)\n\n};
+print qq{Ditto (") to repeat prev tags: $ansi_last_doing\n\n};
 
 my($resp, $tagstr, $comments, $a);
 do {
