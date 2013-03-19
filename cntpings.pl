@@ -1,19 +1,12 @@
 #!/usr/bin/env perl
 # Count the number of a pings with given tags in the given time period.
-# Related scripts:
-#  aux/contest.pl -- for chrock contests
-#  aux/frask.pl -- a different kind of chrock contest
-#  aux/tot.pl -- customized for keeping track of yahoo job pings
-#  aux/showpie.pl -- this one is just wrong given how we currently use tagtime 
-#  aux/showvenn.pl -- not sure about this one
-#  ../kibo/timepiekib.pl -- converts tagtime log to kib file 
 
 BEGIN { require "$ENV{HOME}/.tagtimerc"; }
 use lib $path, "$path/lib";
 
 require "util.pl";
 use Getopt::Long qw(:config bundling);
-use TagTime qw(match);
+use TagTime qw(match); # should be in util.pl (or util.pl should all be here)
 
 my $start = -1;
 my $end = ts(time());
@@ -57,21 +50,18 @@ my $logfile = shift;
 my $expr = '( ' . join(' )|( ', @ARGV) . ' )';
 open(LOG, $logfile) or die qq{Cannot open logfile "$logfile" - $!\n};
 while(<LOG>) {
-  my $line = strip($_);
-
-  my $orig = $_;
-  $_ = strip($_);
-  if(!(s/^\d+\s+//) || /(\(|\)|\[|\])/) {  # should be a function, 'parseable'
+  if(!parsable($_)) {
     $e++;
-    $errstr .= $orig;
+    $errstr .= $_;
     next;
   }
+  my $line = strip($_);
 
   my @tags = split(/\s+/, $line);
   my $ts = shift(@tags);
   if($first == -1 || $ts < $first) { $first = $ts; }
-  if($ts < $start) { $toosoon++; }
-  elsif($ts > $end) { $toolate++; }
+  if   ($ts < $start) { $toosoon++; }
+  elsif($ts > $end)   { $toolate++; }
   elsif(match($expr, $line)) {
     $m++;
     for(@tags) { $tc{$_}++; }

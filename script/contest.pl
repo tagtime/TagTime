@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+# For pomodoro contests...
 # smack frac = fraction of in-front-of-the-computer time (ie, not "afk") that
 # was spent checking email, chatting, surfing, etc.  (Even if some of that is
 # legitimate work.)  Tag "smk" means "*smack* get back to real work".

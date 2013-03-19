@@ -21,8 +21,7 @@ sub match {
   for(split(/\s+/, $line)) { $h{$_} = 1; }
 
   # TODO: Refactor this so we're not using eval() at the end.
-  # Based upon what the user has entered, almost anything
-  # could happen!
+  # Based upon what the user has entered, almost anything could happen!
 
   $expr =~ s/([^\|])\|([^\|])/$1\|\|$2/g;
   $expr =~ s/([^\&])\&([^\&])/$1\&\&$2/g;

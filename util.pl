@@ -6,10 +6,10 @@ use Time::Local;  # more sophisticated packages are Date::Calc and Date::Manip
 
 $lockf = "${path}tagtime.lock";
 
-$| = 1;  # autoflush STDOUT.
+$| = 1;  # autoflush STDOUT
 
-my $IA = 16807;       # constant used for RNG (see p37 of Simulation by Ross).
-my $IM = 2147483647;  # constant used for RNG (2^31-1).
+my $IA = 16807;       # constant used for RNG (see p37 of Simulation by Ross)
+my $IM = 2147483647;  # constant used for RNG (2^31-1)
 
 # $seed is a global variable that is really the state of the RNG.
 # Should be set in .tagtimerc but set to a default value here if not.
@@ -29,8 +29,8 @@ sub ran0 {
 # Returns a U(0,1) random number.
 sub ran01 { return ran0()/$IM; }
 
-# Returns a random number drawn from an exponential
-# distribution with mean $gap (defined in settings file).
+# Returns a random number drawn from an exponential distribution with mean 
+# $gap (defined in settings file).
 sub exprand { return -1 * $gap * log(ran01()); }
 
 
@@ -76,8 +76,8 @@ sub strip {
   return $s;
 }
 
-# Strips out stuff in brackets only; remaining brackets means
-#  they were unmatched.   
+# Strips out stuff in brackets only; remaining brackets means they were 
+#  unmatched.
 sub stripb {
   my($s) = @_;
   while($s =~ s/\s*\[[^\[\]]*\]//g) {}
@@ -96,6 +96,12 @@ sub stripc {
     substr($s, $i, length($_)) = "";
   }
   return $s;
+}
+
+# Whether the given string is valid line in a tagtime log file
+sub parsable { my($s) = @_;
+  $s = strip($s);
+  return !(!($s =~ s/^\d+\s+//) || ($s =~ /(\(|\)|\[|\])/));
 }
 
 # Fetches stuff in parens. Not currently used.
@@ -188,8 +194,8 @@ sub divider { my($label) = @_;
   return ("-"x$left).$label.("-"x$rt);
 }
 
-# Takes 2 strings and returns them concatenated with enough space in the
-# middle so the whole string is $x long (default: $linelen).
+# Takes 2 strings and returns them concatenated with enough space in the middle
+# so the whole string is $x long (default: $linelen).
 sub lrjust { my($a, $b, $x) = @_;
   $x = $linelen unless defined($x);
   "$a " . " "x(max(0,$x-length("$a $b"))) . $b;

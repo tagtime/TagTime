@@ -106,7 +106,9 @@ sub estim { my($a) = @_;
 	     "d" => 3600*24,
 	     "w" => 3600*24*7,
 	     "y" => 3600*24*365.25,
-	     "c" => 60*45,  # a chrock is 45 minutes.
+	     "c" => 60*45,  # a chrock is 45 minutes (deprecated)
+             "t" => 60*45,  # a tock is 45 minutes
+             "p" => 60*25,  # a pomodoro (aka a tick) is 25 minutes
 	   );
   my($n, $u) = ($a =~ /\~([\d\.]*)(\w)/);
   $n = 1 if $n eq "";
