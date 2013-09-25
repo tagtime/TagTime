@@ -34,13 +34,16 @@ import datetime
 import re
 
 class TagTimeLog:
-    def __init__(self, filename, interval=.75):
+    def __init__(self, filename, interval=.75, startend=(None, None), double_count=False):
         self.interval = interval
+        self.double_count = double_count
         if isinstance(filename, str):
             with open(filename, "r") as log:
                 self._parse_file(log)
         else:
             self._parse_file(filename)
+        self.D = self.D.ix[startend[0]:startend[1]]
+        self.D = self.D.fillna(0)
 
     def _parse_file(self, handle):
         D = defaultdict(list)
@@ -52,7 +55,10 @@ class TagTimeLog:
             fields = fields[1:]
             for f in fields:
                 D[f].append(dt)
-                V[f].append(self.interval / len(fields))
+                if self.double_count:
+                    V[f].append(self.interval)
+                else:
+                    V[f].append(self.interval / len(fields))
 
         for f in D.keys():
              D[f] = pd.Series(V[f], index=D[f])  
@@ -150,9 +156,13 @@ def main():
     parser.add_argument('--top-n', type=int, help='limit the tags acted upon to the N most popular')
     parser.add_argument('--other', action='store_true', help='show the category "other"')
     parser.add_argument('--tags', nargs='*', help='limit the tags acted upon')
+    parser.add_argument('--interval', type=float, default=.75, help='the expected time between two pings, in fractions of hours')
+    parser.add_argument('--double-count', action='store_true', help='one ping with multiple tags is treated as one ping separate for every tag (default off=time is split equally between tags)')
+    parser.add_argument('--start', type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='start date of interval, inclusive (YYYY-MM-DD)')
+    parser.add_argument('--end',   type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='end date of interval, exclusive (YYYY-MM-DD)')
     args = parser.parse_args()
     
-    ttl = TagTimeLog(args.logfile)
+    ttl = TagTimeLog(args.logfile, interval=args.interval, startend=(args.start, args.end), double_count=args.double_count)
     if(args.pie):
         ttl.pie(args.tags, args.top_n, args.other)
     if(args.day_of_the_week):
