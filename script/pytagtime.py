@@ -169,6 +169,10 @@ class TagTimeLog:
         keys = sorted(D.keys(), key=lambda x: D[x], reverse=True)
         values = [D[x] for x in keys]
 
+        idx = np.where(~np.isnan(values))
+        keys = np.array(keys)[idx]
+        values = np.array(values)[idx]
+
         # reformat labels to include absolute hours
         keys = ["%s (%1.1f h)" % (x, D[x]) for x in keys]
 
