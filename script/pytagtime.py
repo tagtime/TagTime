@@ -78,6 +78,8 @@ class TagTimeLog:
         D = D.resample(resample, how='sum')
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D.plot(color=colors)
+        plt.ylabel('Time Spent per Interval (%s)' % resample)
+        plt.xlabel('Interval ID')
         plt.legend(loc='best')
 
     def hour_of_the_week(self, tags, top_n, resolution=2, other=False):
@@ -92,10 +94,12 @@ class TagTimeLog:
         D = D.groupby([D.index.dayofweek, resolution * (D.index.hour / resolution)], sort=True).sum()
         V = D.sum(axis=1)
         for k in D.keys():
-            D[k] = D[k] / V
+            D[k] = D[k] * 60 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D.plot(kind='bar', stacked=True, color=colors)
-        plt.ylim(0, 1)
+        plt.ylabel('Minutes')
+        plt.xlabel('Hour of the Week')
+        plt.ylim(0, 60)
         plt.legend(loc='best')
 
     def hour_sums(self, tags, top_n, resolution=2, other=False):
@@ -110,10 +114,12 @@ class TagTimeLog:
         D = D.groupby(resolution * (D.index.hour / resolution), sort=True).sum()
         V = D.sum(axis=1)
         for k in D.keys():
-            D[k] = D[k] / V
+            D[k] = D[k] * 60 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D.plot(kind='bar', stacked=True, color=colors)
-        plt.ylim(0, 1)
+        plt.ylabel('Minutes')
+        plt.xlabel('Hour of the Day')
+        plt.ylim(0, 60)
         plt.legend(loc='best')
 
     def day_of_the_week_sums(self, tags, top_n=None, other=False):
@@ -136,6 +142,8 @@ class TagTimeLog:
         plt.title('Time Spent over Day of the Week')
         plt.xticks(np.arange(7) + 0.5, list("MTWTFSS"))
         plt.legend(loc='best')
+        plt.xlabel('Day of the Week')
+        plt.ylabel('Time Spent')
 
     def top_n_tags(self, n):
         # sum up tags within a day, determine the mean over the days
