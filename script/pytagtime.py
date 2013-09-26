@@ -33,10 +33,12 @@ from collections import defaultdict
 import datetime
 import re
 
+
 class TagTimeLog:
-    def __init__(self, filename, interval=.75, startend=(None, None), double_count=False):
+    def __init__(self, filename, interval=.75, startend=(None, None), double_count=False, cmap="Paired"):
         self.interval = interval
         self.double_count = double_count
+        self.cmap = plt.cm.get_cmap(cmap)
         if isinstance(filename, str):
             with open(filename, "r") as log:
                 self._parse_file(log)
@@ -72,9 +74,8 @@ class TagTimeLog:
         D = self.D[tags] if tags is not None else self.D
         if other:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
-        D = D.resample('D', how='sum')
-        cmap = plt.cm.Paired
-        colors = cmap(np.linspace(0., 1., len(D.keys())))
+        D = D.resample(resample, how='sum')
+        colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D.plot(color=colors)
         plt.legend(loc='best')
 
@@ -86,8 +87,7 @@ class TagTimeLog:
         if other:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
         D = D.groupby(resolution * (D.index.hour / resolution)).sum()
-        cmap = plt.cm.Paired
-        colors = cmap(np.linspace(0., 1., len(D.keys())))
+        colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D.plot(kind='bar', stacked=True, color=colors)
         plt.legend(loc='best')
 
@@ -99,8 +99,7 @@ class TagTimeLog:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
         D = D.resample('D', how='sum')
         D = D.groupby(D.index.dayofweek).mean()
-        cmap = plt.cm.Paired
-        colors = cmap(np.linspace(0., 1., len(D.keys())))
+        colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D.plot(kind='bar', stacked=True, color=colors)
         plt.title('Time Spent over Day of the Week')
         plt.xticks(np.arange(7) + 0.5, list("MTWTFSS"))
@@ -135,8 +134,7 @@ class TagTimeLog:
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        cmap = plt.cm.Paired
-        colors = cmap(np.linspace(0., 1., len(values)))
+        colors = self.cmap(np.linspace(0., 1., len(values)))
         pie_wedge_collection = ax.pie(values, labels=keys, autopct='%1.1f%%', colors=colors, labeldistance=1.05)
         for pie_wedge in pie_wedge_collection[0]:
                 pie_wedge.set_edgecolor('white')
@@ -160,9 +158,10 @@ def main():
     parser.add_argument('--double-count', action='store_true', help='one ping with multiple tags is treated as one ping separate for every tag (default off=time is split equally between tags)')
     parser.add_argument('--start', type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='start date of interval, inclusive (YYYY-MM-DD)')
     parser.add_argument('--end',   type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='end date of interval, exclusive (YYYY-MM-DD)')
+    parser.add_argument('--cmap',   default='Paired', help='color map for graphs, see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps')
     args = parser.parse_args()
     
-    ttl = TagTimeLog(args.logfile, interval=args.interval, startend=(args.start, args.end), double_count=args.double_count)
+    ttl = TagTimeLog(args.logfile, interval=args.interval, startend=(args.start, args.end), double_count=args.double_count, cmap=args.cmap)
     if(args.pie):
         ttl.pie(args.tags, args.top_n, args.other)
     if(args.day_of_the_week):
