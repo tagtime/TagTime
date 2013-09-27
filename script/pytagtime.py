@@ -36,7 +36,8 @@ import re
 
 
 class TagTimeLog:
-    def __init__(self, filename, interval=.75, startend=(None, None), double_count=False, cmap="Paired"):
+    def __init__(self, filename, interval=.75, startend=(None, None), double_count=False, cmap="Paired", skipweekdays=[]):
+        self.skipweekdays = skipweekdays
         self.interval = interval
         self.double_count = double_count
         self.cmap = plt.cm.get_cmap(cmap)
@@ -51,10 +52,14 @@ class TagTimeLog:
     def _parse_file(self, handle):
         D = defaultdict(list)
         V = defaultdict(list)
+        n_excluded = 0
         for line in handle:
             line = re.sub(r'\s*\[.*?\]\s*$', '', line)
             fields = re.split(r'\s+', line)
             dt = datetime.datetime.fromtimestamp(int(fields[0]))
+            if dt.weekday() in self.skipweekdays:
+                n_excluded += 1
+                continue
             fields = fields[1:]
             for f in fields:
                 D[f].append(dt)
@@ -62,6 +67,7 @@ class TagTimeLog:
                     V[f].append(self.interval)
                 else:
                     V[f].append(self.interval / len(fields))
+        print "Excluded %d entries" % n_excluded
 
         for f in D.keys():
             D[f] = pd.Series(V[f], index=D[f])
@@ -195,6 +201,7 @@ def main():
     parser.add_argument('--trend-interval', default='D', help='the interval to sum over for trend calculation (e.g. 2D, 7D, ...)')
     parser.add_argument('--hour-of-the-day', action='store_true', help='display a bar for each hour of the day')
     parser.add_argument('--hour-of-the-week', action='store_true', help='display a bar for each hour of the day')
+    parser.add_argument('--exclude-weekdays', type=lambda s: [int(x) for x in s], help='skip the day of the week (Delimiter-free list of integers, e.g. 01 -> skip monday and tuesday)')
     parser.add_argument('--resolution', type=int, default=2, help='the number of consecutive hours summed over in hour-of-the-XXX chart')
     parser.add_argument('--top-n', type=int, help='limit the tags acted upon to the N most popular')
     parser.add_argument('--other', action='store_true', help='show the category "other"')
@@ -206,7 +213,11 @@ def main():
     parser.add_argument('--cmap',   default='Paired', help='color map for graphs, see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps')
     args = parser.parse_args()
 
-    ttl = TagTimeLog(args.logfile, interval=args.interval, startend=(args.start, args.end), double_count=args.double_count, cmap=args.cmap)
+    ttl = TagTimeLog(args.logfile, interval=args.interval,
+                     startend=(args.start, args.end),
+                     double_count=args.double_count,
+                     cmap=args.cmap,
+                     skipweekdays=args.exclude_weekdays)
     if(args.pie):
         ttl.pie(args.tags, args.top_n, args.other)
     if(args.day_of_the_week):
