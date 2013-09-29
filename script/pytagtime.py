@@ -201,7 +201,7 @@ def main():
     parser.add_argument('--trend-interval', default='D', help='the interval to sum over for trend calculation (e.g. 2D, 7D, ...)')
     parser.add_argument('--hour-of-the-day', action='store_true', help='display a bar for each hour of the day')
     parser.add_argument('--hour-of-the-week', action='store_true', help='display a bar for each hour of the day')
-    parser.add_argument('--exclude-weekdays', type=lambda s: [int(x) for x in s], help='skip the day of the week (Delimiter-free list of integers, e.g. 01 -> skip monday and tuesday)')
+    parser.add_argument('--exclude-weekdays', default=[], type=lambda s: [int(x) for x in s], help='skip the day of the week (Delimiter-free list of integers, e.g. 01 -> skip monday and tuesday)')
     parser.add_argument('--resolution', type=int, default=2, help='the number of consecutive hours summed over in hour-of-the-XXX chart')
     parser.add_argument('--top-n', type=int, help='limit the tags acted upon to the N most popular')
     parser.add_argument('--other', action='store_true', help='show the category "other"')
