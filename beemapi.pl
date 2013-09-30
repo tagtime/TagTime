@@ -1,5 +1,5 @@
 # Rough implementation of some Beeminder API calls needed for TagTime
-# See http://beeminder.com/api-docs
+# See http://beeminder.com/api
 
 # Get your personal Beeminder auth token (after signing in) from
 #   https://www.beeminder.com/api/v1/auth_token.json

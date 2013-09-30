@@ -83,11 +83,11 @@ print "It's tag time!  What are you doing RIGHT NOW ($h:$m:$s)?\n";
 
 my $last_doing = eval { get_last_doing() };
 $last_doing = trim($last_doing);
-if ($@) { $eflag++; warn "ERROR: $@" }
+if($@) { $eflag++; warn "ERROR: $@" }
 
 my $ansi_last_doing = $last_doing;
 
-if ($INC{'Term/ANSIColor.pm'}) {
+if($INC{'Term/ANSIColor.pm'}) {
   # Yay! We can do fancy formatting
   $ansi_last_doing = CYAN() . BOLD() . $last_doing . RESET();
 }
@@ -133,7 +133,9 @@ do {
   $tagstr .= $autotags;
   $tagstr =~ s/\s+/\ /g;
   $a = annotime("$t $tagstr $comments", $t)."\n";
-} while($enforcenums && $tagstr ne "" && ($tagstr !~ /\b(\d+|non|afk)\b/));
+} while($tagstr ne "" &&
+        ($enforcenums  && ($tagstr !~ /\b(\d+|non|afk)\b/) ||
+         $enforcenonon && ($tagstr =~ /\bnon\b/)));
 print $a;
 slog($a);
 
@@ -163,10 +165,9 @@ sub bm { my($s) = @_;
   }
 }
 
-# Returns what the user was last doing by extracting it from their logfile.
+# Return what the user was last doing by extracting it from their logfile.
 # Timestamps and comments are removed.
 # On error, throws an exception. (You can catch this with Try::Tiny or eval)
-
 sub get_last_doing {
   use strict;
   use warnings;
