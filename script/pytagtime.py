@@ -122,7 +122,24 @@ class TagTimeLog:
         for k in D.keys():
             D[k] = D[k] * 60 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
-        D.plot(kind='bar', stacked=True, color=colors)
+        if self.double_count:
+            D = D.fillna(0)
+            if len(D.keys()) < 8:
+                Dmax = D.max().max()
+                axes = D.plot(style=["-*" for c in colors], subplots=True, sharex=True, linewidth=2)
+                for c, ax in zip(colors, axes):
+                    ax.get_lines()[0].set_c(c)
+                    ax.set_ylim(0, Dmax)
+                    ax.grid(True)
+                plt.gcf().subplots_adjust(hspace=0.0, wspace=0.0)
+            else:
+                ax = D.plot(style=["-*" for c in D.keys()], linewidth=3)
+                for c, l in zip(colors, ax.get_lines()):
+                    l.set_c(c)
+                ax.set_ylim(0)
+                ax.grid(True)
+        else:
+            D.plot(kind='bar', stacked=True, color=colors)
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Day')
         plt.ylim(0, 60)
@@ -143,13 +160,30 @@ class TagTimeLog:
         for k in D.keys():
             D[k] = D[k] * 24 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
-        D.plot(kind='bar', stacked=True, color=colors)
-        plt.ylim(0, 24)
-        plt.title('Time Spent over Day of the Week')
+        if self.double_count:
+            if len(D.keys()) < 8:
+                Dmax = D.max().max()
+                axes = D.plot(style=["-*" for c in colors], subplots=True, sharex=True, linewidth=2)
+                for c, ax in zip(colors, axes):
+                    #from IPython import embed; embed()
+                    ax.get_lines()[0].set_c(c)
+                    ax.set_ylim(0, Dmax)
+                    ax.grid(True)
+                plt.gcf().subplots_adjust(hspace=0.0, wspace=0.0)
+            else:
+                ax = D.plot(style=["-*" for c in D.keys()], linewidth=3)
+                for c, l in zip(colors, ax.get_lines()):
+                    l.set_c(c)
+                ax.set_ylim(0)
+                ax.grid(True)
+        else:
+            D.plot(kind='bar', stacked=True, color=colors)
+            plt.ylim(0, 24)
+        plt.suptitle('Time Spent over Day of the Week')
         plt.xticks(np.arange(7) + 0.5, list("MTWTFSS"))
         plt.legend(loc='best')
         plt.xlabel('Day of the Week')
-        plt.ylabel('Time Spent')
+        plt.ylabel('Time Spent (h)')
 
     def top_n_tags(self, n):
         # sum up tags within a day, determine the mean over the days
