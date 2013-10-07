@@ -169,7 +169,7 @@ class TagTimeLog:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
         D = D.resample('D', how='sum')  # sum up within days
         D = D / D.sum(axis=1)  # all records within a day must sum to 1
-        D = D.groupby((D.index.dayofweek-1)%7, sort=True).mean()  # take average over weeks
+        D = D.groupby((D.index.dayofweek - 1) % 7, sort=True).mean()  # take average over weeks
         V = D.sum(axis=1)
         for k in D.keys():
             D[k] = D[k] * 24 / V
