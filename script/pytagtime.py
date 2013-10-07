@@ -89,8 +89,12 @@ class TagTimeLog:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
         D = D.resample(resample, how='sum')
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
-        D.plot(color=colors)
-        plt.ylabel('Time Spent per Interval (%s)' % resample)
+        D = D.fillna(0)
+        ax = D.plot(linewidth=2)
+        for c, l in zip(colors, ax.get_lines()):
+            l.set_c(c)
+            ax.grid(True)
+        plt.ylabel('Time Spent (h) per Interval (%s)' % resample)
         plt.xlabel('Interval ID')
         plt.legend(loc='best')
 
@@ -108,7 +112,11 @@ class TagTimeLog:
         for k in D.keys():
             D[k] = D[k] * 60 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
-        D.plot(kind='bar', stacked=True, color=colors)
+        D = D.fillna(0)
+        ax = D.plot(kind='bar', stacked=True, color=colors)
+        for c, l in zip(colors, ax.get_lines()):
+            l.set_c(c)
+            ax.grid(True)
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Week')
         plt.ylim(0, 60)
@@ -239,7 +247,7 @@ def main():
     parser.add_argument('--pie', action='store_true', help='display a pie chart for total time spent')
     parser.add_argument('--day-of-the-week', action='store_true', help='display a bar for each day of the week')
     parser.add_argument('--trends', action='store_true', help='show a line chart of time spent in trend-interval')
-    parser.add_argument('--trend-interval', default='D', help='the interval to sum over for trend calculation (e.g. 2D, 7D, ...)')
+    parser.add_argument('--trend-interval', default='W', help='the interval to sum over for trend calculation (e.g. 2D, 7D, ...)')
     parser.add_argument('--hour-of-the-day', action='store_true', help='display a bar for each hour of the day')
     parser.add_argument('--hour-of-the-week', action='store_true', help='display a bar for each hour of the day')
     parser.add_argument('--exclude-weekdays', default=[], type=lambda s: [int(x) for x in s], help='skip the day of the week (Delimiter-free list of integers, e.g. 01 -> skip monday and tuesday)')
