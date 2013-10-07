@@ -38,7 +38,8 @@ import re
 class TagTimeLog:
     def __init__(self, filename, interval=.75, startend=(None, None),
                  double_count=False, cmap="Paired", skipweekdays=[],
-                 skiptags=[], obfuscate=False, show_now=True):
+                 skiptags=[], obfuscate=False, show_now=True, smooth=True,
+                 sigma=1.0):
         self.skipweekdays = skipweekdays
         self.skiptags = skiptags
         self.interval = interval
@@ -46,6 +47,8 @@ class TagTimeLog:
         self.cmap = plt.cm.get_cmap(cmap)
         self.obfuscate = obfuscate
         self.show_now = show_now
+        self.smooth = smooth
+        self.sigma = sigma
         if isinstance(filename, str):
             with open(filename, "r") as log:
                 self._parse_file(log)
@@ -58,23 +61,40 @@ class TagTimeLog:
         D = defaultdict(list)
         V = defaultdict(list)
         n_excluded = 0
+        interval = self.interval
+
+        # use gaussian weights around true measurement to smooth data
+        offsetlist = np.array([0.])
+        offsetinterval = (4 * self.sigma + 1) / 15
+        if self.smooth:
+            #offsetlist = np.array([-.75, -0.5, -0.25, 0., 0.25, 0.5, 0.75])
+            offsetlist = np.arange(-2 * self.sigma, 2 * self.sigma, offsetinterval)
+            offsetlist += np.random.uniform(-0.1, 0.1, size=offsetlist.shape)
+        weights = np.exp(- offsetlist ** 2 / self.sigma ** 2)
+        weights /= weights.sum()
+        print weights
+
         for line in handle:
             line = re.sub(r'\s*\[.*?\]\s*$', '', line)
             fields = re.split(r'\s+', line)
             dt = datetime.datetime.fromtimestamp(int(fields[0]))
-            if dt.weekday() in self.skipweekdays:
-                n_excluded += 1
-                continue
             fields = fields[1:]
+
             for f in fields:
                 if f in self.skiptags:
                     n_excluded += 1
                     continue
-                D[f].append(dt)
-                if self.double_count:
-                    V[f].append(self.interval)
-                else:
-                    V[f].append(self.interval / len(fields))
+                duration = interval
+                if not self.double_count:
+                    duration /= len(fields)
+
+                for weight, offset in zip(weights, offsetlist):
+                    dtx = dt + datetime.timedelta(hours=offset * interval)
+                    if dtx.weekday() in self.skipweekdays:
+                        n_excluded += 1
+                        continue
+                    D[f].append(dtx)
+                    V[f].append(weight * duration)
         print "Excluded %d entries" % n_excluded
 
         for f in D.keys():
@@ -294,6 +314,8 @@ def main():
     parser.add_argument('--cmap',   default='Paired', help='color map for graphs, see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps')
     parser.add_argument('--obfuscate', action='store_true', help='show plot, but obfuscate tag names')
     parser.add_argument('--no-now', action='store_false', help='do not display a line for the current day/time')
+    parser.add_argument('--smooth-sigma', type=float, default=0.25, help='sigma to smooth observations with, in multiples of interval')
+    parser.add_argument('--no-smooth', action='store_false', help='do not spread the pings over the interval around the real ping time')
     args = parser.parse_args()
 
     if len(args.include_weekdays) != 7:
@@ -309,7 +331,9 @@ def main():
                      skipweekdays=args.exclude_weekdays,
                      skiptags=args.exclude_tags,
                      obfuscate=args.obfuscate,
-                     show_now=args.no_now)
+                     show_now=args.no_now,
+                     smooth=args.no_smooth,
+                     sigma=args.smooth_sigma)
     if(args.pie):
         ttl.pie(args.tags, args.top_n, args.other)
     if(args.day_of_the_week):
