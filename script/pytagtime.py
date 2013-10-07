@@ -38,13 +38,14 @@ import re
 class TagTimeLog:
     def __init__(self, filename, interval=.75, startend=(None, None),
                  double_count=False, cmap="Paired", skipweekdays=[],
-                 skiptags=[], obfuscate=False):
+                 skiptags=[], obfuscate=False, show_now=True):
         self.skipweekdays = skipweekdays
         self.skiptags = skiptags
         self.interval = interval
         self.double_count = double_count
         self.cmap = plt.cm.get_cmap(cmap)
         self.obfuscate = obfuscate
+        self.show_now = show_now
         if isinstance(filename, str):
             with open(filename, "r") as log:
                 self._parse_file(log)
@@ -157,17 +158,23 @@ class TagTimeLog:
                 axes = D.plot(style=["-*" for c in colors], subplots=True, sharex=True, linewidth=2)
                 for c, ax in zip(colors, axes):
                     ax.get_lines()[0].set_c(c)
+                    if self.show_now:
+                        ax.axvline(x=(datetime.datetime.now().hour), label='now', color='black')
                     ax.set_ylim(0, Dmax)
                     ax.grid(True)
                 plt.gcf().subplots_adjust(hspace=0.0, wspace=0.0)
             else:
                 ax = D.plot(style=["-*" for c in D.keys()], linewidth=3)
+                if self.show_now:
+                    ax.axvline(x=(datetime.datetime.now().hour), label='now', color='black')
                 for c, l in zip(colors, ax.get_lines()):
                     l.set_c(c)
                 ax.set_ylim(0)
                 ax.grid(True)
         else:
-            D.plot(kind='bar', stacked=True, color=colors)
+            ax = D.plot(kind='bar', stacked=True, color=colors)
+            if self.show_now:
+                ax.axvline(x=datetime.datetime.now().hour  / resolution, label='now', color='red')
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Day')
         plt.ylim(0, 60)
@@ -195,15 +202,21 @@ class TagTimeLog:
                 axes = D.plot(style=["-*" for c in colors], subplots=True, sharex=True, linewidth=2)
                 for c, ax in zip(colors, axes):
                     #from IPython import embed; embed()
+                    if self.show_now:
+                        ax.axvline(x=(datetime.datetime.now().weekday()), label='today', color='black')
                     ax.get_lines()[0].set_c(c)
+                    ax.set_xlim(-0.1, 6.1)
                     ax.set_ylim(0, Dmax)
                     ax.grid(True)
                 plt.gcf().subplots_adjust(hspace=0.0, wspace=0.0)
             else:
                 ax = D.plot(style=["-*" for c in D.keys()], linewidth=3)
+                if self.show_now:
+                    ax.axvline(x=(datetime.datetime.now().weekday()), label='today', color='black')
                 for c, l in zip(colors, ax.get_lines()):
                     l.set_c(c)
                 ax.set_ylim(0)
+                ax.set_xlim(-0.1, 6.1)
                 ax.grid(True)
             plt.xticks(np.arange(7), list("MTWTFSS"))
         else:
@@ -278,6 +291,7 @@ def main():
     parser.add_argument('--end',   type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='end date of interval, exclusive (YYYY-MM-DD)')
     parser.add_argument('--cmap',   default='Paired', help='color map for graphs, see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps')
     parser.add_argument('--obfuscate', action='store_true', help='show plot, but obfuscate tag names')
+    parser.add_argument('--no-now', action='store_false', help='do not display a line for the current day/time')
     args = parser.parse_args()
 
     ttl = TagTimeLog(args.logfile, interval=args.interval,
@@ -286,7 +300,8 @@ def main():
                      cmap=args.cmap,
                      skipweekdays=args.exclude_weekdays,
                      skiptags=args.exclude_tags,
-                     obfuscate=args.obfuscate)
+                     obfuscate=args.obfuscate,
+                     show_now=args.no_now)
     if(args.pie):
         ttl.pie(args.tags, args.top_n, args.other)
     if(args.day_of_the_week):
