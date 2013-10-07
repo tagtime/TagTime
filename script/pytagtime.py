@@ -155,7 +155,7 @@ class TagTimeLog:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
         D = D.resample('D', how='sum')  # sum up within days
         D = D / D.sum(axis=1)  # all records within a day must sum to 1
-        D = D.groupby(D.index.dayofweek, sort=True).mean()  # take average over weeks
+        D = D.groupby((D.index.dayofweek-1)%7, sort=True).mean()  # take average over weeks
         V = D.sum(axis=1)
         for k in D.keys():
             D[k] = D[k] * 24 / V
@@ -176,11 +176,12 @@ class TagTimeLog:
                     l.set_c(c)
                 ax.set_ylim(0)
                 ax.grid(True)
+            plt.xticks(np.arange(7), list("MTWTFSS"))
         else:
             D.plot(kind='bar', stacked=True, color=colors)
             plt.ylim(0, 24)
+            plt.xticks(np.arange(7) + 0.5, list("MTWTFSS"))
         plt.suptitle('Time Spent over Day of the Week')
-        plt.xticks(np.arange(7) + 0.5, list("MTWTFSS"))
         plt.legend(loc='best')
         plt.xlabel('Day of the Week')
         plt.ylabel('Time Spent (h)')
