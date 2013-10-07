@@ -151,6 +151,7 @@ class TagTimeLog:
             D[k] = D[k] * 60 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         self._obfuscate(D)
+        now = datetime.datetime.now().hour + datetime.datetime.now().minute / 60.
         if self.double_count:
             D = D.fillna(0)
             if len(D.keys()) < 8:
@@ -159,14 +160,14 @@ class TagTimeLog:
                 for c, ax in zip(colors, axes):
                     ax.get_lines()[0].set_c(c)
                     if self.show_now:
-                        ax.axvline(x=(datetime.datetime.now().hour), label='now', color='black')
+                        ax.axvline(x=now, label='now', color='black')
                     ax.set_ylim(0, Dmax)
                     ax.grid(True)
                 plt.gcf().subplots_adjust(hspace=0.0, wspace=0.0)
             else:
                 ax = D.plot(style=["-*" for c in D.keys()], linewidth=3)
                 if self.show_now:
-                    ax.axvline(x=(datetime.datetime.now().hour), label='now', color='black')
+                    ax.axvline(x=now, label='now', color='black')
                 for c, l in zip(colors, ax.get_lines()):
                     l.set_c(c)
                 ax.set_ylim(0)
@@ -174,7 +175,7 @@ class TagTimeLog:
         else:
             ax = D.plot(kind='bar', stacked=True, color=colors)
             if self.show_now:
-                ax.axvline(x=datetime.datetime.now().hour  / resolution, label='now', color='red')
+                ax.axvline(x=now / resolution, label='now', color='red')
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Day')
         plt.ylim(0, 60)
@@ -297,6 +298,9 @@ def main():
 
     if len(args.include_weekdays) != 7:
         args.exclude_weekdays = np.setdiff1d(np.arange(7), args.include_weekdays)
+
+    if datetime.datetime.now().weekday() in args.exclude_weekdays:
+        args.no_now = False
 
     ttl = TagTimeLog(args.logfile, interval=args.interval,
                      startend=(args.start, args.end),
