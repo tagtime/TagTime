@@ -36,8 +36,11 @@ import re
 
 
 class TagTimeLog:
-    def __init__(self, filename, interval=.75, startend=(None, None), double_count=False, cmap="Paired", skipweekdays=[]):
+    def __init__(self, filename, interval=.75, startend=(None, None),
+                 double_count=False, cmap="Paired", skipweekdays=[],
+                 skiptags=[]):
         self.skipweekdays = skipweekdays
+        self.skiptags = skiptags
         self.interval = interval
         self.double_count = double_count
         self.cmap = plt.cm.get_cmap(cmap)
@@ -62,6 +65,9 @@ class TagTimeLog:
                 continue
             fields = fields[1:]
             for f in fields:
+                if f in self.skiptags:
+                    n_excluded += 1
+                    continue
                 D[f].append(dt)
                 if self.double_count:
                     V[f].append(self.interval)
@@ -237,6 +243,7 @@ def main():
     parser.add_argument('--hour-of-the-day', action='store_true', help='display a bar for each hour of the day')
     parser.add_argument('--hour-of-the-week', action='store_true', help='display a bar for each hour of the day')
     parser.add_argument('--exclude-weekdays', default=[], type=lambda s: [int(x) for x in s], help='skip the day of the week (Delimiter-free list of integers, e.g. 01 -> skip monday and tuesday)')
+    parser.add_argument('--exclude-tags', default=[], type=lambda s: [x for x in s.split(",")], help='skip tags (comma-delimited list of strings)')
     parser.add_argument('--resolution', type=int, default=2, help='the number of consecutive hours summed over in hour-of-the-XXX chart')
     parser.add_argument('--top-n', type=int, help='limit the tags acted upon to the N most popular')
     parser.add_argument('--other', action='store_true', help='show the category "other"')
@@ -252,7 +259,8 @@ def main():
                      startend=(args.start, args.end),
                      double_count=args.double_count,
                      cmap=args.cmap,
-                     skipweekdays=args.exclude_weekdays)
+                     skipweekdays=args.exclude_weekdays,
+                     skiptags=args.exclude_tags)
     if(args.pie):
         ttl.pie(args.tags, args.top_n, args.other)
     if(args.day_of_the_week):
