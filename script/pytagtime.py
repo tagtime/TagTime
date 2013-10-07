@@ -107,7 +107,7 @@ class TagTimeLog:
         D = self.D[tags] if tags is not None else self.D
         if other:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
-        D = D.groupby([D.index.dayofweek, resolution * (D.index.hour / resolution)], sort=True).sum()
+        D = D.groupby([(D.index.dayofweek - 1) % 7, resolution * (D.index.hour / resolution)], sort=True).sum()
         V = D.sum(axis=1)
         for k in D.keys():
             D[k] = D[k] * 60 / V
