@@ -38,12 +38,13 @@ import re
 class TagTimeLog:
     def __init__(self, filename, interval=.75, startend=(None, None),
                  double_count=False, cmap="Paired", skipweekdays=[],
-                 skiptags=[]):
+                 skiptags=[], obfuscate=False):
         self.skipweekdays = skipweekdays
         self.skiptags = skiptags
         self.interval = interval
         self.double_count = double_count
         self.cmap = plt.cm.get_cmap(cmap)
+        self.obfuscate = obfuscate
         if isinstance(filename, str):
             with open(filename, "r") as log:
                 self._parse_file(log)
@@ -113,6 +114,7 @@ class TagTimeLog:
             D[k] = D[k] * 60 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D = D.fillna(0)
+        self._obfuscate(D)
         ax = D.plot(kind='bar', stacked=True, color=colors)
         for c, l in zip(colors, ax.get_lines()):
             l.set_c(c)
@@ -121,6 +123,17 @@ class TagTimeLog:
         plt.xlabel('Hour of the Week')
         plt.ylim(0, 60)
         plt.legend(loc='best')
+
+    def _obfuscate(self, D):
+        import string
+        import random
+        if self.obfuscate:
+            keys = D.keys()
+            for k in keys:
+                if k in ['other']:
+                    continue
+                k2 = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(4))
+                D.rename(columns={k: k2}, inplace=True)
 
     def hour_sums(self, tags, top_n, resolution=2, other=False):
         """ show the supplied tags summed up per hour """
@@ -136,6 +149,7 @@ class TagTimeLog:
         for k in D.keys():
             D[k] = D[k] * 60 / V
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
+        self._obfuscate(D)
         if self.double_count:
             D = D.fillna(0)
             if len(D.keys()) < 8:
@@ -173,6 +187,7 @@ class TagTimeLog:
         V = D.sum(axis=1)
         for k in D.keys():
             D[k] = D[k] * 24 / V
+        self._obfuscate(D)
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         if self.double_count:
             if len(D.keys()) < 8:
@@ -219,6 +234,7 @@ class TagTimeLog:
 
         # sum up tags within a day, determine the mean over the days
         D = D.resample('D', how='sum').mean()
+        self._obfuscate(D)
 
         # sort by time spent
         keys = sorted(D.keys(), key=lambda x: D[x], reverse=True)
@@ -261,6 +277,7 @@ def main():
     parser.add_argument('--start', type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='start date of interval, inclusive (YYYY-MM-DD)')
     parser.add_argument('--end',   type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='end date of interval, exclusive (YYYY-MM-DD)')
     parser.add_argument('--cmap',   default='Paired', help='color map for graphs, see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps')
+    parser.add_argument('--obfuscate', action='store_true', help='show plot, but obfuscate tag names')
     args = parser.parse_args()
 
     ttl = TagTimeLog(args.logfile, interval=args.interval,
@@ -268,7 +285,8 @@ def main():
                      double_count=args.double_count,
                      cmap=args.cmap,
                      skipweekdays=args.exclude_weekdays,
-                     skiptags=args.exclude_tags)
+                     skiptags=args.exclude_tags,
+                     obfuscate=args.obfuscate)
     if(args.pie):
         ttl.pie(args.tags, args.top_n, args.other)
     if(args.day_of_the_week):
