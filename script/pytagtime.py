@@ -279,7 +279,8 @@ def main():
     parser.add_argument('--trend-interval', default='W', help='the interval to sum over for trend calculation (e.g. 2D, 7D, ...)')
     parser.add_argument('--hour-of-the-day', action='store_true', help='display a bar for each hour of the day')
     parser.add_argument('--hour-of-the-week', action='store_true', help='display a bar for each hour of the day')
-    parser.add_argument('--exclude-weekdays', default=[], type=lambda s: [int(x) for x in s], help='skip the day of the week (Delimiter-free list of integers, e.g. 01 -> skip monday and tuesday)')
+    parser.add_argument('--exclude-weekdays', default=[], type=lambda s: [int(x) for x in s], help='skip days of the week (Delimiter-free list of integers, e.g. 01 -> skip monday and tuesday)')
+    parser.add_argument('--include-weekdays', default=np.arange(7), type=lambda s: np.array([int(x) for x in s]), help='keep only these days of the week (Delimiter-free list of integers, e.g. 01 -> keep monday and tuesday)')
     parser.add_argument('--exclude-tags', default=[], type=lambda s: [x for x in s.split(",")], help='skip tags (comma-delimited list of strings)')
     parser.add_argument('--resolution', type=int, default=2, help='the number of consecutive hours summed over in hour-of-the-XXX chart')
     parser.add_argument('--top-n', type=int, help='limit the tags acted upon to the N most popular')
@@ -293,6 +294,9 @@ def main():
     parser.add_argument('--obfuscate', action='store_true', help='show plot, but obfuscate tag names')
     parser.add_argument('--no-now', action='store_false', help='do not display a line for the current day/time')
     args = parser.parse_args()
+
+    if len(args.include_weekdays) != 7:
+        args.exclude_weekdays = np.setdiff1d(np.arange(7), args.include_weekdays)
 
     ttl = TagTimeLog(args.logfile, interval=args.interval,
                      startend=(args.start, args.end),
