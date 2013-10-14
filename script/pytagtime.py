@@ -37,13 +37,13 @@ import re
 
 class TagTimeLog:
     def __init__(self, filename, interval=.75, startend=(None, None),
-                 double_count=False, cmap="Paired", skipweekdays=[],
+                 multitag='first', cmap="Paired", skipweekdays=[],
                  skiptags=[], obfuscate=False, show_now=True, smooth=True,
                  sigma=1.0):
         self.skipweekdays = skipweekdays
         self.skiptags = skiptags
         self.interval = interval
-        self.double_count = double_count
+        self.multitag = multitag
         self.cmap = plt.cm.get_cmap(cmap)
         self.obfuscate = obfuscate
         self.show_now = show_now
@@ -82,9 +82,12 @@ class TagTimeLog:
 
             tags = [x for x in tags if x not in self.skiptags]
 
+            if self.multitag == 'first':
+                tags = tags[:1]
+
             for t in tags:
                 duration = interval
-                if not self.double_count:
+                if self.multitag == 'split':
                     duration /= len(tags)
 
                 for weight, offset in zip(weights, offsetlist):
@@ -180,7 +183,7 @@ class TagTimeLog:
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         self._obfuscate(D)
         now = datetime.datetime.now().hour + datetime.datetime.now().minute / 60.
-        if self.double_count:
+        if self.multitag == 'double':
             D = D.fillna(0)
             if len(D.keys()) < 8:
                 Dmax = D.max().max()
@@ -233,7 +236,7 @@ class TagTimeLog:
             D[k] = D[k] * 24 / V
         self._obfuscate(D)
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
-        if self.double_count:
+        if self.multitag == 'double':
             if len(D.keys()) < 8:
                 Dmax = D.max().max()
                 axes = D.plot(style=["-*" for c in colors], subplots=True, sharex=True, linewidth=2)
@@ -329,7 +332,11 @@ def main():
     parser.add_argument('--other', action='store_true', help='show the category "other"')
     parser.add_argument('--tags', nargs='*', help='limit the tags acted upon')
     parser.add_argument('--interval', type=float, default=.75, help='the expected time between two pings, in fractions of hours')
-    parser.add_argument('--double-count', action='store_true', help='one ping with multiple tags is treated as one ping separate for every tag (default off=time is split equally between tags)')
+    parser.add_argument('--multitag', type=str, default='first', help='''how to deal with one ping with multiple tags:
+                        first (default) -- only first tag is used
+                        split -- split timeinterval equally among tags
+                        double -- treat as one ping separate for every tag''')
+    #parser.add_argument('--double-count', action='store_true', help='one ping with multiple tags is treated as one ping separate for every tag (default off=time is split equally between tags)')
     parser.add_argument('--start', type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='start date of interval, inclusive (YYYY-MM-DD)')
     parser.add_argument('--end',   type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='end date of interval, exclusive (YYYY-MM-DD)')
     parser.add_argument('--cmap',   default='Paired', help='color map for graphs, see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps')
@@ -347,7 +354,7 @@ def main():
 
     ttl = TagTimeLog(args.logfile, interval=args.interval,
                      startend=(args.start, args.end),
-                     double_count=args.double_count,
+                     multitag=args.multitag,
                      cmap=args.cmap,
                      skipweekdays=args.exclude_weekdays,
                      skiptags=args.exclude_tags,
