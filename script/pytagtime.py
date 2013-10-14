@@ -78,23 +78,22 @@ class TagTimeLog:
             line = re.sub(r'\s*\[.*?\]\s*$', '', line)
             fields = re.split(r'\s+', line)
             dt = datetime.datetime.fromtimestamp(int(fields[0]))
-            fields = fields[1:]
+            tags = fields[1:]
 
-            for f in fields:
-                if f in self.skiptags:
-                    n_excluded += 1
-                    continue
+            tags = [x for x in tags if x not in self.skiptags]
+
+            for t in tags:
                 duration = interval
                 if not self.double_count:
-                    duration /= len(fields)
+                    duration /= len(tags)
 
                 for weight, offset in zip(weights, offsetlist):
                     dtx = dt + datetime.timedelta(hours=offset * interval)
                     if dtx.weekday() in self.skipweekdays:
                         n_excluded += 1
                         continue
-                    D[f].append(dtx)
-                    V[f].append(weight * duration)
+                    D[t].append(dtx)
+                    V[t].append(weight * duration)
         print "Excluded %d entries" % n_excluded
 
         for f in D.keys():
@@ -105,31 +104,36 @@ class TagTimeLog:
     def trend(self, tags, top_n=None, other=False, resample='D'):
         """ show the supplied tags summed up per day """
         if top_n is not None:
-            tags = self.top_n_tags(top_n)
+            tags = self.top_n_tags(top_n, tags)
         D = self.D[tags] if tags is not None else self.D
         if other:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
-        D = D.resample(resample, how='sum')
+        D = D.resample(resample, how='sum', label='left')
+        self._obfuscate(D)
         colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         D = D.fillna(0)
         ax = D.plot(linewidth=2)
         for c, l in zip(colors, ax.get_lines()):
             l.set_c(c)
             ax.grid(True)
+        ax.legend(loc='best')
+        leg = ax.get_legend()
+        for c, l in zip(colors, leg.legendHandles):
+            l.set_linewidth(10)
+            l.set_c(c)
         plt.ylabel('Time Spent (h) per Interval (%s)' % resample)
         plt.xlabel('Interval ID')
-        plt.legend(loc='best')
 
     def hour_of_the_week(self, tags, top_n, resolution=2, other=False):
         """ show the supplied tags summed up per hour """
         if top_n is not None:
-            tags = self.top_n_tags(top_n)
+            tags = self.top_n_tags(top_n, tags)
         if tags is None:
             tags = self.top_n_tags(1000)  # sorted ;)
         D = self.D[tags] if tags is not None else self.D
         if other:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
-        D = D.groupby([(D.index.dayofweek - 1) % 7, resolution * (D.index.hour / resolution)], sort=True).sum()
+        D = D.groupby([D.index.weekday, resolution * (D.index.hour / resolution)], sort=True).sum()
         V = D.sum(axis=1)
         for k in D.keys():
             D[k] = D[k] * 60 / V
@@ -140,10 +144,14 @@ class TagTimeLog:
         for c, l in zip(colors, ax.get_lines()):
             l.set_c(c)
             ax.grid(True)
+        ax.legend(loc='best')
+        leg = ax.get_legend()
+        for c, l in zip(colors, leg.legendHandles):
+            l.set_linewidth(10)
+            l.set_c(c)
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Week')
         plt.ylim(0, 60)
-        plt.legend(loc='best')
 
     def _obfuscate(self, D):
         import string
@@ -159,7 +167,7 @@ class TagTimeLog:
     def hour_sums(self, tags, top_n, resolution=2, other=False):
         """ show the supplied tags summed up per hour """
         if top_n is not None:
-            tags = self.top_n_tags(top_n)
+            tags = self.top_n_tags(top_n, tags)
         if tags is None:
             tags = self.top_n_tags(1000)  # sorted ;)
         D = self.D[tags] if tags is not None else self.D
@@ -180,15 +188,24 @@ class TagTimeLog:
                 for c, ax in zip(colors, axes):
                     ax.get_lines()[0].set_c(c)
                     if self.show_now:
-                        ax.axvline(x=now, label='now', color='black')
+                        ax.axvline(x=now, color='black')
                     ax.set_ylim(0, Dmax)
                     ax.grid(True)
+                    ax.legend(loc='best')
+                    leg = ax.get_legend()
+                    for l, t in zip(leg.legendHandles, leg.get_texts()):
+                        l.set_c(c)
                 plt.gcf().subplots_adjust(hspace=0.0, wspace=0.0)
             else:
                 ax = D.plot(style=["-*" for c in D.keys()], linewidth=3)
                 if self.show_now:
-                    ax.axvline(x=now, label='now', color='black')
+                    ax.axvline(x=now, color='black')
                 for c, l in zip(colors, ax.get_lines()):
+                    l.set_c(c)
+                ax.legend(loc='best')
+                leg = ax.get_legend()
+                for c, l, t in zip(colors, leg.legendHandles, leg.get_texts()):
+                    l.set_linewidth(10)
                     l.set_c(c)
                 ax.set_ylim(0)
                 ax.grid(True)
@@ -199,19 +216,18 @@ class TagTimeLog:
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Day')
         plt.ylim(0, 60)
-        plt.legend(loc='best')
 
     def day_of_the_week_sums(self, tags, top_n=None, other=False):
         if top_n is not None:
-            tags = self.top_n_tags(top_n)
+            tags = self.top_n_tags(top_n, tags)
         if tags is None:
             tags = self.top_n_tags(1000)  # sorted ;)
         D = self.D[tags] if tags is not None else self.D
         if other:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
-        D = D.resample('D', how='sum')  # sum up within days
+        D = D.resample('D', how='sum', label='left').fillna(0)  # sum up within days
         D = D / D.sum(axis=1)  # all records within a day must sum to 1
-        D = D.groupby((D.index.dayofweek - 1) % 7, sort=True).mean()  # take average over weeks
+        D = D.groupby(D.index.weekday, sort=True).mean()  # take average over weeks
         V = D.sum(axis=1)
         for k in D.keys():
             D[k] = D[k] * 24 / V
@@ -249,11 +265,16 @@ class TagTimeLog:
         plt.xlabel('Day of the Week')
         plt.ylabel('Time Spent (h)')
 
-    def top_n_tags(self, n):
-        # sum up tags within a day, determine the mean over the days
-        D = self.D.resample('D', how='sum').mean()
+    def top_n_tags(self, n, extra_tags):
+        # sum up tags within a day, determine the sum over the days
+        D = self.D.resample('D', how='sum', label='left').sum()
         keys = sorted(D.keys(), key=lambda x: D[x], reverse=True)
-        return keys[:n]
+        keys = keys[:n]
+        for x in extra_tags:
+            if x in keys:
+                continue
+            keys.append(x)
+        return keys
 
     def pie(self, tags, top_n=None, other=False):
         """
@@ -261,13 +282,13 @@ class TagTimeLog:
         """
 
         if top_n is not None:
-            tags = self.top_n_tags(top_n)
+            tags = self.top_n_tags(top_n, tags)
         D = self.D[tags] if tags is not None else self.D
         if other:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
 
         # sum up tags within a day, determine the mean over the days
-        D = D.resample('D', how='sum').mean()
+        D = D.resample('D', how='sum', label='left').fillna(0).mean()
         self._obfuscate(D)
 
         # sort by time spent
