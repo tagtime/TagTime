@@ -32,5 +32,13 @@
 	    android:summaryOff="No flashing"
 	    android:summaryOn="LED will flash"
 	   /> 
+	  <EditTextPreference
+	    android:key="pingGap"
+	    android:title="Ping Frequency"
+	    android:defaultValue="45"
+	    android:inputType="number"
+	    android:summary="Average time between pings, in minutes."
+	   /> 
+
   </PreferenceCategory>
 </PreferenceScreen>
