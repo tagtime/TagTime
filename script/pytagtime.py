@@ -35,8 +35,27 @@ import datetime
 import re
 
 
+def reldate(s):
+    m = re.search(r'^(\d+)([DWM])', s)
+    n = int(m.group(1))
+    f = m.group(2)
+    if f == 'D':
+        d = datetime.date.today() - datetime.timedelta(days=n)
+    elif f == 'W':
+        d = datetime.date.today() - datetime.timedelta(weeks=n)
+    elif f == 'M':
+        d = datetime.date.today() - datetime.timedelta(weeks=n * 4)
+    else:
+        raise RuntimeError("Unknown relative date format: %s" % s)
+    return datetime.datetime(d.year, d.month, d.day)
+
+
+def dt2d(dt):
+    return datetime.date(dt.year, dt.month, dt.day)
+
+
 class TagTimeLog:
-    def __init__(self, filename, interval=.75, startend=(None, None),
+    def __init__(self, filename, interval=.75, startend=[None, None],
                  multitag='first', cmap="Paired", skipweekdays=[],
                  skiptags=[], obfuscate=False, show_now=True, smooth=True,
                  sigma=1.0):
@@ -54,7 +73,17 @@ class TagTimeLog:
                 self._parse_file(log)
         else:
             self._parse_file(filename)
+
+        if startend[0] is None:
+            startend[0] = datetime.datetime.fromtimestamp(1)
+        if startend[1] is None:
+            startend[1] = datetime.datetime.now()
+
         self.D = self.D.ix[startend[0]:startend[1]]
+
+        self.rng = "%s -- %s" % (str(dt2d(self.D.index.min())),
+                                 str(dt2d(self.D.index.max())))
+
         #self.D = self.D.fillna(0)
 
     def _parse_file(self, handle):
@@ -148,7 +177,7 @@ class TagTimeLog:
             l.set_c(c)
             ax.grid(True)
         ax.legend(loc='best')
-        leg = ax.get_legend()
+        ax.get_legend()
         #for c, l in zip(colors, leg.legendHandles):
             #l.set_linewidth(10)
             #l.set_c(c)
@@ -216,6 +245,7 @@ class TagTimeLog:
             ax = D.plot(kind='bar', stacked=True, color=colors)
             if self.show_now:
                 ax.axvline(x=now / resolution, label='now', color='red')
+        plt.suptitle(self.rng)
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Day')
         plt.ylim(0, 60)
@@ -341,6 +371,8 @@ def main():
                         split -- split timeinterval equally among tags
                         double -- treat as one ping separate for every tag''')
     #parser.add_argument('--double-count', action='store_true', help='one ping with multiple tags is treated as one ping separate for every tag (default off=time is split equally between tags)')
+    parser.add_argument('--rstart', type=reldate, help='relative start date of interval, inclusive (2D: 2 days ago, 2W: 2 Weeks ago)')
+    parser.add_argument('--rend',   type=reldate, help='relative end date of interval, exclusive')
     parser.add_argument('--start', type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='start date of interval, inclusive (YYYY-MM-DD)')
     parser.add_argument('--end',   type=lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), help='end date of interval, exclusive (YYYY-MM-DD)')
     parser.add_argument('--cmap',   default='Paired', help='color map for graphs, see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps')
@@ -356,8 +388,13 @@ def main():
     if datetime.datetime.now().weekday() in args.exclude_weekdays:
         args.no_now = False
 
+    if args.rstart is not None:
+        args.start = args.rstart
+    if args.rend is not None:
+        args.end = args.rend
+
     ttl = TagTimeLog(args.logfile, interval=args.interval,
-                     startend=(args.start, args.end),
+                     startend=[args.start, args.end],
                      multitag=args.multitag,
                      cmap=args.cmap,
                      skipweekdays=args.exclude_weekdays,
