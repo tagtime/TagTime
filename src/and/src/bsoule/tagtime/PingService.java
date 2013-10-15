@@ -79,6 +79,14 @@ public class PingService extends Service {
 		NEXT = mPrefs.getLong(KEY_NEXT, -1); 
 		SEED = mPrefs.getLong(KEY_SEED, -1);
 
+		int gap;
+		try {
+			gap = Integer.parseInt(mPrefs.getString("pingGap", "45"));
+		} catch (NumberFormatException e) {
+			Log.w(TAG, "Invalid gap: " + mPrefs.getString("pingGap", "not set"));
+			gap = 45;
+		}
+
 		// First do a quick check to see if next ping is still in the future...
 		if (NEXT > launchTime) { 
 			// note: if we already set an alarm for this ping, it's 
@@ -92,7 +100,7 @@ public class PingService extends Service {
 
 		// If we make it here then it's time to do something ---------------------
 		if (NEXT == -1 || SEED == -1) { // then need to recalc from beg.
-			NEXT = nextping(prevping(launchTime));
+			NEXT = nextping(prevping(launchTime, gap), gap);
 		}
 
 		pingsDB = new PingsDbAdapter(this);
@@ -102,7 +110,7 @@ public class PingService extends Service {
 		// apparent reason, then assume the computer was off and auto-log them.
 		while(NEXT < launchTime-RETROTHRESH) {
 			logPing(NEXT, "", Arrays.asList(new String[]{"OFF"}));
-			NEXT = nextping(NEXT);
+			NEXT = nextping(NEXT, gap);
 			editorFlag = true;
 		}
 		// Next, ping for any pings in the last retrothresh seconds.
@@ -116,7 +124,7 @@ public class PingService extends Service {
 					long rowID = logPing(NEXT, "", Arrays.asList(new String[]{tag}));
 					sendNote(NEXT,editorFlag,rowID);
 				}
-				NEXT = nextping(NEXT);
+				NEXT = nextping(NEXT, gap);
 			}
 		} while (NEXT <= time());
 
@@ -226,20 +234,21 @@ public class PingService extends Service {
 	private static double ran01() { return ran0()/(IM*1.0); }
 
 	// Returns a random number drawn from an exponential
-	// distribution with mean gap
-	public static double exprand() { return -1 * Constant.GAP * Math.log(ran01()); }
+	// distribution with mean gap.  Gap is in minutes, we
+	// want seconds, so multiply by 60.
+	public static double exprand(int gap) { return -1 * gap * 60 * Math.log(ran01()); }
 
 	// Takes previous ping time, returns random next ping time (unix time).
 	// NB: this has the side effect of changing the RNG state ($seed)
 	//     and so should only be called once per next ping to calculate,
 	//     after calling prevping.
-	public static long nextping(long prev) {
+	public static long nextping(long prev, int gap) {
 		if (TPController.DEBUG) return time() + 60;
-		return Math.max(prev+1, Math.round(prev+exprand())); 
+		return Math.max(prev+1, Math.round(prev+exprand(gap))); 
 	}
 
 	// Computes the last scheduled ping time before time t.
-	public static long prevping(long t) {
+	public static long prevping(long t, int gap) {
 		SEED = INITSEED;
 		// Starting at the beginning of time, walk forward computing next pings
 		// until the next ping is >= t.
@@ -251,7 +260,7 @@ public class PingService extends Service {
 		while(nxt < t) {
 			lst = nxt;
 			lstseed = SEED;
-			nxt = nextping(nxt);
+			nxt = nextping(nxt, gap);
 		}
 		SEED = lstseed;
 		return lst;
