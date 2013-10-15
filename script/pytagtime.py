@@ -273,6 +273,10 @@ class TagTimeLog:
         D = self.D.resample('D', how='sum', label='left').sum()
         keys = sorted(D.keys(), key=lambda x: D[x], reverse=True)
         keys = keys[:n]
+
+        if extra_tags is None:
+            return keys
+
         for x in extra_tags:
             if x in keys:
                 continue
