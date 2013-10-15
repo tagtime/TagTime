@@ -149,9 +149,9 @@ class TagTimeLog:
             ax.grid(True)
         ax.legend(loc='best')
         leg = ax.get_legend()
-        for c, l in zip(colors, leg.legendHandles):
-            l.set_linewidth(10)
-            l.set_c(c)
+        #for c, l in zip(colors, leg.legendHandles):
+            #l.set_linewidth(10)
+            #l.set_c(c)
         plt.ylabel('Minutes')
         plt.xlabel('Hour of the Week')
         plt.ylim(0, 60)
@@ -291,8 +291,8 @@ class TagTimeLog:
             D['other'] = self.D[[t for t in self.D.keys() if t not in tags]].sum(axis=1)
 
         # sum up tags within a day, determine the mean over the days
-        D = D.resample('D', how='sum', label='left').fillna(0).mean()
         self._obfuscate(D)
+        D = D.resample('D', how='sum', label='left').fillna(0).mean()
 
         # sort by time spent
         keys = sorted(D.keys(), key=lambda x: D[x], reverse=True)
