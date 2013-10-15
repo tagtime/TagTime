@@ -131,6 +131,12 @@ Each goal on Beeminder will track a collection of one or more tags on TagTime.
 Regular expressions are encouraged! 
 See `settings.pl` for more details. 
 
+# Android App
+
+There is an Android app available [on Google
+Play](https://play.google.com/store/apps/details?id=bsoule.tagtime).
+The source and build instructions are in `src/and`.
+
 # Google Group
 
 For discussion and questions: 
