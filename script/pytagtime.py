@@ -293,7 +293,7 @@ class TagTimeLog:
             D.plot(kind='bar', stacked=True, color=colors)
             plt.ylim(0, 24)
             plt.xticks(np.arange(7) + 0.5, list("MTWTFSS"))
-        plt.suptitle('Time Spent over Day of the Week')
+        plt.suptitle(self.rng)
         plt.legend(loc='best')
         plt.xlabel('Day of the Week')
         plt.ylabel('Time Spent (h)')
