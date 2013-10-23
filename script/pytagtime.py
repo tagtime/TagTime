@@ -79,10 +79,21 @@ class TagTimeLog:
         if startend[1] is None:
             startend[1] = datetime.datetime.now()
 
-        self.D = self.D.ix[startend[0]:startend[1]]
+        self.D = self.D.sort()  # sort, since smoothing might introduce non-ordered entries
+        start = self.D.index.searchsorted(startend[0])
+        end = self.D.index.searchsorted(startend[1])
+        self.D = self.D.ix[start:end]
 
         self.rng = "%s -- %s" % (str(dt2d(self.D.index.min())),
                                  str(dt2d(self.D.index.max())))
+
+        # determine by what number we have to divide the tota sum of hours to
+        # get the number of hours per day.
+        # by default, that's just n_days; but it gets less if we excluded some
+        # week days.
+        n_days = max(1, (self.D.index.max() - self.D.index.min()).days)
+        print "Number of days: ", n_days
+        self.day_normalizer = n_days - n_days * len(np.unique(skipweekdays)) / 7.
 
         #self.D = self.D.fillna(0)
 
@@ -327,18 +338,19 @@ class TagTimeLog:
 
         # sum up tags within a day, determine the mean over the days
         self._obfuscate(D)
-        D = D.resample('D', how='sum', label='left').fillna(0).mean()
+        D = D.resample('D', how='sum', label='left').fillna(0).sum()
 
         # sort by time spent
         keys = sorted(D.keys(), key=lambda x: D[x], reverse=True)
         values = [D[x] for x in keys]
 
+        # restrict key selection to keys which have existing values
         idx = np.where(~np.isnan(values))
         keys = np.array(keys)[idx]
-        values = np.array(values)[idx]
+        values = np.array(values)[idx] / self.day_normalizer
 
         # reformat labels to include absolute hours
-        keys = ["%s (%1.1f h)" % (x, D[x]) for x in keys]
+        keys = ["%s (%1.1f h)" % (x, y) for x, y in zip(keys, values)]
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
