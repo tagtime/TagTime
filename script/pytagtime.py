@@ -298,10 +298,11 @@ class TagTimeLog:
         plt.xlabel('Day of the Week')
         plt.ylabel('Time Spent (h)')
 
-    def top_n_tags(self, n, extra_tags):
+    def top_n_tags(self, n, extra_tags=[]):
         # sum up tags within a day, determine the sum over the days
-        D = self.D.resample('D', how='sum', label='left').sum()
-        keys = sorted(D.keys(), key=lambda x: D[x], reverse=True)
+        D = self.D.sum()
+        keys = list(x for x in D.keys() if ~np.isnan(D[x]))
+        keys = sorted(keys, key=lambda x: D[x], reverse=True)
         keys = keys[:n]
 
         if extra_tags is None:
