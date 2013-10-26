@@ -70,6 +70,13 @@ public class TPController extends Activity {
 			}
 		});
 
+		TextView beeminder = (TextView) findViewById(R.id.BeeminderLink);
+		beeminder.setClickable(true);
+		beeminder.setOnClickListener(new OnClickListener() {
+			public void onClick(View arg0) {
+				startBeeminderLinks();
+			}
+		});
 	}
 	
 	public void startExport() {
@@ -88,6 +95,12 @@ public class TPController extends Activity {
 		Intent pref = new Intent();
 		pref.setClass(this, Preferences.class);
 		startActivity(pref);
+	}
+
+	public void startBeeminderLinks() {
+		Intent goals = new Intent();
+		goals.setClass(this,ViewGoals.class);
+		startActivity(goals);
 	}
 
 	public void setAlarm() {

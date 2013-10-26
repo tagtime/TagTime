@@ -13,13 +13,16 @@ import android.util.Log;
 
 public class PingsDbAdapter {
 
+	public static final String KEY_ROWID = "_id";
+	// Table for pings
 	public static final String KEY_PING = "ping";
 	public static final String KEY_NOTES = "notes";
+	// Table for tags
 	public static final String KEY_TAG = "tag";
 	public static final String KEY_USED_CACHE = "used_cache";
 	public static final String KEY_TIME_CACHE = "time_cache";
+	// Table for ping tag pairs
 	public static final String KEY_TAGPING = "tag_ping";
-	public static final String KEY_ROWID = "_id";
 	public static final String KEY_PID = "ping_id";
 	public static final String KEY_TID = "tag_id";
 
@@ -184,7 +187,7 @@ public class PingsDbAdapter {
 		return (java.lang.Math.round(d*100000))/100000.0;
 	}
 
-	private long getOrMakeNewTID(String tag) {
+	public long getOrMakeNewTID(String tag) {
 		long tid;
 		try {
 			tid = newTag(tag);
@@ -245,11 +248,6 @@ public class PingsDbAdapter {
 		return mDb.delete(TAG_PING_TABLE, query, null) > 0;
 	}
 
-	/**
-	 * Return a Cursor over the list of all notes in the database
-	 * 
-	 * @return Cursor over all notes
-	 */
 	public Cursor fetchAllPings(boolean reverse) {
 		if (reverse) { // return notes in reverse order
 			//mDb.query(table, columns, selection, selectionArgs, groupBy, having, orderBy)

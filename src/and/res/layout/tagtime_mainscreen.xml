@@ -94,7 +94,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_margin="5dip"
-            android:text="Beeminder Links"
+            android:text="Link to Beeminder"
             android:textSize="20sp" />
     </LinearLayout>
 

@@ -6,13 +6,24 @@
 
     <ListView
         android:id="@+id/android:list"
+        android:layout_weight="1"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="0dip" />
 
     <TextView
         android:id="@+id/android:empty"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight="0"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/nodata" />
+        android:text="@string/nogoals" />
+    
+    <Button
+        android:id="@+id/vg_add"
+        android:layout_weight="0"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Link to new goal" />
 
 </LinearLayout>
