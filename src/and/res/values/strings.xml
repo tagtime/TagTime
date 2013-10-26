@@ -9,7 +9,8 @@
 	<string name="editping_pingtime">Ping:  </string>
 	<string name="confirm">Done</string>
 	<string name="nodata">No ping data found.</string>
-
+	<string name="editping_selecttags">Select one or more tags:</string>
+	
 
 <string name="app_version">1</string>
 <string name="toggle_notes">Stop bugging me!</string>

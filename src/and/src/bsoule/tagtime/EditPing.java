@@ -1,10 +1,11 @@
 package bsoule.tagtime;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Arrays;
 
 import android.app.Activity;
 import android.app.NotificationManager;
@@ -16,23 +17,30 @@ import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewTreeObserver;
 import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+// ChangeLog:
+
+/* 2013.10.26 Uluc: If the activity is invoked with RowId = null, it will let the user 
+ * select a number of tags and send them back to the invking activity in the response. */
 
 public class EditPing extends Activity {
+
+	private final static String TAG = "EditPing";
+	private static final boolean LOCAL_LOGV = true && !Timepie.DISABLE_LOGV;
 
 	public static final String KEY_EDIT = "editor";
 	public static final String KEY_PTIME = "pingtime";
 
 	private PingsDbAdapter mPingsDB;
-	//private EditText mNotesEdit;
+	// private EditText mNotesEdit;
 	private EditText mTagsEdit = null;
 	private TextView mPingTitle;
 	private Long mRowId;
@@ -45,7 +53,8 @@ public class EditPing extends Activity {
 
 	private boolean landscape;
 	private List<String> mCurrentTags;
-	private static final String TAG = "EditPing";
+	private String mCurrentTagString = "";
+	
 
 	public static int LAUNCH_VIEW = 0;
 	public static int LAUNCH_NOTE = 1;
@@ -54,8 +63,8 @@ public class EditPing extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_editping);
-		//mNotesEdit = (EditText) findViewById(R.id.notes);
-		
+		// mNotesEdit = (EditText) findViewById(R.id.notes);
+
 		View v = findViewById(R.id.tags_editText);
 		if (v == null) {
 			landscape = false;
@@ -79,45 +88,66 @@ public class EditPing extends Activity {
 		mPingsDB.open();
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		String ordering = prefs.getString("sortOrderPref", "FREQ");
-		Log.w(TAG, "Getting Tags with order: " + ordering);
+		if (LOCAL_LOGV)
+			Log.w(TAG, "Getting Tags with order: " + ordering);
 		mTagsCursor = mPingsDB.fetchAllTags(ordering);
 		startManagingCursor(mTagsCursor);
-		mTaggings = mPingsDB.fetchTaggings(mRowId,PingsDbAdapter.KEY_PID);
-		startManagingCursor(mTaggings);
-
+		if (mRowId >= 0) {
+			mTaggings = mPingsDB.fetchTaggings(mRowId, PingsDbAdapter.KEY_PID);
+			startManagingCursor(mTaggings);
+		} else {
+			mTaggings = null;
+			String savedtags = null;
+			if (savedInstanceState != null) savedtags = savedInstanceState.getString("editping_tagsave");
+			if (savedtags != null) {
+				mCurrentTags = new ArrayList<String>(Arrays.asList(savedtags.split("\\s+"))); 
+				mCurrentTagString = TextUtils.join(" ", mCurrentTags);
+			}
+		}
+		
 		// Set confirm button behaviour
 		Button confirm = (Button) findViewById(R.id.confirm);
-		confirm.setOnClickListener(	new OnClickListener() {
+		confirm.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				setResult(RESULT_OK);
+				Intent resultIntent = new Intent();
+				resultIntent.putExtra("tags", mCurrentTagString);
+				setResult(RESULT_OK, resultIntent);
 				finish();
 			}
 		});
 	}
 
 	private void populateFields() {
-		if (mRowId != null) {
+		if (mRowId >= 0) {
 			Cursor note = mPingsDB.fetchPing(mRowId);
 			startManagingCursor(note);
 			try {
 				// set ping time title
 				mPingUTC = note.getLong(note.getColumnIndexOrThrow(PingsDbAdapter.KEY_PING));
-				SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());		
-				mPingTitle.setText(SDF.format(new Date(mPingUTC*1000)));
+				SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
+				mPingTitle.setText(SDF.format(new Date(mPingUTC * 1000)));
 				// get tags
 				mCurrentTags = mPingsDB.fetchTagsForPing(mRowId);
-				if (!landscape) {
-					loadTags();
-				} else {
-					mTagsEdit.setText(TextUtils.join(" ", mCurrentTags));
-				}
+				mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 			} catch (Exception e) {
 				Log.i(TAG, "caught an exception in populateFields():");
-				Log.i(TAG, "    "+e.getLocalizedMessage());
-				Log.i(TAG, "    "+e.getMessage());
+				Log.i(TAG, "    " + e.getLocalizedMessage());
+				Log.i(TAG, "    " + e.getMessage());
 			}
 		} else {
-			Log.i(TAG,"ROWID was NULL");
+			Log.i(TAG, "ROWID was NULL");
+			mPingTitle.setText(getText(R.string.editping_selecttags));
+			if (mCurrentTags == null)
+				mCurrentTags = new ArrayList<String>();
+			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
+			// TODO: Update string to be sent back to calling activity here
+		}
+
+		if (!landscape) {
+			loadTags();
+		} else {
+			if (mCurrentTags != null)
+				mTagsEdit.setText(TextUtils.join(" ", mCurrentTags));
 		}
 	}
 
@@ -128,13 +158,13 @@ public class EditPing extends Activity {
 		LinearLayout ll = new LinearLayout(this);
 		ll.setId(FIXTAGS);
 		ll.setOrientation(1);
-		ll.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT));
+		ll.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 		while (!mTagsCursor.isAfterLast()) {
-			String tag = mTagsCursor.getString(
-					mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_TAG));
-			long id = mTagsCursor.getLong(
-					mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_ROWID));
-			boolean on = mCurrentTags.contains(tag);
+			String tag = mTagsCursor.getString(mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_TAG));
+			long id = mTagsCursor.getLong(mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_ROWID));
+			boolean on = false;
+			if (mCurrentTags != null)
+				on = mCurrentTags.contains(tag);
 			TagToggle tog = new TagToggle(this, tag, id, on);
 			tog.setOnClickListener(mTogListener);
 			ll.addView(tog);
@@ -153,19 +183,19 @@ public class EditPing extends Activity {
 
 		LinearLayout tagrow = new LinearLayout(this);
 		tagrow.setOrientation(0);
-		tagrow.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT));
-		while (ll.getChildCount()>0) {
+		tagrow.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+		while (ll.getChildCount() > 0) {
 			View tog = ll.getChildAt(0);
 			ll.removeViewAt(0);
-			if ( (twidth+tog.getWidth()) > pwidth ) {
+			if ((twidth + tog.getWidth()) > pwidth) {
 				tagParent.addView(tagrow);
-				tagrow = new LinearLayout(this);//.removeAllViews();
+				tagrow = new LinearLayout(this);// .removeAllViews();
 				tagrow.setOrientation(0);
-				tagrow.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT));
+				tagrow.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 				twidth = 0;
-			} 
+			}
 			tagrow.addView(tog);
-			twidth+=tog.getWidth();
+			twidth += tog.getWidth();
 		}
 		tagParent.addView(tagrow);
 	}
@@ -174,18 +204,21 @@ public class EditPing extends Activity {
 	protected void onPause() {
 		super.onPause();
 		saveState();
-		Log.i(TAG, "Was paused...");
+		if (LOCAL_LOGV)
+			Log.i(TAG, "Was paused...");
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		if ( findViewById(R.id.tags_editText) == null ) {
+		if (findViewById(R.id.tags_editText) == null) {
 			landscape = false;
-			Log.i(TAG, "Resuming in PORTRAIT");
+			if (LOCAL_LOGV)
+				Log.i(TAG, "Resuming in PORTRAIT");
 		} else {
 			landscape = true;
-			Log.i(TAG, "Resuming in LANDSCAPE");
+			if (LOCAL_LOGV)
+				Log.i(TAG, "Resuming in LANDSCAPE");
 		}
 		populateFields();
 	}
@@ -193,11 +226,24 @@ public class EditPing extends Activity {
 	private void saveState() {
 		if (landscape) {
 			String[] newtagstrings = mTagsEdit.getText().toString().split("\\s+");
-			mPingsDB.updateTaggings(mRowId, Arrays.asList(newtagstrings));
+			if (mRowId >= 0)
+				mPingsDB.updateTaggings(mRowId, Arrays.asList(newtagstrings));
 		} else {
-			if (mCurrentTags != null) {
+			if (mRowId >= 0) {
 				mPingsDB.updateTaggings(mRowId, mCurrentTags);
+			} else {
+				// Nothing, onSaveInstanceState will take care of saving the
+				// current tags for orientation change
 			}
+		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		if (mCurrentTags != null && mRowId < 0) {
+			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
+			outState.putString("editping_tagsave", mCurrentTagString);
 		}
 	}
 
@@ -207,6 +253,12 @@ public class EditPing extends Activity {
 
 	@Override
 	protected void onDestroy() {
+
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		SharedPreferences.Editor edit = prefs.edit();
+		edit.remove("editping_tagsave");
+		edit.commit();
+
 		mPingsDB.close();
 		super.onDestroy();
 	}
@@ -219,22 +271,23 @@ public class EditPing extends Activity {
 			return true;
 		}
 	};
-	
+
 	private OnClickListener mTogListener = new OnClickListener() {
 		public void onClick(View v) {
 			TagToggle tog = (TagToggle) v;
 			if (tog.isSelected()) {
-				Log.i(TAG,"toggle selected");
+				Log.i(TAG, "toggle selected");
 				try {
 					mCurrentTags.add(tog.getText().toString());
 				} catch (Exception e) {
-					Log.e(TAG,"error inserting newTagPing()");
+					Log.e(TAG, "error inserting newTagPing()");
 				}
 			} else {
 				mCurrentTags.remove(tog.getText().toString());
 			}
+			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 		}
-		
+
 	};
 
 }

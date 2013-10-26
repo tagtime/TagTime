@@ -101,6 +101,9 @@ public class ViewLog extends ListActivity {
 	protected void onActivityResult(int requestCode, int resultCode,
 			Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
+		if (intent.getExtras() != null) {
+			Log.v(TAG, intent.getExtras().getString("tags"));
+		}
 		fillData();
 	}
 
