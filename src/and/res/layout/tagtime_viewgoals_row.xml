@@ -58,8 +58,8 @@
         android:layout_marginTop="2dip"
         android:layout_marginLeft="10dip"
         android:layout_marginRight="10dip"
-        android:ellipsize="end"
-        android:text="tag1 tag2 tag3 tag4 tag1 tag2 tag3 tag4 tag1 tag2 tag3 tag4 tag1 tag2 tag3 tag4 tag1 tag2 tag3 tag4 "
+        android:ellipsize="none"
+        android:maxLines="10"
         android:textSize="13sp" />
 
 </RelativeLayout>

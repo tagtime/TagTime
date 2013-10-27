@@ -78,7 +78,7 @@ public class ViewGoals extends ListActivity {
 					TextView tv = (TextView) view;
 					try {
 						String t = mDbHelper.fetchTagString(cursor.getLong(columnIndex));
-						tv.setText(t);
+						tv.setText("Tags: "+t);
 						return true;
 					} catch (Exception e) {
 						Log.e(TAG, "error loading tags for viewlog.");
