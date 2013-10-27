@@ -36,12 +36,8 @@ public class ViewGoals extends ListActivity {
 		beeminder.setClickable(true);
 		beeminder.setOnClickListener(new OnClickListener() {
 			public void onClick(View arg0) {
-				List<String> tags = new ArrayList<String>();
-				tags.add("a");
-				tags.add("b");
-				tags.add("c");
-				mDbHelper.createGoal("saranli", "deneme", "deneme", tags);
-				fillData();
+				Intent i = new Intent(ViewGoals.this, EditGoal.class);
+				startActivityForResult(i, ACTIVITY_EDIT);
 			}
 		});
 	}
@@ -50,9 +46,10 @@ public class ViewGoals extends ListActivity {
 		Cursor goalsCursor = mDbHelper.fetchAllGoals();
 		startManagingCursor(goalsCursor);
 		// Create an array to specify the fields we want to display in the list
-		String[] from = new String[] { BeeminderDbAdapter.KEY_USERNAME, BeeminderDbAdapter.KEY_SLUG, BeeminderDbAdapter.KEY_ROWID };
+		String[] from = new String[] { BeeminderDbAdapter.KEY_USERNAME, BeeminderDbAdapter.KEY_SLUG,
+				BeeminderDbAdapter.KEY_ROWID };
 		// and an array of the fields we want to bind those field to
-		int[] to = new int[] { R.id.viewgoals_row_user, R.id.viewgoals_row_slug, R.id.viewgoals_row_tags};
+		int[] to = new int[] { R.id.viewgoals_row_user, R.id.viewgoals_row_slug, R.id.viewgoals_row_tags };
 		// Now create a simple cursor adapter and set it to display
 		GoalsCursorAdapter goals = new GoalsCursorAdapter(this, R.layout.tagtime_viewgoals_row, goalsCursor, from, to);
 		setListAdapter(goals);
@@ -71,7 +68,7 @@ public class ViewGoals extends ListActivity {
 			public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
 				int userIdx = cursor.getColumnIndex(BeeminderDbAdapter.KEY_USERNAME);
 				int slugIdx = cursor.getColumnIndex(BeeminderDbAdapter.KEY_SLUG);
-				if (userIdx == columnIndex || slugIdx == columnIndex ) {
+				if (userIdx == columnIndex || slugIdx == columnIndex) {
 					TextView tv = (TextView) view;
 					String username = cursor.getString(columnIndex);
 					tv.setText(username);
@@ -98,18 +95,17 @@ public class ViewGoals extends ListActivity {
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
-		//Intent i = new Intent(this, EditPing.class);
-		//i.putExtra(PingsDbAdapter.KEY_ROWID, id);
-		//i.putExtra("editorFlag", true);
-		//startActivityForResult(i, ACTIVITY_EDIT);
+		Intent i = new Intent(this, EditGoal.class);
+		i.putExtra(PingsDbAdapter.KEY_ROWID, id);
+		startActivityForResult(i, ACTIVITY_EDIT);
 	}
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
-		//if (intent.getExtras() != null) {
-		//	Log.v(TAG, intent.getExtras().getString("tags"));
-		//}
+		// if (intent.getExtras() != null) {
+		// Log.v(TAG, intent.getExtras().getString("tags"));
+		// }
 		fillData();
 	}
 

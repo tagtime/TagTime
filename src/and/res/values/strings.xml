@@ -18,5 +18,10 @@
     <string name="editping_tags_land">Tags (space separated):</string>
     <string name="editping_tags_port">Tags (open keyboard or switch to landscape view to add tags):</string>
     <string name="saving_log">Saving... Please wait.</string>
-
+    <string name="editgoal_title">Edit goal details</string>
+    <string name="editgoal_confirm">Save Goal</string>
+    <string name="editgoal_delete">Delete Goal</string>
+    <string name="editgoal_select">Select Goal</string>
+    <string name="editgoal_tags">Select Tags</string>
+    
 </resources>

@@ -25,7 +25,8 @@
         </activity>
         <activity android:name=".EditPing" />
         <activity android:name=".ViewLog" />
-        <activity android:name=".ViewGoals" />
+        <activity android:name=".EditGoal" android:screenOrientation="portrait"/>
+        <activity android:name=".ViewGoals" android:screenOrientation="portrait"/>
         <activity android:name=".Export" />
         <activity android:name=".Preferences" />
 

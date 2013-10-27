@@ -98,7 +98,14 @@ public class EditPing extends Activity {
 		} else {
 			mTaggings = null;
 			String savedtags = null;
-			if (savedInstanceState != null) savedtags = savedInstanceState.getString("editping_tagsave");
+			if (savedInstanceState != null) {
+				savedtags = savedInstanceState.getString("editping_tagsave");
+			} else {
+				// Look for tag information inthe incoming intent
+				Bundle extras = getIntent().getExtras();
+				if (extras != null)
+					savedtags = extras.getString("tags");
+			}
 			if (savedtags != null) {
 				mCurrentTags = new ArrayList<String>(Arrays.asList(savedtags.split("\\s+"))); 
 				mCurrentTagString = TextUtils.join(" ", mCurrentTags);
@@ -253,11 +260,6 @@ public class EditPing extends Activity {
 
 	@Override
 	protected void onDestroy() {
-
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		SharedPreferences.Editor edit = prefs.edit();
-		edit.remove("editping_tagsave");
-		edit.commit();
 
 		mPingsDB.close();
 		super.onDestroy();
