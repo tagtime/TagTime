@@ -73,19 +73,18 @@ public class ViewGoals extends ListActivity {
 					String username = cursor.getString(columnIndex);
 					tv.setText(username);
 					return true;
-				} else { // should be tags case
+				} else {
+					// should be tags case
 					TextView tv = (TextView) view;
 					try {
-						// ArrayList<String> tags =
-						// mDbHelper.getTagsAsList(PingsDbAdapter.KEY_ROWID,columnIndex);
 						String t = mDbHelper.fetchTagString(cursor.getLong(columnIndex));
 						tv.setText(t);
 						return true;
 					} catch (Exception e) {
 						Log.e(TAG, "error loading tags for viewlog.");
 						Log.e(TAG, e.getMessage());
-						tv.setText("");
-						return false;
+						tv.setText("error fetching tags!");
+						return true;
 					}
 				}
 			}

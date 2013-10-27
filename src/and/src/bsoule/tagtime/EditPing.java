@@ -54,7 +54,6 @@ public class EditPing extends Activity {
 	private boolean landscape;
 	private List<String> mCurrentTags;
 	private String mCurrentTagString = "";
-	
 
 	public static int LAUNCH_VIEW = 0;
 	public static int LAUNCH_NOTE = 1;
@@ -107,16 +106,21 @@ public class EditPing extends Activity {
 					savedtags = extras.getString("tags");
 			}
 			if (savedtags != null) {
-				mCurrentTags = new ArrayList<String>(Arrays.asList(savedtags.split("\\s+"))); 
+				mCurrentTags = new ArrayList<String>(Arrays.asList(savedtags.split("\\s+")));
 				mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 			}
 		}
-		
+
 		// Set confirm button behaviour
 		Button confirm = (Button) findViewById(R.id.confirm);
 		confirm.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				Intent resultIntent = new Intent();
+				if (landscape) {
+					String[] newtagstrings = mTagsEdit.getText().toString().split("\\s+");
+					mCurrentTags = new ArrayList<String>(Arrays.asList(newtagstrings));
+					mCurrentTagString = TextUtils.join(" ", mCurrentTags);
+				}
 				resultIntent.putExtra("tags", mCurrentTagString);
 				setResult(RESULT_OK, resultIntent);
 				finish();
@@ -233,8 +237,21 @@ public class EditPing extends Activity {
 	private void saveState() {
 		if (landscape) {
 			String[] newtagstrings = mTagsEdit.getText().toString().split("\\s+");
+			mCurrentTags = new ArrayList<String>(Arrays.asList(newtagstrings));
+			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 			if (mRowId >= 0)
 				mPingsDB.updateTaggings(mRowId, Arrays.asList(newtagstrings));
+			else {
+				for (String t : mCurrentTags) {
+					if (t.trim().length() == 0)
+						continue;
+
+					if (LOCAL_LOGV)
+						Log.v(TAG, "Creating tag -" + t + "-");
+					mPingsDB.getOrMakeNewTID(t);
+				}
+			}
+
 		} else {
 			if (mRowId >= 0) {
 				mPingsDB.updateTaggings(mRowId, mCurrentTags);

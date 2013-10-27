@@ -20,6 +20,7 @@ public class ViewLog extends ListActivity {
 
 	private static final int ACTIVITY_EDIT=0;
 	private static final String TAG = "ViewLog";
+	private static final boolean LOCAL_LOGV = true && !Timepie.DISABLE_LOGV;
 	
 	private PingsDbAdapter mDbHelper;
 	private SimpleDateFormat mSDF;
@@ -101,8 +102,8 @@ public class ViewLog extends ListActivity {
 	protected void onActivityResult(int requestCode, int resultCode,
 			Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
-		if (intent.getExtras() != null) {
-			Log.v(TAG, intent.getExtras().getString("tags"));
+		if (intent != null && intent.getExtras() != null) {
+			if (LOCAL_LOGV) Log.v(TAG, intent.getExtras().getString("tags"));
 		}
 		fillData();
 	}

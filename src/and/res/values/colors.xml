@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Actionbar colors -->
+    <color name="menubutton_unselected_bg">#00000000</color>
+    <color name="menubutton_selected_bg">#0000ff</color>
+    <color name="menubutton_unselected_text">#ffffff</color>
+    <color name="menubutton_selected_text">#ffffff</color>
+    
+</resources>

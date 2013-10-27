@@ -19,9 +19,11 @@ public class BeeminderDbAdapter {
 	public static final String KEY_USERNAME = "user";
 	public static final String KEY_SLUG = "slug";
 	public static final String KEY_TOKEN = "token";
+
 	// Table for goal tags
 	public static final String KEY_GID = "goal_id";
 	public static final String KEY_TID = "tag_id";
+
 	// Table for datapoint submissions
 	public static final String KEY_REQID = "req_id";
 	public static final String KEY_VALUE = "value";
@@ -44,12 +46,14 @@ public class BeeminderDbAdapter {
 
 	// a goal is a user/slug with a Beeminder token for submission
 	private static final String CREATE_GOALS = "create table goals (_id integer primary key autoincrement, "
-			+ "user text not null, slug text not null, token text not null);";
+			+ "user text not null, slug text not null, token text not null, UNIQUE (user, slug));";
 
 	// a tag is just a string (no spaces)
 	private static final String CREATE_GOALTAGS = "create table goaltags (_id integer primary key autoincrement, "
 			+ "goal_id integer not null, tag_id integer not null," + "UNIQUE (goal_id, tag_id));";
-	// a tagging is a ping and a tag
+
+	// a point records submission details, corresponding goal and generating
+	// ping
 	private static final String CREATE_POINTS = "create table points (_id integer primary key autoincrement, "
 			+ "request_id text not null, value real not null, time integer not null, comment textnot null, goal_id integer ot null, ping_id integer not null,"
 			+ "UNIQUE (goal_id, ping_id));";
@@ -108,21 +112,41 @@ public class BeeminderDbAdapter {
 		mDbHelper.close();
 	}
 
+	public long getGoalID(String user, String slug) {
+		Log.i(TAG,"getGoalID("+user+"/"+slug+")");
+		long gid = -1;
+		Cursor cursor = 
+			mDb.query(GOALS_TABLE, new String[] {KEY_ROWID, KEY_USERNAME, KEY_SLUG}, 
+					KEY_USERNAME + "='" + user + "' AND "+KEY_SLUG+"='"+slug+"'", null,
+					null, null, null, null);
+		if (cursor.getCount()>0) {
+			cursor.moveToFirst();
+			gid = cursor.getLong(cursor.getColumnIndex(KEY_ROWID));
+		}
+		cursor.close();
+		return gid;
+	}
+
 	public long createGoal(String user, String slug, String token, List<String> tags) {
 		Log.i(TAG, "createGoal()");
-		long gid = newGoal(user, slug, token);
+		long gid;
+		try {
+			gid = newGoal(user, slug, token);
+		} catch (Exception e) {
+			gid = getGoalID(user, slug);
+		}
 		if (!updateGoalTags(gid, tags)) {
 			Log.e(TAG, "error creating the goal-tag entries");
 		}
 		return gid;
 	}
 
-	private long newGoal(String user, String slug, String token) {
+	private long newGoal(String user, String slug, String token) throws Exception {
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(KEY_USERNAME, user);
 		initialValues.put(KEY_SLUG, slug);
 		initialValues.put(KEY_TOKEN, token);
-		return mDb.insert(GOALS_TABLE, null, initialValues);
+		return mDb.insertOrThrow(GOALS_TABLE, null, initialValues);
 	}
 
 	public long newGoalTag(long goal_id, long tag_id) throws Exception {
@@ -132,12 +156,8 @@ public class BeeminderDbAdapter {
 		return mDb.insertOrThrow(GOALTAGS_TABLE, null, init);
 	}
 
-	// round d to 5 sig digits
-	public static double round5(double d) {
-		return (java.lang.Math.round(d * 100000)) / 100000.0;
-	}
-
 	public boolean deleteGoal(long rowId) {
+		updateGoalTags(rowId, new ArrayList<String>(0));
 		return mDb.delete(GOALS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 
@@ -170,8 +190,8 @@ public class BeeminderDbAdapter {
 	}
 
 	public Cursor fetchGoal(long rowId) throws SQLException {
-		Cursor pCursor = mDb.query(true, GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN }, KEY_ROWID + "="
-				+ rowId, null, null, null, null, null);
+		Cursor pCursor = mDb.query(true, GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN },
+				KEY_ROWID + "=" + rowId, null, null, null, null, null);
 		if (pCursor != null) {
 			pCursor.moveToFirst();
 		}
@@ -180,8 +200,8 @@ public class BeeminderDbAdapter {
 	}
 
 	public String fetchTagString(long goal_id) throws Exception {
-		Cursor c = mDb.query(GOALTAGS_TABLE, new String[] {KEY_GID, KEY_TID},
-				KEY_GID + "=" + goal_id, null, null, null, null);
+		Cursor c = mDb.query(GOALTAGS_TABLE, new String[] { KEY_GID, KEY_TID }, KEY_GID + "=" + goal_id, null, null,
+				null, null);
 		String s = "";
 		PingsDbAdapter db = new PingsDbAdapter(mCtx);
 		try {
@@ -192,10 +212,10 @@ public class BeeminderDbAdapter {
 				long tid = c.getLong(idx);
 				String t = db.getTagName(tid);
 				if (t.equals("")) {
-					Exception e = new Exception("Could not find tag with id="+tid);
+					Exception e = new Exception("Could not find tag with id=" + tid);
 					throw e;
 				}
-				s += t+" ";
+				s += t + " ";
 				c.moveToNext();
 			}
 		} finally {
@@ -226,6 +246,21 @@ public class BeeminderDbAdapter {
 		c.close();
 		db.close();
 		return ret;
+	}
+
+	public boolean updateGoal(long goalId, String user, String slug, String token) {
+		// Insert authorization into the table
+		ContentValues values = new ContentValues();
+		values.put(KEY_USERNAME, user);
+		values.put(KEY_SLUG, slug);
+		values.put(KEY_TOKEN, token);
+		int numrows = mDb.update(GOALS_TABLE, values, KEY_ROWID + " = " + goalId, null);
+
+		if (numrows == 1)
+			return true;
+		else
+			return false;
+
 	}
 
 	public boolean updateGoalTags(long goalId, List<String> newTags) {

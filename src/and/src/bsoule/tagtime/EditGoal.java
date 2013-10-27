@@ -1,5 +1,8 @@
 package bsoule.tagtime;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -9,6 +12,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.beeminder.beedroid.api.Session;
 import com.beeminder.beedroid.api.Session.SessionError;
@@ -26,7 +30,7 @@ public class EditGoal extends Activity {
 	private static final boolean LOCAL_LOGV = true && !Timepie.DISABLE_LOGV;
 
 	private static final int ACTIVITY_EDIT = 0;
-	
+
 	public static final String KEY_EDIT = "editor";
 
 	private BeeminderDbAdapter mBeeminderDB;
@@ -93,14 +97,28 @@ public class EditGoal extends Activity {
 		mGoalSlug = goal.getString(slugIdx);
 		mToken = goal.getString(tokenIdx);
 		try {
-			mTagString = mBeeminderDB.fetchTagString(goal_id);
-			mTagInfo.setText("Tags: "+mTagString);
+			mTagString = mBeeminderDB.fetchTagString(goal_id).trim();
+			mTagInfo.setText("Tags: " + mTagString);
 			mTags = mTagString.split(" ");
 		} catch (Exception e) {
 			Log.w(TAG, "Could not fetch tag string for goal!");
 		}
-		
+
 		updateFields();
+	}
+
+	private void updateGoal() {
+		if (mUsername == null)
+			return;
+
+		if (mRowId >= 0) {
+			// Called on an existing goal, update
+			mBeeminderDB.updateGoal(mRowId, mUsername, mGoalSlug, mToken);
+			mBeeminderDB.updateGoalTags(mRowId, new ArrayList<String>(Arrays.asList(mTags)));
+		} else {
+			// No existing goals, attempt to create
+			mBeeminderDB.createGoal(mUsername, mGoalSlug, mToken, new ArrayList<String>(Arrays.asList(mTags)));
+		}
 	}
 
 	@Override
@@ -116,9 +134,12 @@ public class EditGoal extends Activity {
 		mTokenInfo = (TextView) findViewById(R.id.token);
 		mTagInfo = (TextView) findViewById(R.id.tags);
 
+		mTags = new String[0];
+		mTagString = "";
+
 		if (mRowId >= 0) {
 			Cursor goal = mBeeminderDB.fetchGoal(mRowId);
-			updateWithGoal( goal );
+			updateWithGoal(goal);
 			goal.close();
 		} else {
 			mGoalInfo.setText("Goal: not selected");
@@ -161,14 +182,45 @@ public class EditGoal extends Activity {
 		});
 
 		Button confirm = (Button) findViewById(R.id.confirm);
+		if (mRowId < 0)
+			confirm.setText(getText(R.string.editgoal_create));
+		else		
+			confirm.setText(getText(R.string.editgoal_confirm));
 		confirm.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
+				if (mUsername == null) {
+					Toast.makeText(EditGoal.this, getText(R.string.editgoal_nogoal), Toast.LENGTH_SHORT).show();
+					return;
+				}
+				if (mTags.length == 0) {
+					Toast.makeText(EditGoal.this, getText(R.string.editgoal_notags), Toast.LENGTH_SHORT).show();
+					return;
+				}
+				updateGoal();
 				Intent resultIntent = new Intent();
 				setResult(RESULT_OK, resultIntent);
 				finish();
 			}
 		});
 
+		Button delete = (Button) findViewById(R.id.delete);
+		if (mRowId < 0)
+			delete.setVisibility(View.GONE);
+		else
+			delete.setOnClickListener(new OnClickListener() {
+				public void onClick(View v) {
+					if (mUsername == null) {
+						Toast.makeText(EditGoal.this, getText(R.string.editgoal_nogoal), Toast.LENGTH_SHORT).show();
+						return;
+					}
+					
+					mBeeminderDB.deleteGoal(mRowId);
+					mRowId = -1L;
+					Intent resultIntent = new Intent();
+					setResult(RESULT_OK, resultIntent);
+					finish();
+				}
+			});
 	}
 
 	@Override
@@ -195,13 +247,14 @@ public class EditGoal extends Activity {
 
 		if (requestCode == ACTIVITY_EDIT) {
 			if (intent != null && intent.getExtras() != null) {
-				mTagString =intent.getExtras().getString("tags"); 
-				Log.v(TAG, mTagString);
-				mTagInfo.setText("Tags: "+mTagString);
-				mTags =  mTagString.split(" ");
-			}			
+				mTagString = intent.getExtras().getString("tags").trim();
+				mTags = mTagString.split(" ");
+				if (LOCAL_LOGV)
+					Log.v(TAG, mTags.length + " tags:" + mTagString);
+				mTagInfo.setText("Tags: " + mTagString);
+			}
 		} else {
-			mSession.onActivityResult(requestCode, resultCode, intent);			
+			mSession.onActivityResult(requestCode, resultCode, intent);
 		}
 	}
 
@@ -214,6 +267,7 @@ public class EditGoal extends Activity {
 	protected void onDestroy() {
 		if (mSession != null)
 			mSession.close();
+		mBeeminderDB.close();
 		super.onDestroy();
 	}
 }

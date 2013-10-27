@@ -439,7 +439,7 @@ public class PingsDbAdapter {
 		cacheUpdates.addAll(newTags);
 		mDb.delete(TAG_PING_TABLE, KEY_PID + "=" + pingId, null);
 		for (String t : newTags) {
-			if (t.trim() == "") {
+			if (t.trim().length() == 0) {
 				continue;
 			}
 			long tid = getOrMakeNewTID(t);
@@ -458,15 +458,24 @@ public class PingsDbAdapter {
 		return true;
 	}
 	public void cleanupUnusedTags() {
+		BeeminderDbAdapter bdb = new BeeminderDbAdapter(mCtx);
+		bdb.open();
 		Cursor c = fetchAllTags();
 		c.moveToFirst();
 		int idx = c.getColumnIndex(KEY_ROWID);
 		int tagIdx = c.getColumnIndex(KEY_TAG);
 		while (!c.isAfterLast()) {
 			long tid = c.getLong(idx);
+			// Check ping tag pairs
 			Cursor tids = mDb.query(TAG_PING_TABLE, new String[] {KEY_ROWID}, KEY_TID + "=" + tid, null, null, null, null);
 			int usecount = tids.getCount();
 			tids.close();
+			
+			// Check goal tag pairs
+			Cursor gtids = bdb.fetchGoalTags(tid, BeeminderDbAdapter.KEY_TID);
+			usecount += gtids.getCount();
+			gtids.close();
+			
 			Log.i(TAG, "tag " + c.getString(tagIdx) + " is used " + usecount + " times");
 			if (usecount == 0) {
 				Log.i(TAG, "removing tag " + c.getString(tagIdx) + " noone is using it.");
@@ -475,5 +484,6 @@ public class PingsDbAdapter {
 			c.moveToNext();
 		}
 		c.close();
+		bdb.close();
 	}
 }
