@@ -32,6 +32,13 @@
 	    android:summaryOff="No flashing"
 	    android:summaryOn="LED will flash"
 	   /> 
+	  <CheckBoxPreference
+	    android:key="pingQuietCharging"
+	    android:title="Quiet While Charging"
+	    android:defaultValue="false"
+	    android:summaryOff="Standard pings while charging."
+	    android:summaryOn="Silent pings while charging."
+	   /> 
 	  <EditTextPreference
 	    android:key="pingGap"
 	    android:title="Ping Frequency"

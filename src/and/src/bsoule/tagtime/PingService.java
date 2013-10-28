@@ -12,8 +12,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.Parcel;
@@ -182,16 +184,26 @@ public class PingService extends Service {
 		// Set the info for the views that show in the notification panel.
 		// note.setLatestEventInfo(context, contentTitle, contentText, contentIntent)
 		note.setLatestEventInfo(this, "Ping!", SDF.format(ping), contentIntent);
-		if (mPrefs.getBoolean("pingVibrate", true)) {
-			note.vibrate = new long[] {0, 200, 50, 100, 50, 200, 50, 200, 50, 100};
+
+		boolean suppress_noises = false;
+		if (mPrefs.getBoolean("pingQuietCharging", false)) {
+			IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+			Intent batteryStatus = registerReceiver(null, ifilter);
+			suppress_noises = batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0;
 		}
-		String sound_uri = mPrefs.getString("pingRingtonePref", "DEFAULT_RINGTONE_URI");
-		if (!sound_uri.equals("")) {
-			note.sound = Uri.parse(sound_uri);
-		} else {
-			note.defaults |= Notification.DEFAULT_SOUND;
+
+		if (!suppress_noises) {
+			if (mPrefs.getBoolean("pingVibrate", true)) {
+				note.vibrate = new long[] {0, 200, 50, 100, 50, 200, 50, 200, 50, 100};
+			}
+			String sound_uri = mPrefs.getString("pingRingtonePref", "DEFAULT_RINGTONE_URI");
+			if (!sound_uri.equals("")) {
+				note.sound = Uri.parse(sound_uri);
+			} else {
+				note.defaults |= Notification.DEFAULT_SOUND;
+			}
 		}
-	
+
 		if (mPrefs.getBoolean("pingLedFlash", false)) {
 			note.ledARGB = 0xff0033ff;
 			note.ledOffMS = 1000;
