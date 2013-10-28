@@ -176,7 +176,7 @@ public class EditGoal extends Activity {
 		selecttags.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				Intent i = new Intent(EditGoal.this, EditPing.class);
-				i.putExtra("tags", mTagString);
+				i.putExtra(EditPing.KEY_TAGS, mTagString);
 				startActivityForResult(i, ACTIVITY_EDIT);
 			}
 		});
@@ -247,7 +247,7 @@ public class EditGoal extends Activity {
 
 		if (requestCode == ACTIVITY_EDIT) {
 			if (intent != null && intent.getExtras() != null) {
-				mTagString = intent.getExtras().getString("tags").trim();
+				mTagString = intent.getExtras().getString(EditPing.KEY_TAGS).trim();
 				mTags = mTagString.split(" ");
 				if (LOCAL_LOGV)
 					Log.v(TAG, mTags.length + " tags:" + mTagString);

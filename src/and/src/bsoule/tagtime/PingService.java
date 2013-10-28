@@ -174,7 +174,6 @@ public class PingService extends Service {
 		// The PendingIntent to launch our activity if the user selects this notification
 		Intent editIntent = new Intent(this, EditPing.class);
 
-		editIntent.putExtra(EditPing.KEY_EDIT, ed);
 		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
 		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
