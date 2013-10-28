@@ -31,7 +31,8 @@
         <activity android:name=".Preferences" android:label="@string/prefs_title" />
 
         <service android:name=".PingService" />
-
+        <service android:name=".BeeminderService" />
+        
         <receiver
             android:name=".TPStartUp"
             android:enabled="true"

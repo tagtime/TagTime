@@ -192,7 +192,7 @@ public class EditGoal extends Activity {
 					Toast.makeText(EditGoal.this, getText(R.string.editgoal_nogoal), Toast.LENGTH_SHORT).show();
 					return;
 				}
-				if (mTags.length == 0) {
+				if (mTagString.length() == 0) {
 					Toast.makeText(EditGoal.this, getText(R.string.editgoal_notags), Toast.LENGTH_SHORT).show();
 					return;
 				}

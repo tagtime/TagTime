@@ -12,6 +12,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 public class BeeminderDbAdapter {
+	private static final String TAG = "BeeminderDbAdapter";
+	private static final boolean LOCAL_LOGV = false && !Timepie.DISABLE_LOGV;
 
 	public static final String KEY_ROWID = "_id";
 
@@ -36,9 +38,9 @@ public class BeeminderDbAdapter {
 	private static final String GOALS_TABLE = "goals";
 	private static final String GOALTAGS_TABLE = "goaltags";
 	private static final String POINTS_TABLE = "points";
+	private static final String POINTPINGS_TABLE = "pointpings";
 	private static final int DATABASE_VERSION = 1;
 
-	private static final String TAG = "BeeminderDbAdapter";
 	private DatabaseHelper mDbHelper;
 	private SQLiteDatabase mDb;
 
@@ -48,18 +50,23 @@ public class BeeminderDbAdapter {
 	private static final String CREATE_GOALS = "create table goals (_id integer primary key autoincrement, "
 			+ "user text not null, slug text not null, token text not null, UNIQUE (user, slug));";
 
-	// a tag is just a string (no spaces)
+	// a goal tag is a goal-tag pairing
 	private static final String CREATE_GOALTAGS = "create table goaltags (_id integer primary key autoincrement, "
 			+ "goal_id integer not null, tag_id integer not null," + "UNIQUE (goal_id, tag_id));";
 
 	// a point records submission details, corresponding goal and generating
 	// ping
 	private static final String CREATE_POINTS = "create table points (_id integer primary key autoincrement, "
-			+ "request_id text not null, value real not null, time integer not null, comment textnot null, goal_id integer ot null, ping_id integer not null,"
-			+ "UNIQUE (goal_id, ping_id));";
+			+ "request_id text not null, value real not null, time integer not null, comment text not null, goal_id integer not null,"
+			+ "UNIQUE (request_id));";
+
+	// a point ping is a point-ping pairing
+	private static final String CREATE_POINTPINGS = "create table pointpings (_id integer primary key autoincrement, "
+			+ "point_id integer not null, ping_id integer not null," + "UNIQUE (point_id, ping_id));";
 
 	private final Context mCtx;
 
+	// ===================== General Database Management =====================
 	private static class DatabaseHelper extends SQLiteOpenHelper {
 
 		DatabaseHelper(Context context) {
@@ -71,6 +78,7 @@ public class BeeminderDbAdapter {
 			db.execSQL(CREATE_GOALS);
 			db.execSQL(CREATE_GOALTAGS);
 			db.execSQL(CREATE_POINTS);
+			db.execSQL(CREATE_POINTPINGS);
 		}
 
 		@Override
@@ -80,6 +88,7 @@ public class BeeminderDbAdapter {
 			db.execSQL("DROP TABLE IF EXISTS goals");
 			db.execSQL("DROP TABLE IF EXISTS goaltags");
 			db.execSQL("DROP TABLE IF EXISTS points");
+			db.execSQL("DROP TABLE IF EXISTS pointpings");
 			onCreate(db);
 		}
 	}
@@ -112,23 +121,9 @@ public class BeeminderDbAdapter {
 		mDbHelper.close();
 	}
 
-	public long getGoalID(String user, String slug) {
-		Log.i(TAG,"getGoalID("+user+"/"+slug+")");
-		long gid = -1;
-		Cursor cursor = 
-			mDb.query(GOALS_TABLE, new String[] {KEY_ROWID, KEY_USERNAME, KEY_SLUG}, 
-					KEY_USERNAME + "='" + user + "' AND "+KEY_SLUG+"='"+slug+"'", null,
-					null, null, null, null);
-		if (cursor.getCount()>0) {
-			cursor.moveToFirst();
-			gid = cursor.getLong(cursor.getColumnIndex(KEY_ROWID));
-		}
-		cursor.close();
-		return gid;
-	}
-
+	// ===================== Goal database utilities =====================
 	public long createGoal(String user, String slug, String token, List<String> tags) {
-		Log.i(TAG, "createGoal()");
+		if (LOCAL_LOGV) Log.v(TAG, "createGoal()");
 		long gid;
 		try {
 			gid = newGoal(user, slug, token);
@@ -149,16 +144,59 @@ public class BeeminderDbAdapter {
 		return mDb.insertOrThrow(GOALS_TABLE, null, initialValues);
 	}
 
+	public boolean deleteGoal(long rowId) {
+		updateGoalTags(rowId, new ArrayList<String>(0));
+		return mDb.delete(GOALS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
+	}
+
+	public long getGoalID(String user, String slug) {
+		if (LOCAL_LOGV) Log.v(TAG, "getGoalID(" + user + "/" + slug + ")");
+		long gid = -1;
+		Cursor cursor = mDb.query(GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG }, KEY_USERNAME + "='"
+				+ user + "' AND " + KEY_SLUG + "='" + slug + "'", null, null, null, null, null);
+		if (cursor.getCount() > 0) {
+			cursor.moveToFirst();
+			gid = cursor.getLong(cursor.getColumnIndex(KEY_ROWID));
+		}
+		cursor.close();
+		return gid;
+	}
+
+	public Cursor fetchGoal(long rowId) throws SQLException {
+		Cursor pCursor = mDb.query(true, GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN },
+				KEY_ROWID + "=" + rowId, null, null, null, null, null);
+		if (pCursor != null) {
+			pCursor.moveToFirst();
+		}
+		return pCursor;
+
+	}
+
+	public Cursor fetchAllGoals() {
+		return mDb.query(GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN }, null, null, null,
+				null, null);
+	}
+
+	public boolean updateGoal(long goalId, String user, String slug, String token) {
+		// Insert authorization into the table
+		ContentValues values = new ContentValues();
+		values.put(KEY_USERNAME, user);
+		values.put(KEY_SLUG, slug);
+		values.put(KEY_TOKEN, token);
+		int numrows = mDb.update(GOALS_TABLE, values, KEY_ROWID + " = " + goalId, null);
+
+		if (numrows == 1) return true;
+		else return false;
+
+	}
+
+	// ===================== Goal-tag pair database utilities
+	// =====================
 	public long newGoalTag(long goal_id, long tag_id) throws Exception {
 		ContentValues init = new ContentValues();
 		init.put(KEY_GID, goal_id);
 		init.put(KEY_TID, tag_id);
 		return mDb.insertOrThrow(GOALTAGS_TABLE, null, init);
-	}
-
-	public boolean deleteGoal(long rowId) {
-		updateGoalTags(rowId, new ArrayList<String>(0));
-		return mDb.delete(GOALS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 
 	public boolean isGoalTag(long gid, long tid) {
@@ -174,11 +212,6 @@ public class BeeminderDbAdapter {
 		return mDb.delete(GOALTAGS_TABLE, query, null) > 0;
 	}
 
-	public Cursor fetchAllGoals() {
-		return mDb.query(GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN }, null, null, null,
-				null, null);
-	}
-
 	public Cursor fetchGoalTags(long id, String col_key, String order) {
 		return mDb.query(true, GOALTAGS_TABLE, new String[] { KEY_GID, KEY_TID }, col_key + " = " + id, null, null,
 				null, KEY_PID + " DESC", null);
@@ -187,16 +220,6 @@ public class BeeminderDbAdapter {
 	public Cursor fetchGoalTags(long id, String col_key) {
 		return mDb.query(true, GOALTAGS_TABLE, new String[] { KEY_GID, KEY_TID }, col_key + " = " + id, null, null,
 				null, null, null);
-	}
-
-	public Cursor fetchGoal(long rowId) throws SQLException {
-		Cursor pCursor = mDb.query(true, GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN },
-				KEY_ROWID + "=" + rowId, null, null, null, null, null);
-		if (pCursor != null) {
-			pCursor.moveToFirst();
-		}
-		return pCursor;
-
 	}
 
 	public String fetchTagString(long goal_id) throws Exception {
@@ -248,29 +271,14 @@ public class BeeminderDbAdapter {
 		return ret;
 	}
 
-	public boolean updateGoal(long goalId, String user, String slug, String token) {
-		// Insert authorization into the table
-		ContentValues values = new ContentValues();
-		values.put(KEY_USERNAME, user);
-		values.put(KEY_SLUG, slug);
-		values.put(KEY_TOKEN, token);
-		int numrows = mDb.update(GOALS_TABLE, values, KEY_ROWID + " = " + goalId, null);
-
-		if (numrows == 1)
-			return true;
-		else
-			return false;
-
-	}
-
 	public boolean updateGoalTags(long goalId, List<String> newTags) {
-		Log.i(TAG, "updateGoalTags()");
+		if (LOCAL_LOGV) Log.v(TAG, "updateGoalTags()");
 		// Remove all the old tags.
 		List<String> cacheUpdates = new ArrayList<String>();
 		try {
 			cacheUpdates = fetchTagsForGoal(goalId);
 		} catch (Exception e) {
-			Log.i(TAG, "Some problem getting tags for this ping!");
+			Log.w(TAG, "Some problem getting tags for this ping!");
 			e.printStackTrace();
 		}
 		cacheUpdates.addAll(newTags);
@@ -288,7 +296,7 @@ public class BeeminderDbAdapter {
 			try {
 				newGoalTag(goalId, tid);
 			} catch (Exception e) {
-				Log.i(TAG, "error inserting newGoalTag(" + goalId + "," + tid + ") in updateTaggings()");
+				Log.w(TAG, "error inserting newGoalTag(" + goalId + "," + tid + ") in updateTaggings()");
 			}
 		}
 		for (String tag : cacheUpdates) {
@@ -298,4 +306,76 @@ public class BeeminderDbAdapter {
 		return true;
 	}
 
+	// ========================= Point database utilities ===================
+
+	public long createPoint(String req_id, double value, long time, String comment, long goal_id) {
+		if (LOCAL_LOGV) Log.v(TAG, "createPoint()");
+		long gid;
+		try {
+			gid = newPoint(req_id, value, time, comment, goal_id);
+		} catch (Exception e) {
+			gid = getPointID(req_id);
+		}
+		// if (!updateGoalTags(gid, tags)) {
+		// Log.e(TAG, "error creating the goal-tag entries");
+		// }
+		return gid;
+	}
+
+	private long newPoint(String req_id, double value, long time, String comment, long goal_id) throws Exception {
+		ContentValues initialValues = new ContentValues();
+		initialValues.put(KEY_REQID, req_id);
+		initialValues.put(KEY_VALUE, value);
+		initialValues.put(KEY_TIMESTAMP, time);
+		initialValues.put(KEY_COMMENT, comment);
+		initialValues.put(KEY_GID, goal_id);
+		return mDb.insertOrThrow(POINTS_TABLE, null, initialValues);
+	}
+
+	public boolean deletePoint(long rowId) {
+		// updateGoalTags(rowId, new ArrayList<String>(0));
+		return mDb.delete(POINTS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
+	}
+
+	public long getPointID(String req_id) {
+		if (LOCAL_LOGV) Log.v(TAG, "getPointID(" + req_id + ")");
+		long gid = -1;
+		Cursor cursor = mDb.query(POINTS_TABLE, new String[] { KEY_ROWID, KEY_REQID }, KEY_REQID + "='" + req_id + "'",
+				null, null, null, null, null);
+		if (cursor.getCount() > 0) {
+			cursor.moveToFirst();
+			gid = cursor.getLong(cursor.getColumnIndex(KEY_ROWID));
+		}
+		cursor.close();
+		return gid;
+	}
+
+	public Cursor fetchPoint(long rowId) throws SQLException {
+		Cursor pCursor = mDb.query(true, POINTS_TABLE, new String[] { KEY_ROWID, KEY_REQID, KEY_VALUE, KEY_TIMESTAMP,
+				KEY_COMMENT, KEY_GID }, KEY_ROWID + "=" + rowId, null, null, null, null, null);
+		if (pCursor != null) {
+			pCursor.moveToFirst();
+		}
+		return pCursor;
+
+	}
+
+	public Cursor fetchAllPoints() {
+		return mDb.query(POINTS_TABLE, new String[] { KEY_ROWID, KEY_REQID, KEY_VALUE, KEY_TIMESTAMP, KEY_COMMENT,
+				KEY_GID }, null, null, null, null, null);
+	}
+
+	public boolean updatePoint(long pointId, double value, long time, String comment ) {
+		// Insert authorization into the table
+		ContentValues values = new ContentValues();
+		values.put(KEY_VALUE, value);
+		values.put(KEY_TIMESTAMP, time);
+		values.put(KEY_COMMENT, comment);
+		int numrows = mDb.update(GOALS_TABLE, values, KEY_ROWID + " = " + pointId, null);
+
+		if (numrows == 1) return true;
+		else return false;
+	}
+
+	// ===================== Point-ping pair database utilities =============
 }

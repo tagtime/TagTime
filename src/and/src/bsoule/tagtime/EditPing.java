@@ -135,14 +135,11 @@ public class EditPing extends Activity {
 		Button confirm = (Button) findViewById(R.id.confirm);
 		confirm.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				Intent resultIntent = new Intent();
 				if (landscape) {
 					String[] newtagstrings = mTagsEdit.getText().toString().trim().split("\\s+");
 					mCurrentTags = new ArrayList<String>(Arrays.asList(newtagstrings));
 					mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 				}
-				resultIntent.putExtra(KEY_TAGS, mCurrentTagString);
-				setResult(RESULT_OK, resultIntent);
 				finish();
 			}
 		});
@@ -265,6 +262,9 @@ public class EditPing extends Activity {
 		populateFields();
 	}
 
+	/** Called from onPause(), this method saves the current tag selection into the database, 
+	 * or updates the outgoing intent to include current tag selection
+	 */
 	private void saveState() {
 		if (LOCAL_LOGV) Log.v(TAG, "saveState()");
 		
@@ -289,6 +289,24 @@ public class EditPing extends Activity {
 				// current tags for orientation change
 			}
 		}
+	}
+
+	@Override
+	public void finish() {
+		if (LOCAL_LOGV) Log.i(TAG, "finish()");
+		// Update result intent
+		Intent resultIntent = new Intent();
+		resultIntent.putExtra(KEY_TAGS, mCurrentTagString);
+		setResult(RESULT_OK, resultIntent);
+		
+		// Submit datapoint associated with the ping
+		if (mRowId >= 0 ){
+			Intent intent = new Intent(this, BeeminderService.class);
+			intent.putExtra(BeeminderDbAdapter.KEY_ROWID, mRowId);
+			this.startService(intent);
+		}
+		
+		super.finish();
 	}
 
 	@Override
