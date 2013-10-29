@@ -1,16 +1,20 @@
 package bsoule.tagtime;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 
 import android.app.IntentService;
 import android.content.Intent;
 import android.database.Cursor;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.beeminder.beedroid.api.Session;
+import com.beeminder.beedroid.api.Session.SessionState;
 
 public class BeeminderService extends IntentService {
 	private static final String TAG = "BeeminderService";
@@ -24,14 +28,100 @@ public class BeeminderService extends IntentService {
 
 	private BeeminderDbAdapter mBeeDB;
 	private PingsDbAdapter mPingDB;
+	private Session mBeeminder;
+
+	private final Semaphore mSubmitSem = new Semaphore(0, true);
+	private final Semaphore mOpenSem = new Semaphore(0, true);
+	private boolean mWaitingOpen = false;
+	
+	private class SessionStatusCallback implements Session.StatusCallback {
+		@Override
+		public void call(Session session, SessionState state) {
+			if (LOCAL_LOGV) Log.v(TAG, "Session Callback: Beeminder status changed:" + state);
+
+			if (state == SessionState.OPENED) {
+				if (mWaitingOpen) {
+					mOpenSem.release();
+					mWaitingOpen = false;
+				}
+			} else if (state == SessionState.CLOSED_ON_ERROR) {
+				if (mWaitingOpen) {
+					mOpenSem.release();
+					mWaitingOpen = false;
+				}
+			} else if (state == SessionState.CLOSED) {
+				// Nothing here since it is a normal close.
+			}
+
+		}
+	}
+
+	private class PointSubmissionCallback implements Session.SubmissionCallback {
+		@Override
+		public void call(Session session, int id, String error) {
+			if (LOCAL_LOGV) Log.v(TAG, "Point Callback: Point submission completed, id=" + id + ", error=" + error);
+			if (error == null) {} else {}
+			mSubmitSem.release();
+		}
+	}
+
+	private String createBeeminderPoint(long goal_id, double value, long time, String comment) {
+		Cursor c = mBeeDB.fetchGoal(goal_id);
+		String user = c.getString(1);
+		String slug = c.getString(2);
+
+		if (mBeeminder != null) {
+			try {
+				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Requesting open for " + user + "/" + slug);
+				mWaitingOpen = true;
+				mBeeminder.openForGoal(user, slug);
+				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open finished, waiting for open semaphore.");
+				mOpenSem.acquire();
+				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open semaphore acquired.");
+				if (mBeeminder.getState() == Session.SessionState.OPENED) {
+					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submitting point.");
+					mBeeminder.submitPoint(value, time, comment);
+					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submission done, waiting for point semaphore");
+					mSubmitSem.acquire();
+					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submit semaphore acquired.");
+				}
+				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Closing session.");
+				mBeeminder.close();
+			} catch (Session.SessionException e) {
+				Log.w(TAG, "createBeeminderPoint: Error opening sessionor submitting point. msg=" + e.getMessage());
+			} catch (InterruptedException e) {
+				Log.w(TAG, "createBeeminderPoint: interrupted. msg=" + e.getMessage());
+			}
+
+		}
+		return user + "/" + slug + "_" + Long.toString(time);
+	}
+
+	private void deleteBeeminderPoint(long goal_id, long point_id) {
+	}
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		if (LOCAL_LOGV) Log.v(TAG, "onCreate: Beeminder notification service created.");
+		if (LOCAL_LOGV) Log.v(TAG, "onCreate: Beeminder service created.");
 
 		mBeeDB = new BeeminderDbAdapter(this);
 		mPingDB = new PingsDbAdapter(this);
+		try {
+			mBeeminder = new Session(getApplicationContext());
+			mBeeminder.setStatusCallback(new SessionStatusCallback());
+			mBeeminder.setSubmissionCallback(new PointSubmissionCallback());
+		} catch (Session.SessionException e) {
+			Log.w(TAG, "onCreate: Error creating Beeminder Session: " + e.getMessage());
+			mBeeminder = null;
+		}
+	}
+
+	@Override
+	public void onDestroy() {
+		if (LOCAL_LOGV) Log.v(TAG, "onDestroy()");
+		if (mBeeminder != null) mBeeminder.close();
+		super.onDestroy();
 	}
 
 	private List<Long> findPingPoints(long ping_id) {
@@ -113,13 +203,21 @@ public class BeeminderService extends IntentService {
 		double value = 0.75;
 		String comment = "TagTime ping";
 
-		long ptid = mBeeDB.createPoint(Long.toString(time) + goal_id, value, time, comment, goal_id);
-		try {
-			mBeeDB.newPointPing(ptid, ping_id);
-		} catch (Exception e) {
-			Log.w(TAG, "onHandleIntent: Could not create pair for point=" + ptid + ", ping=" + ping_id);
-		}
+		// Initiate creation of a Beeminder point submission. Will block until
+		// response with request ID is received
+		String req_id = createBeeminderPoint(goal_id, value, time, comment);
 
+		if (req_id != null) {
+			long ptid = mBeeDB.createPoint(req_id, value, time, comment, goal_id);
+			try {
+				mBeeDB.newPointPing(ptid, ping_id);
+			} catch (Exception e) {
+				Log.w(TAG, "newPointForPing: Could not create pair for point=" + ptid + ", ping=" + ping_id
+						+ " for goal " + goal_id);
+			}
+		} else {
+			Log.w(TAG, "newPointForPing: Beeminder submission failed for ping=" + ping_id + " to goal " + goal_id);
+		}
 	}
 
 	@Override
@@ -178,7 +276,7 @@ public class BeeminderService extends IntentService {
 				// Remove all points that were left unassociated with any goals
 				// that matched the new set of tags.
 				for (long ptid : points) {
-					if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Removing point "+ptid);
+					if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Removing point " + ptid);
 					mBeeDB.removePoint(ptid);
 				}
 
