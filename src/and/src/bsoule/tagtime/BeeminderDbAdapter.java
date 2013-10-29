@@ -34,6 +34,10 @@ public class BeeminderDbAdapter {
 	// Uses KEY_GID
 	public static final String KEY_PID = "ping_id";
 
+	// Table for point ping pairs
+	public static final String KEY_POINTID = "point_id";
+	// Uses KEY_PID
+
 	private static final String DATABASE_NAME = "timepie_beeminder";
 	private static final String GOALS_TABLE = "goals";
 	private static final String GOALTAGS_TABLE = "goaltags";
@@ -57,8 +61,8 @@ public class BeeminderDbAdapter {
 	// a point records submission details, corresponding goal and generating
 	// ping
 	private static final String CREATE_POINTS = "create table points (_id integer primary key autoincrement, "
-			+ "request_id text not null, value real not null, time integer not null, comment text not null, goal_id integer not null,"
-			+ "UNIQUE (request_id));";
+			+ "req_id text not null, value real not null, time integer not null, comment text not null, goal_id integer not null,"
+			+ "UNIQUE (req_id));";
 
 	// a point ping is a point-ping pairing
 	private static final String CREATE_POINTPINGS = "create table pointpings (_id integer primary key autoincrement, "
@@ -190,8 +194,7 @@ public class BeeminderDbAdapter {
 
 	}
 
-	// ===================== Goal-tag pair database utilities
-	// =====================
+	// ============== Goal-tag pair database utilities ===============
 	public long newGoalTag(long goal_id, long tag_id) throws Exception {
 		ContentValues init = new ContentValues();
 		init.put(KEY_GID, goal_id);
@@ -306,7 +309,7 @@ public class BeeminderDbAdapter {
 		return true;
 	}
 
-	// ========================= Point database utilities ===================
+	// ======================= Point database utilities ==================
 
 	public long createPoint(String req_id, double value, long time, String comment, long goal_id) {
 		if (LOCAL_LOGV) Log.v(TAG, "createPoint()");
@@ -332,7 +335,7 @@ public class BeeminderDbAdapter {
 		return mDb.insertOrThrow(POINTS_TABLE, null, initialValues);
 	}
 
-	public boolean deletePoint(long rowId) {
+	private boolean deletePoint(long rowId) {
 		// updateGoalTags(rowId, new ArrayList<String>(0));
 		return mDb.delete(POINTS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
 	}
@@ -365,7 +368,7 @@ public class BeeminderDbAdapter {
 				KEY_GID }, null, null, null, null, null);
 	}
 
-	public boolean updatePoint(long pointId, double value, long time, String comment ) {
+	public boolean updatePoint(long pointId, double value, long time, String comment) {
 		// Insert authorization into the table
 		ContentValues values = new ContentValues();
 		values.put(KEY_VALUE, value);
@@ -377,5 +380,57 @@ public class BeeminderDbAdapter {
 		else return false;
 	}
 
+	public void removePoint(long point_id) {
+		List<Long> pings;
+		deletePoint(point_id);
+		try {
+			pings = fetchPingsForPoint(point_id);
+		} catch (Exception e) {
+			Log.w(TAG, "removePoints: Error fetching pings for point "+point_id);
+			return;
+		}
+		for (long ping_id : pings) {
+			deletePointPing(point_id, ping_id);
+		}
+	}
+
 	// ===================== Point-ping pair database utilities =============
+	public long newPointPing(long point_id, long ping_id) throws Exception {
+		ContentValues init = new ContentValues();
+		init.put(KEY_POINTID, point_id);
+		init.put(KEY_PID, ping_id);
+		return mDb.insertOrThrow(POINTPINGS_TABLE, null, init);
+	}
+
+	public boolean isPointPing(long pointId, long pingId) {
+		Cursor c = mDb.query(POINTPINGS_TABLE, new String[] { KEY_ROWID }, KEY_POINTID + "=" + pointId + " AND "
+				+ KEY_PID + "=" + pingId, null, null, null, null);
+		boolean ret = c.getCount() > 0;
+		c.close();
+		return ret;
+	}
+
+	public boolean deletePointPing(long pointId, long pingId) {
+		String query = KEY_POINTID + "=" + pointId + " AND " + KEY_PID + "=" + pingId;
+		return mDb.delete(POINTPINGS_TABLE, query, null) > 0;
+	}
+
+	public Cursor fetchPointPings(long id, String col_key) {
+		return mDb.query(true, POINTPINGS_TABLE, new String[] { KEY_POINTID, KEY_PID }, col_key + " = " + id, null,
+				null, null, null, null);
+	}
+
+	public List<Long> fetchPingsForPoint(long point_id) throws Exception {
+		Cursor c = fetchPointPings(point_id, KEY_POINTID);
+		List<Long> ret = new ArrayList<Long>();
+		c.moveToFirst();
+		int idx = c.getColumnIndex(KEY_PID);
+		while (!c.isAfterLast()) {
+			long tid = c.getLong(idx);
+			ret.add(tid);
+			c.moveToNext();
+		}
+		c.close();
+		return ret;
+	}
 }

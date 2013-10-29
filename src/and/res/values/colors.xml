@@ -7,4 +7,7 @@
     <color name="menubutton_unselected_text">#ffffff</color>
     <color name="menubutton_selected_text">#ffffff</color>
     
+    <!-- Tag button colors -->
+    <color name="tag_unselected_text">#888888</color>
+    <color name="tag_selected_text">#eeeeee</color>
 </resources>

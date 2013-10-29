@@ -1,6 +1,7 @@
 package bsoule.tagtime;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.util.AttributeSet;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
@@ -47,12 +48,16 @@ public class TagToggle extends Button {
 		return super.performClick();
 	}
 
+	private Resources mRes = getResources();
+	
 	public void setChecked(boolean state) {
 		selected = state;
 		if (selected) {
 			setBackgroundResource(R.drawable.tagbuttononbmp);
+			setTextColor(mRes.getColor(R.color.tag_selected_text));
 		} else {
 			setBackgroundResource(R.drawable.tagbuttonoffpng);
+			setTextColor(mRes.getColor(R.color.tag_unselected_text));
 		}
 	}
 	

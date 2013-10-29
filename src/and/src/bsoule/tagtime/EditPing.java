@@ -302,7 +302,10 @@ public class EditPing extends Activity {
 		// Submit datapoint associated with the ping
 		if (mRowId >= 0 ){
 			Intent intent = new Intent(this, BeeminderService.class);
-			intent.putExtra(BeeminderDbAdapter.KEY_ROWID, mRowId);
+			intent.setAction(BeeminderService.ACTION_EDITPING);
+			intent.putExtra(BeeminderService.KEY_PID, mRowId);
+			intent.putExtra(BeeminderService.KEY_OLDTAGS, "");
+			intent.putExtra(BeeminderService.KEY_NEWTAGS, mCurrentTagString);
 			this.startService(intent);
 		}
 		
