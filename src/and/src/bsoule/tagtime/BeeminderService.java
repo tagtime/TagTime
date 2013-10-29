@@ -9,7 +9,6 @@ import java.util.concurrent.Semaphore;
 import android.app.IntentService;
 import android.content.Intent;
 import android.database.Cursor;
-import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
 
