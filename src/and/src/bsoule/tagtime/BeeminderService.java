@@ -32,6 +32,22 @@ public class BeeminderService extends IntentService {
 	private final Semaphore mSubmitSem = new Semaphore(0, true);
 	private final Semaphore mOpenSem = new Semaphore(0, true);
 	private boolean mWaitingOpen = false;
+
+	private class Point {
+		public int submissionId;
+		public String requestId;
+		public String user;
+		public String slug;
+		public double value;
+		public long timestamp;
+		public String comment;
+		public Point() {
+			submissionId = -1; 
+			requestId = null;
+		}
+	};
+	
+	private Point mPoint = new Point();
 	
 	private class SessionStatusCallback implements Session.StatusCallback {
 		@Override
@@ -57,46 +73,121 @@ public class BeeminderService extends IntentService {
 
 	private class PointSubmissionCallback implements Session.SubmissionCallback {
 		@Override
-		public void call(Session session, int id, String error) {
-			if (LOCAL_LOGV) Log.v(TAG, "Point Callback: Point submission completed, id=" + id + ", error=" + error);
-			if (error == null) {} else {}
+		public void call(Session session, int submission_id, String request_id, String error) {
+			if (LOCAL_LOGV) Log.v(TAG, "Point Callback: Point submission completed, id=" + submission_id + ", req_id="
+					+ request_id + ", error=" + error);
+			if (error == null && submission_id == mPoint.submissionId) {
+				mPoint.requestId = request_id;
+			} else {
+				Log.w(TAG, "Point Callback: Submission error or ID mismatch. msg="+error);
+				mPoint.requestId = null;
+			}
 			mSubmitSem.release();
 		}
 	}
 
-	private String createBeeminderPoint(long goal_id, double value, long time, String comment) {
+	private void initializePointFromGoal( long goal_id ) {
 		Cursor c = mBeeDB.fetchGoal(goal_id);
-		String user = c.getString(1);
-		String slug = c.getString(2);
-
+		mPoint.requestId = null;
+		mPoint.user = c.getString(1);
+		mPoint.slug = c.getString(2);
+		c.close();		
+	}
+	
+	private void initializePoint( long point_id ) {
+		Cursor c = mBeeDB.fetchPoint(point_id);
+		initializePointFromGoal( c.getLong(5) );
+		mPoint.requestId = c.getString(1);
+		c.close();		
+	}
+	
+	private String createBeeminderPoint(long goal_id, double value, long time, String comment) {
+		initializePointFromGoal(goal_id);
+		mPoint.value = value;
+		mPoint.timestamp = time;
+		mPoint.comment = comment;
+		
 		if (mBeeminder != null) {
 			try {
-				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Requesting open for " + user + "/" + slug);
+				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Requesting open for " + mPoint.user + "/" + mPoint.slug);
+
 				mWaitingOpen = true;
-				mBeeminder.openForGoal(user, slug);
+				mBeeminder.openForGoal(mPoint.user, mPoint.slug);
+				
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open finished, waiting for open semaphore.");
+				
 				mOpenSem.acquire();
+				
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open semaphore acquired.");
+				
 				if (mBeeminder.getState() == Session.SessionState.OPENED) {
+					
 					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submitting point.");
-					mBeeminder.submitPoint(value, time, comment);
+					
+					mPoint.submissionId = mBeeminder.createPoint(mPoint.value, mPoint.timestamp, mPoint.comment);
+					
 					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submission done, waiting for point semaphore");
+					
 					mSubmitSem.acquire();
+					
 					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submit semaphore acquired.");
 				}
+				
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Closing session.");
+				
 				mBeeminder.close();
 			} catch (Session.SessionException e) {
-				Log.w(TAG, "createBeeminderPoint: Error opening sessionor submitting point. msg=" + e.getMessage());
+				Log.w(TAG, "createBeeminderPoint: Error opening session or submitting point. msg=" + e.getMessage());
 			} catch (InterruptedException e) {
 				Log.w(TAG, "createBeeminderPoint: interrupted. msg=" + e.getMessage());
 			}
 
 		}
-		return user + "/" + slug + "_" + Long.toString(time);
+		return mPoint.requestId;
 	}
 
-	private void deleteBeeminderPoint(long goal_id, long point_id) {
+	private boolean deleteBeeminderPoint(long point_id) {
+		boolean result = false;
+		initializePoint(point_id);
+
+		if (mBeeminder != null) {
+			try {
+				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Requesting open for " + mPoint.user + "/" + mPoint.slug);
+
+				mWaitingOpen = true;
+				mBeeminder.openForGoal(mPoint.user, mPoint.slug);
+				
+				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open finished, waiting for open semaphore.");
+				
+				mOpenSem.acquire();
+				
+				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open semaphore acquired.");
+				
+				if (mBeeminder.getState() == Session.SessionState.OPENED) {
+					
+					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Deleting point.");
+					
+					mPoint.submissionId = mBeeminder.deletePoint(mPoint.requestId);
+					
+					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submission done, waiting for point semaphore");
+					
+					mSubmitSem.acquire();
+					
+					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submit semaphore acquired.");
+					if(mPoint.requestId != null) result = true;
+				}
+				
+				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Closing session.");
+				
+				mBeeminder.close();
+			} catch (Session.SessionException e) {
+				Log.w(TAG, "deleteBeeminderPoint: Error opening session or deleting point. msg=" + e.getMessage());
+			} catch (InterruptedException e) {
+				Log.w(TAG, "deleteBeeminderPoint: interrupted. msg=" + e.getMessage());
+			}
+
+		}
+		return result;
 	}
 
 	@Override
@@ -276,7 +367,8 @@ public class BeeminderService extends IntentService {
 				// that matched the new set of tags.
 				for (long ptid : points) {
 					if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Removing point " + ptid);
-					mBeeDB.removePoint(ptid);
+					boolean deleted = deleteBeeminderPoint(ptid);
+					if (deleted) mBeeDB.removePoint(ptid);
 				}
 
 				mPingDB.close();
