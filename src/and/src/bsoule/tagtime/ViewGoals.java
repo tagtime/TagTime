@@ -1,8 +1,5 @@
 package bsoule.tagtime;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;

@@ -7,8 +7,13 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -41,14 +46,15 @@ public class BeeminderService extends IntentService {
 		public double value;
 		public long timestamp;
 		public String comment;
+
 		public Point() {
-			submissionId = -1; 
+			submissionId = -1;
 			requestId = null;
 		}
 	};
-	
+
 	private Point mPoint = new Point();
-	
+
 	private class SessionStatusCallback implements Session.StatusCallback {
 		@Override
 		public void call(Session session, SessionState state) {
@@ -79,62 +85,63 @@ public class BeeminderService extends IntentService {
 			if (error == null && submission_id == mPoint.submissionId) {
 				mPoint.requestId = request_id;
 			} else {
-				Log.w(TAG, "Point Callback: Submission error or ID mismatch. msg="+error);
+				Log.w(TAG, "Point Callback: Submission error or ID mismatch. msg=" + error);
 				mPoint.requestId = null;
 			}
 			mSubmitSem.release();
 		}
 	}
 
-	private void initializePointFromGoal( long goal_id ) {
+	private void initializePointFromGoal(long goal_id) {
 		Cursor c = mBeeDB.fetchGoal(goal_id);
 		mPoint.requestId = null;
 		mPoint.user = c.getString(1);
 		mPoint.slug = c.getString(2);
-		c.close();		
+		c.close();
 	}
-	
-	private void initializePoint( long point_id ) {
+
+	private void initializePoint(long point_id) {
 		Cursor c = mBeeDB.fetchPoint(point_id);
-		initializePointFromGoal( c.getLong(5) );
+		initializePointFromGoal(c.getLong(5));
 		mPoint.requestId = c.getString(1);
-		c.close();		
+		c.close();
 	}
-	
+
 	private String createBeeminderPoint(long goal_id, double value, long time, String comment) {
 		initializePointFromGoal(goal_id);
 		mPoint.value = value;
 		mPoint.timestamp = time;
 		mPoint.comment = comment;
-		
+
 		if (mBeeminder != null) {
 			try {
-				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Requesting open for " + mPoint.user + "/" + mPoint.slug);
+				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Requesting open for " + mPoint.user + "/"
+						+ mPoint.slug);
 
 				mWaitingOpen = true;
 				mBeeminder.openForGoal(mPoint.user, mPoint.slug);
-				
+
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open finished, waiting for open semaphore.");
-				
+
 				mOpenSem.acquire();
-				
+
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open semaphore acquired.");
-				
+
 				if (mBeeminder.getState() == Session.SessionState.OPENED) {
-					
+
 					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submitting point.");
-					
+
 					mPoint.submissionId = mBeeminder.createPoint(mPoint.value, mPoint.timestamp, mPoint.comment);
-					
+
 					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submission done, waiting for point semaphore");
-					
+
 					mSubmitSem.acquire();
-					
+
 					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submit semaphore acquired.");
 				}
-				
+
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Closing session.");
-				
+
 				mBeeminder.close();
 			} catch (Session.SessionException e) {
 				Log.w(TAG, "createBeeminderPoint: Error opening session or submitting point. msg=" + e.getMessage());
@@ -142,6 +149,21 @@ public class BeeminderService extends IntentService {
 				Log.w(TAG, "createBeeminderPoint: interrupted. msg=" + e.getMessage());
 			}
 
+		}
+		if (mPoint.requestId == null) {
+			String msg = "Error updating "+ mPoint.user + "/" + mPoint.slug;
+			String submsg = "Goal points may now be inconsistent";
+	        Intent intent = new Intent( this, ViewLog.class );
+	        PendingIntent ci = PendingIntent.getActivity( this, mPoint.submissionId, intent, 0 );
+			NotificationManager nm = (NotificationManager) getSystemService( Context.NOTIFICATION_SERVICE );
+			Notification notif = new NotificationCompat.Builder(this)
+	         	.setContentTitle(msg)
+	         	.setContentText(submsg)
+	         	.setSmallIcon(R.drawable.error_ticker)
+	         	.setContentIntent(ci)
+	         	.build();
+	        notif.flags |= Notification.FLAG_AUTO_CANCEL;
+			nm.notify(mPoint.submissionId, notif);
 		}
 		return mPoint.requestId;
 	}
@@ -152,33 +174,34 @@ public class BeeminderService extends IntentService {
 
 		if (mBeeminder != null) {
 			try {
-				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Requesting open for " + mPoint.user + "/" + mPoint.slug);
+				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Requesting open for " + mPoint.user + "/"
+						+ mPoint.slug);
 
 				mWaitingOpen = true;
 				mBeeminder.openForGoal(mPoint.user, mPoint.slug);
-				
+
 				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open finished, waiting for open semaphore.");
-				
+
 				mOpenSem.acquire();
-				
+
 				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open semaphore acquired.");
-				
+
 				if (mBeeminder.getState() == Session.SessionState.OPENED) {
-					
+
 					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Deleting point.");
-					
+
 					mPoint.submissionId = mBeeminder.deletePoint(mPoint.requestId);
-					
+
 					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submission done, waiting for point semaphore");
-					
+
 					mSubmitSem.acquire();
-					
+
 					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submit semaphore acquired.");
-					if(mPoint.requestId != null) result = true;
+					if (mPoint.requestId != null) result = true;
 				}
-				
+
 				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Closing session.");
-				
+
 				mBeeminder.close();
 			} catch (Session.SessionException e) {
 				Log.w(TAG, "deleteBeeminderPoint: Error opening session or deleting point. msg=" + e.getMessage());
@@ -186,6 +209,21 @@ public class BeeminderService extends IntentService {
 				Log.w(TAG, "deleteBeeminderPoint: interrupted. msg=" + e.getMessage());
 			}
 
+		}
+		if (!result) {
+			String msg = "Error updating "+ mPoint.user + "/" + mPoint.slug;
+			String submsg = "Goal points may now be inconsistent";
+	        Intent intent = new Intent( this, ViewLog.class );
+	        PendingIntent ci = PendingIntent.getActivity( this, mPoint.submissionId, intent, 0 );
+			NotificationManager nm = (NotificationManager) getSystemService( Context.NOTIFICATION_SERVICE );
+			Notification notif = new NotificationCompat.Builder(this)
+	         	.setContentTitle(msg)
+	         	.setContentText(submsg)
+	         	.setSmallIcon(R.drawable.error_ticker)
+	         	.setContentIntent(ci)
+	         	.build();
+	        notif.flags |= Notification.FLAG_AUTO_CANCEL;
+			nm.notify(mPoint.submissionId, notif);
 		}
 		return result;
 	}
