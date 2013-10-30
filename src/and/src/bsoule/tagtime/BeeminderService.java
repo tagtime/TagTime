@@ -1,12 +1,14 @@
 package bsoule.tagtime;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -33,6 +35,7 @@ public class BeeminderService extends IntentService {
 	public static final String KEY_RETRIES = "retries";
 
 	private static final int SEMAPHORE_TIMEOUT = 30;
+	private static final int RETRY_DELAY = 30;
 	private static final int MAX_RETRIES = 3;
 
 	private BeeminderDbAdapter mBeeDB;
@@ -91,7 +94,12 @@ public class BeeminderService extends IntentService {
 		intent.putExtra(KEY_OLDTAGS, mOldTagsIn);
 		intent.putExtra(KEY_NEWTAGS, mNewTagsIn);
 		intent.putExtra(KEY_RETRIES, mRetries);
-		startService(intent);
+        PendingIntent sender = PendingIntent.getService( this, mPoint.submissionId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT );
+        AlarmManager am = (AlarmManager) getSystemService( ALARM_SERVICE );
+        Calendar cal = Calendar.getInstance();
+        cal.add( Calendar.SECOND, RETRY_DELAY );
+        am.set( AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), sender );
 	}
 
 	private void notifyForResubmit() {
