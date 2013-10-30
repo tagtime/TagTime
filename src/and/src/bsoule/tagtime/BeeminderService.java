@@ -16,6 +16,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -35,8 +36,8 @@ public class BeeminderService extends IntentService {
 	public static final String KEY_RETRIES = "retries";
 
 	private static final int SEMAPHORE_TIMEOUT = 30;
-	private static final int RETRY_DELAY = 30;
-	private static final int MAX_RETRIES = 3;
+	private static final int RETRY_DELAY = 60;
+	private static final int MAX_RETRIES = 5;
 
 	private BeeminderDbAdapter mBeeDB;
 	private PingsDbAdapter mPingDB;
@@ -45,6 +46,7 @@ public class BeeminderService extends IntentService {
 	private final Semaphore mSubmitSem = new Semaphore(0, true);
 	private final Semaphore mOpenSem = new Semaphore(0, true);
 	private boolean mWaitingOpen = false;
+	private Session.ErrorType mLastError = null;
 
 	private class Point {
 		public int submissionId;
@@ -65,10 +67,10 @@ public class BeeminderService extends IntentService {
 
 	private void notifyVersionError(String submsg) {
 		String msg = "Error opening Beeminder session.";
-		Intent intent = new Intent(BeeminderService.this, TPController.class);
-		PendingIntent ci = PendingIntent.getActivity(BeeminderService.this, 0, intent, 0);
+		Intent intent = new Intent(getApplicationContext(), TPController.class);
+		PendingIntent ci = PendingIntent.getActivity(getApplicationContext(), 0, intent, 0);
 		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		Notification notif = new NotificationCompat.Builder(BeeminderService.this).setContentTitle(msg)
+		Notification notif = new NotificationCompat.Builder(getApplicationContext()).setContentTitle(msg)
 				.setContentText(submsg).setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
 		notif.flags |= Notification.FLAG_AUTO_CANCEL;
 		nm.notify(0, notif);
@@ -77,29 +79,29 @@ public class BeeminderService extends IntentService {
 	private void notifyAuthorizationError(String user, String goal) {
 		String msg = "Authorization lost for " + user + "/" + goal;
 		String submsg = "You should re-link to this goal";
-		Intent intent = new Intent(BeeminderService.this, ViewGoals.class);
-		PendingIntent ci = PendingIntent.getActivity(BeeminderService.this, 0, intent, 0);
+		Intent intent = new Intent(getApplicationContext(), ViewGoals.class);
+		PendingIntent ci = PendingIntent.getActivity(getApplicationContext(), 0, intent, 0);
 		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		Notification notif = new NotificationCompat.Builder(BeeminderService.this).setContentTitle(msg)
+		Notification notif = new NotificationCompat.Builder(getApplicationContext()).setContentTitle(msg)
 				.setContentText(submsg).setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
 		notif.flags |= Notification.FLAG_AUTO_CANCEL;
 		nm.notify(0, notif);
 	}
 
 	private void retryIntent() {
-		if (LOCAL_LOGV) Log.v(TAG, "Retrying edits for ping " + mPingId);
-		Intent intent = new Intent(this, BeeminderService.class);
+		Intent intent = new Intent(getApplicationContext(), BeeminderService.class);
 		intent.setAction(ACTION_EDITPING);
 		intent.putExtra(KEY_PID, mPingId);
 		intent.putExtra(KEY_OLDTAGS, mOldTagsIn);
 		intent.putExtra(KEY_NEWTAGS, mNewTagsIn);
 		intent.putExtra(KEY_RETRIES, mRetries);
-        PendingIntent sender = PendingIntent.getService( this, mPoint.submissionId, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT );
-        AlarmManager am = (AlarmManager) getSystemService( ALARM_SERVICE );
-        Calendar cal = Calendar.getInstance();
-        cal.add( Calendar.SECOND, RETRY_DELAY );
-        am.set( AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), sender );
+		intent.setData(Uri.parse("file://" + mPoint.requestId + mRetries));
+		PendingIntent sender = PendingIntent.getService(getApplicationContext(), 0, intent, 0);
+		AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.SECOND, RETRY_DELAY);
+		if (LOCAL_LOGV) Log.v(TAG, "Retrying edits for ping " + mPingId + " at " + cal.getTimeInMillis());
+		am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), sender);
 	}
 
 	private void notifyForResubmit() {
@@ -138,6 +140,7 @@ public class BeeminderService extends IntentService {
 					// links. Should normally not happen often
 					notifyAuthorizationError(mPoint.user, mPoint.slug);
 				}
+				mLastError = session.getError().type;
 
 			} else if (state == SessionState.CLOSED) {
 				// Nothing here since it is a normal close.
@@ -152,18 +155,19 @@ public class BeeminderService extends IntentService {
 					+ request_id + ", error=" + error);
 			if (error == null && submission_id == mPoint.submissionId) {
 				mPoint.requestId = request_id;
+				mLastError = null;
 			} else {
 				Log.w(TAG, "Point Callback: Submission error or ID mismatch. msg=" + error);
 				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
 					notifyVersionError(session.getError().message);
-					mPoint.requestId = null;
 				} else if (session.getError().type == Session.ErrorType.ERROR_UNAUTHORIZED) {
 					// TODO: Remove this goal from the list of Beeminder links.
 					notifyAuthorizationError(mPoint.user, mPoint.slug);
-					mPoint.requestId = null;
 				} else if (session.getError().type == Session.ErrorType.ERROR_NOTFOUND) {
-					// This only comes back on delete/update requests. Nothing for now 
+					// Points that did not yet make it to the server may appear
+					// as not found. Give up only after all the retries.
 				}
+				mLastError = session.getError().type;
 			}
 			mSubmitSem.release();
 		}
@@ -189,6 +193,7 @@ public class BeeminderService extends IntentService {
 	}
 
 	private String createBeeminderPoint(long goal_id, double value, long time, String comment) {
+		mLastError = null;
 		if (!initializePointFromGoal(goal_id)) return null;
 		mPoint.value = value;
 		mPoint.timestamp = time;
@@ -233,14 +238,18 @@ public class BeeminderService extends IntentService {
 			}
 
 		}
-		if (mPoint.requestId == null) {
+		
+		if (mLastError != null) {
 			retryIntent();
+			return null;
 		}
+
 		return mPoint.requestId;
 	}
 
 	private boolean deleteBeeminderPoint(long point_id) {
 		boolean result = false;
+		mLastError = null;
 		if (!initializePoint(point_id)) return false;
 
 		if (mBeeminder != null) {
@@ -268,9 +277,9 @@ public class BeeminderService extends IntentService {
 
 					// Try to acquire semaphore with a timeout of 2 seconds
 					boolean submitted = mSubmitSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
+					if (mLastError == null) result = true;
 
 					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submit semaphore acquired:" + submitted);
-					if (mPoint.requestId != null) result = true;
 				}
 
 				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Closing session.");
@@ -283,9 +292,8 @@ public class BeeminderService extends IntentService {
 			}
 
 		}
-		if (!result) {
-			retryIntent();
-		}
+		if (!result) retryIntent();
+
 		return result;
 	}
 
@@ -418,7 +426,7 @@ public class BeeminderService extends IntentService {
 	protected void onHandleIntent(Intent intent) {
 		if (intent != null) {
 			String action = intent.getAction();
-			if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Beeminder notification service: " + action);
+			if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: act=" + action + ", data=" + intent.getDataString());
 			if (action == null) {
 				Log.w(TAG, "onHandleIntent: No action specified!");
 				return;
@@ -432,6 +440,13 @@ public class BeeminderService extends IntentService {
 
 				mRetries = intent.getIntExtra(KEY_RETRIES, 0);
 				mRetries++;
+
+				if (LOCAL_LOGV) {
+					Log.v(TAG, "onHandleIntent: =================================================");
+					Log.v(TAG, "onHandleIntent: Got ping_id=" + mPingId + ", oldtags=" + mOldTagsIn + ", newtags="
+							+ mNewTagsIn + ", attempt=" + mRetries);
+				}
+
 				if (mRetries >= MAX_RETRIES) {
 					Log.w(TAG, "onHandleIntent: Exceeded maximum retries for ping " + mPingId);
 					notifyForResubmit();
@@ -442,9 +457,6 @@ public class BeeminderService extends IntentService {
 							+ ", newtags=" + mNewTagsIn);
 					return;
 				}
-
-				if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Got ping_id=" + mPingId + ", oldtags=" + mOldTagsIn
-						+ ", newtags=" + mNewTagsIn);
 
 				mBeeDB.open();
 				mPingDB.open();
@@ -481,6 +493,13 @@ public class BeeminderService extends IntentService {
 					if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Removing point " + ptid);
 					boolean deleted = deleteBeeminderPoint(ptid);
 					if (deleted) mBeeDB.removePoint(ptid);
+					else if (mRetries >= (MAX_RETRIES - 1) && mLastError == Session.ErrorType.ERROR_NOTFOUND) {
+						// We give up on retrying point deletion after a number
+						// of retries with NOTFOUND as a result. The last retry
+						// will have gone through already
+						Log.w(TAG, "onHandleIntent: Giving up on delete for " + mPoint.user + "/" + mPoint.slug);
+						mBeeDB.removePoint(ptid);
+					}
 				}
 
 				mPingDB.close();
