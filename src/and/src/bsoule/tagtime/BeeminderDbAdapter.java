@@ -150,6 +150,7 @@ public class BeeminderDbAdapter {
 
 	public boolean deleteGoal(long rowId) {
 		updateGoalTags(rowId, new ArrayList<String>(0));
+		removeGoalPoints( rowId );
 		return mDb.delete(GOALS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 
@@ -336,7 +337,6 @@ public class BeeminderDbAdapter {
 	}
 
 	private boolean deletePoint(long rowId) {
-		// updateGoalTags(rowId, new ArrayList<String>(0));
 		return mDb.delete(POINTS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 
@@ -380,13 +380,27 @@ public class BeeminderDbAdapter {
 		else return false;
 	}
 
+	public void removeGoalPoints(long goal_id) {
+		Cursor c = mDb.query(true, POINTS_TABLE, new String[] { KEY_ROWID, KEY_GID }, KEY_GID + "=" + goal_id, null,
+				null, null, null, null);
+		List<Long> points = new ArrayList<Long>();
+		c.moveToFirst();
+		while (!c.isAfterLast()) {
+			points.add(c.getLong(0));
+			c.moveToNext();
+		}
+		c.close();
+		for (long pt : points)
+			removePoint(pt);
+	}
+
 	public void removePoint(long point_id) {
 		List<Long> pings;
 		deletePoint(point_id);
 		try {
 			pings = fetchPingsForPoint(point_id);
 		} catch (Exception e) {
-			Log.w(TAG, "removePoints: Error fetching pings for point "+point_id);
+			Log.w(TAG, "removePoints: Error fetching pings for point " + point_id);
 			return;
 		}
 		for (long ping_id : pings) {
@@ -408,6 +422,11 @@ public class BeeminderDbAdapter {
 		boolean ret = c.getCount() > 0;
 		c.close();
 		return ret;
+	}
+
+	public boolean deleteAllPointPings(long pointId) {
+		String query = KEY_POINTID + "=" + pointId;
+		return mDb.delete(POINTPINGS_TABLE, query, null) > 0;
 	}
 
 	public boolean deletePointPing(long pointId, long pingId) {

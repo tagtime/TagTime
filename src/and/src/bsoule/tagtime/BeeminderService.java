@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import android.app.IntentService;
 import android.app.Notification;
@@ -29,6 +30,10 @@ public class BeeminderService extends IntentService {
 	public static final String KEY_PID = "ping_id";
 	public static final String KEY_OLDTAGS = "oldtags";
 	public static final String KEY_NEWTAGS = "newtags";
+	public static final String KEY_RETRIES = "retries";
+
+	private static final int SEMAPHORE_TIMEOUT = 30;
+	private static final int MAX_RETRIES = 3;
 
 	private BeeminderDbAdapter mBeeDB;
 	private PingsDbAdapter mPingDB;
@@ -66,6 +71,42 @@ public class BeeminderService extends IntentService {
 		nm.notify(0, notif);
 	}
 
+	private void notifyAuthorizationError(String user, String goal) {
+		String msg = "Authorization lost for " + user + "/" + goal;
+		String submsg = "You should re-link to this goal";
+		Intent intent = new Intent(BeeminderService.this, ViewGoals.class);
+		PendingIntent ci = PendingIntent.getActivity(BeeminderService.this, 0, intent, 0);
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		Notification notif = new NotificationCompat.Builder(BeeminderService.this).setContentTitle(msg)
+				.setContentText(submsg).setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
+		notif.flags |= Notification.FLAG_AUTO_CANCEL;
+		nm.notify(0, notif);
+	}
+
+	private void retryIntent() {
+		if (LOCAL_LOGV) Log.v(TAG, "Retrying edits for ping " + mPingId);
+		Intent intent = new Intent(this, BeeminderService.class);
+		intent.setAction(ACTION_EDITPING);
+		intent.putExtra(KEY_PID, mPingId);
+		intent.putExtra(KEY_OLDTAGS, mOldTagsIn);
+		intent.putExtra(KEY_NEWTAGS, mNewTagsIn);
+		intent.putExtra(KEY_RETRIES, mRetries);
+		startService(intent);
+	}
+
+	private void notifyForResubmit() {
+		String msg = "Error updating ping " + mPingId;
+		String submsg = "Click to re-edit ping";
+		Intent intent = new Intent(this, EditPing.class);
+		intent.putExtra(PingsDbAdapter.KEY_ROWID, mPingId);
+		PendingIntent ci = PendingIntent.getActivity(this, mPoint.submissionId, intent, 0);
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		Notification notif = new NotificationCompat.Builder(this).setContentTitle(msg).setContentText(submsg)
+				.setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
+		notif.flags |= Notification.FLAG_AUTO_CANCEL;
+		nm.notify(mPoint.submissionId, notif);
+	}
+
 	private class SessionStatusCallback implements Session.StatusCallback {
 		@Override
 		public void call(Session session, SessionState state) {
@@ -84,19 +125,22 @@ public class BeeminderService extends IntentService {
 				}
 				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
 					notifyVersionError(session.getError().message);
+				} else if (session.getError().type == Session.ErrorType.ERROR_UNAUTHORIZED) {
+					// TODO: Must remove this goal from the list of Beeminder
+					// links. Should normally not happen often
+					notifyAuthorizationError(mPoint.user, mPoint.slug);
 				}
 
 			} else if (state == SessionState.CLOSED) {
 				// Nothing here since it is a normal close.
 			}
-
 		}
 	}
 
 	private class PointSubmissionCallback implements Session.SubmissionCallback {
 		@Override
 		public void call(Session session, int submission_id, String request_id, String error) {
-			if (LOCAL_LOGV) Log.v(TAG, "Point Callback: Point submission completed, id=" + submission_id + ", req_id="
+			if (LOCAL_LOGV) Log.v(TAG, "Point Callback: Point operation completed, id=" + submission_id + ", req_id="
 					+ request_id + ", error=" + error);
 			if (error == null && submission_id == mPoint.submissionId) {
 				mPoint.requestId = request_id;
@@ -104,30 +148,40 @@ public class BeeminderService extends IntentService {
 				Log.w(TAG, "Point Callback: Submission error or ID mismatch. msg=" + error);
 				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
 					notifyVersionError(session.getError().message);
+					mPoint.requestId = null;
+				} else if (session.getError().type == Session.ErrorType.ERROR_UNAUTHORIZED) {
+					// TODO: Remove this goal from the list of Beeminder links.
+					notifyAuthorizationError(mPoint.user, mPoint.slug);
+					mPoint.requestId = null;
+				} else if (session.getError().type == Session.ErrorType.ERROR_NOTFOUND) {
+					// This only comes back on delete/update requests. Nothing for now 
 				}
-				mPoint.requestId = null;
 			}
 			mSubmitSem.release();
 		}
 	}
 
-	private void initializePointFromGoal(long goal_id) {
+	private boolean initializePointFromGoal(long goal_id) {
 		Cursor c = mBeeDB.fetchGoal(goal_id);
-		mPoint.requestId = null;
+		if (c.getCount() == 0) return false;
 		mPoint.user = c.getString(1);
 		mPoint.slug = c.getString(2);
+		mPoint.requestId = null;
 		c.close();
+		return true;
 	}
 
-	private void initializePoint(long point_id) {
+	private boolean initializePoint(long point_id) {
 		Cursor c = mBeeDB.fetchPoint(point_id);
+		if (c.getCount() == 0) return false;
 		initializePointFromGoal(c.getLong(5));
 		mPoint.requestId = c.getString(1);
 		c.close();
+		return true;
 	}
 
 	private String createBeeminderPoint(long goal_id, double value, long time, String comment) {
-		initializePointFromGoal(goal_id);
+		if (!initializePointFromGoal(goal_id)) return null;
 		mPoint.value = value;
 		mPoint.timestamp = time;
 		mPoint.comment = comment;
@@ -142,9 +196,10 @@ public class BeeminderService extends IntentService {
 
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open finished, waiting for open semaphore.");
 
-				mOpenSem.acquire();
+				// Try to acquire semaphore with a timeout of 2 seconds
+				boolean opened = mOpenSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
 
-				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open semaphore acquired.");
+				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open semaphore acquired:" + opened);
 
 				if (mBeeminder.getState() == Session.SessionState.OPENED) {
 
@@ -154,9 +209,10 @@ public class BeeminderService extends IntentService {
 
 					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submission done, waiting for point semaphore");
 
-					mSubmitSem.acquire();
+					// Try to acquire semaphore with a timeout of 2 seconds
+					boolean submitted = mSubmitSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
 
-					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submit semaphore acquired.");
+					if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submit semaphore acquired:" + submitted);
 				}
 
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Closing session.");
@@ -170,22 +226,14 @@ public class BeeminderService extends IntentService {
 
 		}
 		if (mPoint.requestId == null) {
-			String msg = "Error updating " + mPoint.user + "/" + mPoint.slug;
-			String submsg = "Goal points may now be inconsistent";
-			Intent intent = new Intent(this, ViewLog.class);
-			PendingIntent ci = PendingIntent.getActivity(this, mPoint.submissionId, intent, 0);
-			NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-			Notification notif = new NotificationCompat.Builder(this).setContentTitle(msg).setContentText(submsg)
-					.setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
-			notif.flags |= Notification.FLAG_AUTO_CANCEL;
-			nm.notify(mPoint.submissionId, notif);
+			retryIntent();
 		}
 		return mPoint.requestId;
 	}
 
 	private boolean deleteBeeminderPoint(long point_id) {
 		boolean result = false;
-		initializePoint(point_id);
+		if (!initializePoint(point_id)) return false;
 
 		if (mBeeminder != null) {
 			try {
@@ -197,9 +245,10 @@ public class BeeminderService extends IntentService {
 
 				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open finished, waiting for open semaphore.");
 
-				mOpenSem.acquire();
+				// Try to acquire semaphore with a timeout of 2 seconds
+				boolean opened = mOpenSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
 
-				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open semaphore acquired.");
+				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open semaphore acquired:" + opened);
 
 				if (mBeeminder.getState() == Session.SessionState.OPENED) {
 
@@ -209,9 +258,10 @@ public class BeeminderService extends IntentService {
 
 					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submission done, waiting for point semaphore");
 
-					mSubmitSem.acquire();
+					// Try to acquire semaphore with a timeout of 2 seconds
+					boolean submitted = mSubmitSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
 
-					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submit semaphore acquired.");
+					if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submit semaphore acquired:" + submitted);
 					if (mPoint.requestId != null) result = true;
 				}
 
@@ -226,15 +276,7 @@ public class BeeminderService extends IntentService {
 
 		}
 		if (!result) {
-			String msg = "Error updating " + mPoint.user + "/" + mPoint.slug;
-			String submsg = "Goal points may now be inconsistent";
-			Intent intent = new Intent(this, ViewLog.class);
-			PendingIntent ci = PendingIntent.getActivity(this, mPoint.submissionId, intent, 0);
-			NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-			Notification notif = new NotificationCompat.Builder(this).setContentTitle(msg).setContentText(submsg)
-					.setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
-			notif.flags |= Notification.FLAG_AUTO_CANCEL;
-			nm.notify(mPoint.submissionId, notif);
+			retryIntent();
 		}
 		return result;
 	}
@@ -359,6 +401,11 @@ public class BeeminderService extends IntentService {
 		}
 	}
 
+	private long mPingId;
+	private String mOldTagsIn;
+	private String mNewTagsIn;
+	private int mRetries = 0;
+
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		if (intent != null) {
@@ -371,26 +418,34 @@ public class BeeminderService extends IntentService {
 			if (action.equals(ACTION_EDITPING)) {
 				// Ping edited. Retrieve changes in tags and manage datapoints
 
-				long ping_id = intent.getLongExtra(KEY_PID, -1);
-				String oldtagsin = intent.getStringExtra(KEY_OLDTAGS);
-				String newtagsin = intent.getStringExtra(KEY_NEWTAGS);
-				if (oldtagsin == null || newtagsin == null || ping_id < 0) {
-					Log.w(TAG, "onHandleIntent: Incomplete intent! ping_id=" + ping_id + ", oldtags=" + oldtagsin
-							+ ", newtags=" + newtagsin);
+				mPingId = intent.getLongExtra(KEY_PID, -1);
+				mOldTagsIn = intent.getStringExtra(KEY_OLDTAGS);
+				mNewTagsIn = intent.getStringExtra(KEY_NEWTAGS);
+
+				mRetries = intent.getIntExtra(KEY_RETRIES, 0);
+				mRetries++;
+				if (mRetries >= MAX_RETRIES) {
+					Log.w(TAG, "onHandleIntent: Exceeded maximum retries for ping " + mPingId);
+					notifyForResubmit();
+					return;
+				}
+				if (mOldTagsIn == null || mNewTagsIn == null || mPingId < 0) {
+					Log.w(TAG, "onHandleIntent: Incomplete intent! ping_id=" + mPingId + ", oldtags=" + mOldTagsIn
+							+ ", newtags=" + mNewTagsIn);
 					return;
 				}
 
-				if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Got ping_id=" + ping_id + ", oldtags=" + oldtagsin
-						+ ", newtags=" + newtagsin);
+				if (LOCAL_LOGV) Log.v(TAG, "onHandleIntent: Got ping_id=" + mPingId + ", oldtags=" + mOldTagsIn
+						+ ", newtags=" + mNewTagsIn);
 
 				mBeeDB.open();
 				mPingDB.open();
 
 				// Find data points that were previously generated by this ping.
-				List<Long> points = findPingPoints(ping_id);
+				List<Long> points = findPingPoints(mPingId);
 
 				// Find all goals that match the new set of tags
-				String[] newtags = newtagsin.trim().split(" ");
+				String[] newtags = mNewTagsIn.trim().split(" ");
 				Set<Long> goals = findGoalsForTags(newtags);
 
 				// Create new data points for all goals matching the edited ping
@@ -409,7 +464,7 @@ public class BeeminderService extends IntentService {
 
 					// Create a new data point for this goal together with a
 					// ping pairing
-					newPointForPing(ping_id, gid);
+					newPointForPing(mPingId, gid);
 				}
 
 				// Remove all points that were left unassociated with any goals

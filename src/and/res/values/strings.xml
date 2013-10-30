@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Tagtime</string>
+    <string name="app_name">TagTime</string>
     <string name="status_bar_notes_ping_msg">Ping!</string>
     <string name="tp_stat">Tagtime notify is:</string>
     <string name="result">off</string>
