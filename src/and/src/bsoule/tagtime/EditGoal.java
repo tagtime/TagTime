@@ -47,7 +47,8 @@ public class EditGoal extends Activity {
 	private String mToken = null;
 	private String[] mTags;
 	private String mTagString = null;
-
+	private boolean mChanged = false;
+	
 	private TextView mGoalInfo;
 	private TextView mTokenInfo;
 	private TextView mTagInfo;
@@ -71,9 +72,12 @@ public class EditGoal extends Activity {
 			Log.v(TAG, "Beeminder status changed:" + state);
 
 			if (state == SessionState.OPENED) {
-				mToken = session.getToken();
+				if (mUsername != null && !mUsername.equals(session.getUsername())) mChanged = true;
+				if (mGoalSlug != null && !mGoalSlug.equals(session.getGoalSlug())) mChanged = true;
+				if (mToken != null && !mToken.equals(session.getToken())) mChanged = true;
 				mUsername = session.getUsername();
 				mGoalSlug = session.getGoalSlug();
+				mToken = session.getToken();
 				Log.v(TAG, "Goal = " + mUsername + "/" + mGoalSlug + ", token=" + session.getToken());
 
 				updateFields();
@@ -129,7 +133,7 @@ public class EditGoal extends Activity {
 	}
 
 	private void updateGoal() {
-		if (mUsername == null) return;
+		if (mUsername == null || !mChanged) return;
 
 		if (mRowId >= 0) {
 			// Called on an existing goal, update
@@ -261,7 +265,10 @@ public class EditGoal extends Activity {
 
 		if (requestCode == ACTIVITY_EDIT) {
 			if (intent != null && intent.getExtras() != null) {
-				mTagString = intent.getExtras().getString(EditPing.KEY_TAGS).trim();
+				String newtags =intent.getExtras().getString(EditPing.KEY_TAGS).trim();
+				if (!newtags.equals(mTagString))
+					mChanged = true;
+				mTagString = newtags;
 				mTags = mTagString.split(" ");
 				if (LOCAL_LOGV) Log.v(TAG, mTags.length + " tags:" + mTagString);
 				mTagInfo.setText("Tags: " + mTagString);

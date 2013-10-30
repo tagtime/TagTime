@@ -1,6 +1,7 @@
 package bsoule.tagtime;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import android.content.ContentValues;
@@ -21,6 +22,7 @@ public class BeeminderDbAdapter {
 	public static final String KEY_USERNAME = "user";
 	public static final String KEY_SLUG = "slug";
 	public static final String KEY_TOKEN = "token";
+	public static final String KEY_UPDATEDAT = "updatedat";
 
 	// Table for goal tags
 	public static final String KEY_GID = "goal_id";
@@ -39,11 +41,12 @@ public class BeeminderDbAdapter {
 	// Uses KEY_PID
 
 	private static final String DATABASE_NAME = "timepie_beeminder";
+	private static final int DATABASE_VERSION = 1;
+
 	private static final String GOALS_TABLE = "goals";
 	private static final String GOALTAGS_TABLE = "goaltags";
 	private static final String POINTS_TABLE = "points";
 	private static final String POINTPINGS_TABLE = "pointpings";
-	private static final int DATABASE_VERSION = 1;
 
 	private DatabaseHelper mDbHelper;
 	private SQLiteDatabase mDb;
@@ -52,7 +55,7 @@ public class BeeminderDbAdapter {
 
 	// a goal is a user/slug with a Beeminder token for submission
 	private static final String CREATE_GOALS = "create table goals (_id integer primary key autoincrement, "
-			+ "user text not null, slug text not null, token text not null, UNIQUE (user, slug));";
+			+ "user text not null, slug text not null, token text not null, updatedat integer not null, UNIQUE (user, slug));";
 
 	// a goal tag is a goal-tag pairing
 	private static final String CREATE_GOALTAGS = "create table goaltags (_id integer primary key autoincrement, "
@@ -69,6 +72,12 @@ public class BeeminderDbAdapter {
 			+ "point_id integer not null, ping_id integer not null," + "UNIQUE (point_id, ping_id));";
 
 	private final Context mCtx;
+
+	private static long now() {
+		// Note that getTimeInMillis returns GMT unixtime anyway, so timezone is
+		// irrelevant
+		return Calendar.getInstance().getTimeInMillis() / 1000;
+	}
 
 	// ===================== General Database Management =====================
 	private static class DatabaseHelper extends SQLiteOpenHelper {
@@ -133,6 +142,7 @@ public class BeeminderDbAdapter {
 			gid = newGoal(user, slug, token);
 		} catch (Exception e) {
 			gid = getGoalID(user, slug);
+			updateGoalTime(gid);
 		}
 		if (!updateGoalTags(gid, tags)) {
 			Log.e(TAG, "error creating the goal-tag entries");
@@ -145,12 +155,13 @@ public class BeeminderDbAdapter {
 		initialValues.put(KEY_USERNAME, user);
 		initialValues.put(KEY_SLUG, slug);
 		initialValues.put(KEY_TOKEN, token);
+		initialValues.put(KEY_UPDATEDAT, now());
 		return mDb.insertOrThrow(GOALS_TABLE, null, initialValues);
 	}
 
 	public boolean deleteGoal(long rowId) {
 		updateGoalTags(rowId, new ArrayList<String>(0));
-		removeGoalPoints( rowId );
+		removeGoalPoints(rowId);
 		return mDb.delete(GOALS_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 
@@ -165,6 +176,19 @@ public class BeeminderDbAdapter {
 		}
 		cursor.close();
 		return gid;
+	}
+
+	public long getGoalUpdatedAt(long gid) {
+		if (LOCAL_LOGV) Log.v(TAG, "getGoalUpdatedAt(" + gid + ")");
+		Cursor cursor = mDb.query(GOALS_TABLE, new String[] { KEY_UPDATEDAT }, KEY_ROWID + "=" + gid, null, null, null,
+				null, null);
+		long updated_at = now();
+		if (cursor.getCount() > 0) {
+			cursor.moveToFirst();
+			updated_at = cursor.getLong(cursor.getColumnIndex(KEY_UPDATEDAT));
+		}
+		cursor.close();
+		return updated_at;
 	}
 
 	public Cursor fetchGoal(long rowId) throws SQLException {
@@ -188,10 +212,29 @@ public class BeeminderDbAdapter {
 		values.put(KEY_USERNAME, user);
 		values.put(KEY_SLUG, slug);
 		values.put(KEY_TOKEN, token);
+		values.put(KEY_UPDATEDAT, now());
 		int numrows = mDb.update(GOALS_TABLE, values, KEY_ROWID + " = " + goalId, null);
 
-		if (numrows == 1) return true;
-		else return false;
+		if (numrows == 1) {
+			// We remove previous point associations since our latest update
+			// time now would not match previous pings
+			removeGoalPoints(goalId);
+			return true;
+		} else return false;
+	}
+
+	public boolean updateGoalTime(long goalId) {
+		// Insert authorization into the table
+		ContentValues values = new ContentValues();
+		values.put(KEY_UPDATEDAT, now());
+		int numrows = mDb.update(GOALS_TABLE, values, KEY_ROWID + " = " + goalId, null);
+
+		if (numrows == 1) {
+			// We remove previous point associations since our latest update
+			// time now would not match previous pings
+			removeGoalPoints(goalId);
+			return true;
+		} else return false;
 
 	}
 
