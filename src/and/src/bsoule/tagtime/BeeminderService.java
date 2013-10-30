@@ -55,10 +55,22 @@ public class BeeminderService extends IntentService {
 
 	private Point mPoint = new Point();
 
+	private void notifyVersionError(String submsg) {
+		String msg = "Error opening Beeminder session.";
+		Intent intent = new Intent(BeeminderService.this, TPController.class);
+		PendingIntent ci = PendingIntent.getActivity(BeeminderService.this, 0, intent, 0);
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		Notification notif = new NotificationCompat.Builder(BeeminderService.this).setContentTitle(msg)
+				.setContentText(submsg).setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
+		notif.flags |= Notification.FLAG_AUTO_CANCEL;
+		nm.notify(0, notif);
+	}
+
 	private class SessionStatusCallback implements Session.StatusCallback {
 		@Override
 		public void call(Session session, SessionState state) {
-			if (LOCAL_LOGV) Log.v(TAG, "Session Callback: Beeminder status changed:" + state);
+			if (LOCAL_LOGV) Log.v(TAG,
+					"Session Callback: Beeminder status changed:" + state + ", error=" + session.getError());
 
 			if (state == SessionState.OPENED) {
 				if (mWaitingOpen) {
@@ -70,6 +82,10 @@ public class BeeminderService extends IntentService {
 					mOpenSem.release();
 					mWaitingOpen = false;
 				}
+				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
+					notifyVersionError(session.getError().message);
+				}
+
 			} else if (state == SessionState.CLOSED) {
 				// Nothing here since it is a normal close.
 			}
@@ -86,6 +102,9 @@ public class BeeminderService extends IntentService {
 				mPoint.requestId = request_id;
 			} else {
 				Log.w(TAG, "Point Callback: Submission error or ID mismatch. msg=" + error);
+				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
+					notifyVersionError(session.getError().message);
+				}
 				mPoint.requestId = null;
 			}
 			mSubmitSem.release();
@@ -151,18 +170,14 @@ public class BeeminderService extends IntentService {
 
 		}
 		if (mPoint.requestId == null) {
-			String msg = "Error updating "+ mPoint.user + "/" + mPoint.slug;
+			String msg = "Error updating " + mPoint.user + "/" + mPoint.slug;
 			String submsg = "Goal points may now be inconsistent";
-	        Intent intent = new Intent( this, ViewLog.class );
-	        PendingIntent ci = PendingIntent.getActivity( this, mPoint.submissionId, intent, 0 );
-			NotificationManager nm = (NotificationManager) getSystemService( Context.NOTIFICATION_SERVICE );
-			Notification notif = new NotificationCompat.Builder(this)
-	         	.setContentTitle(msg)
-	         	.setContentText(submsg)
-	         	.setSmallIcon(R.drawable.error_ticker)
-	         	.setContentIntent(ci)
-	         	.build();
-	        notif.flags |= Notification.FLAG_AUTO_CANCEL;
+			Intent intent = new Intent(this, ViewLog.class);
+			PendingIntent ci = PendingIntent.getActivity(this, mPoint.submissionId, intent, 0);
+			NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+			Notification notif = new NotificationCompat.Builder(this).setContentTitle(msg).setContentText(submsg)
+					.setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
+			notif.flags |= Notification.FLAG_AUTO_CANCEL;
 			nm.notify(mPoint.submissionId, notif);
 		}
 		return mPoint.requestId;
@@ -211,18 +226,14 @@ public class BeeminderService extends IntentService {
 
 		}
 		if (!result) {
-			String msg = "Error updating "+ mPoint.user + "/" + mPoint.slug;
+			String msg = "Error updating " + mPoint.user + "/" + mPoint.slug;
 			String submsg = "Goal points may now be inconsistent";
-	        Intent intent = new Intent( this, ViewLog.class );
-	        PendingIntent ci = PendingIntent.getActivity( this, mPoint.submissionId, intent, 0 );
-			NotificationManager nm = (NotificationManager) getSystemService( Context.NOTIFICATION_SERVICE );
-			Notification notif = new NotificationCompat.Builder(this)
-	         	.setContentTitle(msg)
-	         	.setContentText(submsg)
-	         	.setSmallIcon(R.drawable.error_ticker)
-	         	.setContentIntent(ci)
-	         	.build();
-	        notif.flags |= Notification.FLAG_AUTO_CANCEL;
+			Intent intent = new Intent(this, ViewLog.class);
+			PendingIntent ci = PendingIntent.getActivity(this, mPoint.submissionId, intent, 0);
+			NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+			Notification notif = new NotificationCompat.Builder(this).setContentTitle(msg).setContentText(submsg)
+					.setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
+			notif.flags |= Notification.FLAG_AUTO_CANCEL;
 			nm.notify(mPoint.submissionId, notif);
 		}
 		return result;

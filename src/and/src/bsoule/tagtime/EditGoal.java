@@ -4,9 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -49,6 +54,17 @@ public class EditGoal extends Activity {
 
 	Session mSession;
 
+	private void notifyVersionError(String submsg) {
+		String msg = "Error opening Beeminder session.";
+		Intent intent = new Intent(this, TPController.class);
+		PendingIntent ci = PendingIntent.getActivity(this, 0, intent, 0);
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		Notification notif = new NotificationCompat.Builder(this).setContentTitle(msg).setContentText(submsg)
+				.setSmallIcon(R.drawable.error_ticker).setContentIntent(ci).build();
+		notif.flags |= Notification.FLAG_AUTO_CANCEL;
+		nm.notify(0, notif);
+	}
+
 	private class SessionStatusCallback implements Session.StatusCallback {
 		@Override
 		public void call(Session session, SessionState state) {
@@ -66,6 +82,11 @@ public class EditGoal extends Activity {
 				SessionError error = mSession.getError();
 				if (error.type == Session.ErrorType.ERROR_UNAUTHORIZED) {
 					// clearCurGoal();
+				}
+				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
+					Toast.makeText(EditGoal.this, "Protocol error: "+error.message, Toast.LENGTH_LONG)
+							.show();
+					notifyVersionError(session.getError().message);
 				}
 				resetFields();
 			} else if (state == SessionState.CLOSED) {
@@ -108,8 +129,7 @@ public class EditGoal extends Activity {
 	}
 
 	private void updateGoal() {
-		if (mUsername == null)
-			return;
+		if (mUsername == null) return;
 
 		if (mRowId >= 0) {
 			// Called on an existing goal, update
@@ -182,10 +202,8 @@ public class EditGoal extends Activity {
 		});
 
 		Button confirm = (Button) findViewById(R.id.confirm);
-		if (mRowId < 0)
-			confirm.setText(getText(R.string.editgoal_create));
-		else		
-			confirm.setText(getText(R.string.editgoal_confirm));
+		if (mRowId < 0) confirm.setText(getText(R.string.editgoal_create));
+		else confirm.setText(getText(R.string.editgoal_confirm));
 		confirm.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				if (mUsername == null) {
@@ -204,38 +222,34 @@ public class EditGoal extends Activity {
 		});
 
 		Button delete = (Button) findViewById(R.id.delete);
-		if (mRowId < 0)
-			delete.setVisibility(View.GONE);
-		else
-			delete.setOnClickListener(new OnClickListener() {
-				public void onClick(View v) {
-					if (mUsername == null) {
-						Toast.makeText(EditGoal.this, getText(R.string.editgoal_nogoal), Toast.LENGTH_SHORT).show();
-						return;
-					}
-					
-					mBeeminderDB.deleteGoal(mRowId);
-					mRowId = -1L;
-					Intent resultIntent = new Intent();
-					setResult(RESULT_OK, resultIntent);
-					finish();
+		if (mRowId < 0) delete.setVisibility(View.GONE);
+		else delete.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				if (mUsername == null) {
+					Toast.makeText(EditGoal.this, getText(R.string.editgoal_nogoal), Toast.LENGTH_SHORT).show();
+					return;
 				}
-			});
+
+				mBeeminderDB.deleteGoal(mRowId);
+				mRowId = -1L;
+				Intent resultIntent = new Intent();
+				setResult(RESULT_OK, resultIntent);
+				finish();
+			}
+		});
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
 		saveState();
-		if (LOCAL_LOGV)
-			Log.i(TAG, "Was paused...");
+		if (LOCAL_LOGV) Log.i(TAG, "Was paused...");
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		if (LOCAL_LOGV)
-			Log.i(TAG, "Resuming...");
+		if (LOCAL_LOGV) Log.i(TAG, "Resuming...");
 	}
 
 	private void saveState() {
@@ -249,8 +263,7 @@ public class EditGoal extends Activity {
 			if (intent != null && intent.getExtras() != null) {
 				mTagString = intent.getExtras().getString(EditPing.KEY_TAGS).trim();
 				mTags = mTagString.split(" ");
-				if (LOCAL_LOGV)
-					Log.v(TAG, mTags.length + " tags:" + mTagString);
+				if (LOCAL_LOGV) Log.v(TAG, mTags.length + " tags:" + mTagString);
 				mTagInfo.setText("Tags: " + mTagString);
 			}
 		} else {
@@ -265,8 +278,7 @@ public class EditGoal extends Activity {
 
 	@Override
 	protected void onDestroy() {
-		if (mSession != null)
-			mSession.close();
+		if (mSession != null) mSession.close();
 		mBeeminderDB.close();
 		super.onDestroy();
 	}
