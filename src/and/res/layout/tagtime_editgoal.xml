@@ -6,54 +6,90 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <TextView
-        android:id="@+id/goalinfo"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dip"
-        android:gravity="left"
-        android:textSize="14sp" />
-
-    <TextView
-        android:id="@+id/token"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dip"
-        android:gravity="left"
-        android:textSize="14sp" />
-
-    <Button
-        android:id="@+id/select"
-        android:layout_gravity="center"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/editgoal_select"
-        android:textSize="18px" />
-
-    <TextView
-        android:id="@+id/tags"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dip"
-        android:gravity="left"
-        android:textSize="14sp" />
-
-    <Button
-        android:id="@+id/select_tags"
-        android:layout_gravity="center"
-        android:singleLine="false"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/editgoal_tags"
-        android:textSize="18px" />
-
-    <TextView
-        android:layout_weight="1"
+    <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="0dip"
+        android:layout_marginTop="10dip"
+        android:layout_marginBottom="10dip"
+        android:layout_weight="0.7"
+        android:orientation="vertical" >
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Goal:"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/goalinfo"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="#ffffff"
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="0dip"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/select"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="10dip"
+            android:text="@string/editgoal_select"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="2dip"
         android:layout_marginLeft="10dip"
-        android:gravity="left"
-        android:textSize="14sp" />
+        android:layout_marginRight="10dip"
+        android:background="#eeeeee"
+        android:gravity="center" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dip"
+        android:layout_marginBottom="10dip"
+        android:layout_marginTop="10dip"
+        android:layout_weight="1"
+        android:orientation="vertical" >
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Tags:"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tags"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="#ffffff"
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="0dip"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/select_tags"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="10dip"
+            android:singleLine="false"
+            android:text="@string/editgoal_tags"
+            android:textSize="16sp" />
+    </LinearLayout>
 
     <Button
         android:id="@+id/confirm"
@@ -61,13 +97,13 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dip"
         android:text="@string/editgoal_confirm"
-        android:textSize="18px" />
+        android:textSize="16sp" />
 
     <Button
         android:id="@+id/delete"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="@string/editgoal_delete"
-        android:textSize="18px" />
+        android:textSize="16sp" />
 
 </LinearLayout>

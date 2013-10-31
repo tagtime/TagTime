@@ -50,7 +50,6 @@ public class EditGoal extends Activity {
 	private boolean mChanged = false;
 	
 	private TextView mGoalInfo;
-	private TextView mTokenInfo;
 	private TextView mTagInfo;
 
 	Session mSession;
@@ -103,13 +102,12 @@ public class EditGoal extends Activity {
 		mToken = null;
 		mUsername = null;
 		mGoalSlug = null;
-		mGoalInfo.setText("Goal: none");
-		mTokenInfo.setText("Token: none");
+		mGoalInfo.setText("not selected");
+		mTagInfo.setText("not selected");
 	}
 
 	private void updateFields() {
-		mGoalInfo.setText("Goal: " + mUsername + "/" + mGoalSlug);
-		mTokenInfo.setText("Token: " + mToken);
+		mGoalInfo.setText(mUsername + "/" + mGoalSlug);
 	}
 
 	private void updateWithGoal(Cursor goal) {
@@ -123,7 +121,7 @@ public class EditGoal extends Activity {
 		mToken = goal.getString(tokenIdx);
 		try {
 			mTagString = mBeeminderDB.fetchTagString(goal_id).trim();
-			mTagInfo.setText("Tags: " + mTagString);
+			mTagInfo.setText(mTagString);
 			mTags = mTagString.split(" ");
 		} catch (Exception e) {
 			Log.w(TAG, "Could not fetch tag string for goal!");
@@ -155,7 +153,6 @@ public class EditGoal extends Activity {
 		mBeeminderDB.open();
 
 		mGoalInfo = (TextView) findViewById(R.id.goalinfo);
-		mTokenInfo = (TextView) findViewById(R.id.token);
 		mTagInfo = (TextView) findViewById(R.id.tags);
 
 		mTags = new String[0];
@@ -166,9 +163,8 @@ public class EditGoal extends Activity {
 			updateWithGoal(goal);
 			goal.close();
 		} else {
-			mGoalInfo.setText("Goal: not selected");
-			mTokenInfo.setText("Token: none");
-
+			mGoalInfo.setText("not selected");
+			mTagInfo.setText("not selected");
 		}
 
 		try {
@@ -271,7 +267,7 @@ public class EditGoal extends Activity {
 				mTagString = newtags;
 				mTags = mTagString.split(" ");
 				if (LOCAL_LOGV) Log.v(TAG, mTags.length + " tags:" + mTagString);
-				mTagInfo.setText("Tags: " + mTagString);
+				mTagInfo.setText(mTagString);
 			}
 		} else {
 			mSession.onActivityResult(requestCode, resultCode, intent);

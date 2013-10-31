@@ -398,7 +398,7 @@ public class BeeminderService extends IntentService {
 		ping.close();
 		// TODO: This should depend on the time setting for the ping
 		double value = 0.75;
-		String comment = "TagTime ping";
+		String comment = "TagTime ping: "+mNewTagsIn;
 
 		// Initiate creation of a Beeminder point submission. Will block until
 		// response with request ID is received

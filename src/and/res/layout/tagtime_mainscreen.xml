@@ -42,13 +42,14 @@
 
         <TextView
             android:id="@+id/Viewlog"
-            android:layout_width="180dip"
+            android:layout_width="200dip"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:background="@xml/menu_selector"
             android:gravity="center"
             android:padding="5dip"
             android:text="View Log"
+            android:textColor="#ffffff"
             android:textSize="20sp" />
 
         <View
@@ -60,13 +61,14 @@
 
         <TextView
             android:id="@+id/ExportLink"
-            android:layout_width="180dip"
+            android:layout_width="200dip"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:gravity="center"
             android:padding="5dip"
             android:background="@xml/menu_selector"
             android:text="Manage Data"
+            android:textColor="#ffffff"
             android:textSize="20sp" />
 
         <View
@@ -78,13 +80,14 @@
 
         <TextView
             android:id="@+id/PreferencesLink"
-            android:layout_width="180dip"
+            android:layout_width="200dip"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:gravity="center"
             android:background="@xml/menu_selector"
             android:padding="5dip"
             android:text="Preferences"
+            android:textColor="#ffffff"
             android:textSize="20sp" />
 
         <View
@@ -96,13 +99,14 @@
 
         <TextView
             android:id="@+id/BeeminderLink"
-            android:layout_width="180dip"
+            android:layout_width="200dip"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:gravity="center"
             android:padding="5dip"
             android:background="@xml/menu_selector"
             android:text="Link to Beeminder"
+            android:textColor="#ffffff"
             android:textSize="20sp" />
     </LinearLayout>
 

@@ -1,5 +1,7 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_selected="true" android:color="@color/menubutton_selected_text"  android:drawable="@color/menubutton_selected_bg" />
-    <item android:state_pressed="true"  android:color="@color/menubutton_selected_text"  android:drawable="@color/menubutton_selected_bg" />
-    <item android:drawable="@color/menubutton_unselected_bg" />
+
+    <item android:drawable="@color/menubutton_selected_bg" android:state_selected="true" android:color="@color/menubutton_selected_text"/>
+    <item android:drawable="@color/menubutton_selected_bg" android:state_pressed="true" android:color="@color/menubutton_selected_text"/>
+    <item android:drawable="@color/menubutton_unselected_bg" android:color="@color/menubutton_unselected_text"/>
+
 </selector>
