@@ -41,7 +41,7 @@ public class BeeminderDbAdapter {
 	// Uses KEY_PID
 
 	private static final String DATABASE_NAME = "timepie_beeminder";
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 
 	private static final String GOALS_TABLE = "goals";
 	private static final String GOALTAGS_TABLE = "goaltags";

@@ -205,7 +205,7 @@ public class BeeminderService extends IntentService {
 						+ mPoint.slug);
 
 				mWaitingOpen = true;
-				mBeeminder.openForGoal(mPoint.user, mPoint.slug);
+				mBeeminder.reopenForGoal(mPoint.user, mPoint.slug);
 
 				//if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open finished, waiting for open semaphore.");
 
@@ -230,7 +230,7 @@ public class BeeminderService extends IntentService {
 
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Closing session.");
 
-				mBeeminder.close();
+				//mBeeminder.close();
 			} catch (Session.SessionException e) {
 				Log.w(TAG, "createBeeminderPoint: Error opening session or submitting point. msg=" + e.getMessage());
 			} catch (InterruptedException e) {
@@ -258,7 +258,7 @@ public class BeeminderService extends IntentService {
 						+ mPoint.slug);
 
 				mWaitingOpen = true;
-				mBeeminder.openForGoal(mPoint.user, mPoint.slug);
+				mBeeminder.reopenForGoal(mPoint.user, mPoint.slug);
 
 				//if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open finished, waiting for open semaphore.");
 
@@ -284,7 +284,7 @@ public class BeeminderService extends IntentService {
 
 				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Closing session.");
 
-				mBeeminder.close();
+				//mBeeminder.close();
 			} catch (Session.SessionException e) {
 				Log.w(TAG, "deleteBeeminderPoint: Error opening session or deleting point. msg=" + e.getMessage());
 			} catch (InterruptedException e) {
@@ -365,7 +365,7 @@ public class BeeminderService extends IntentService {
 				goalstr += Long.toString(gid) + " ";
 			}
 			if (LOCAL_LOGV) Log.v(TAG,
-					"findGoalsForTags: Found goals " + goalstr + "for new tags " + TextUtils.join(" ", tags));
+					"findGoalsForTags: Found goals <" + goalstr + "> for new tags " + TextUtils.join(" ", tags));
 		}
 		return goals;
 	}
