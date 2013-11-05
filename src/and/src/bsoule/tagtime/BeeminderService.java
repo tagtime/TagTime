@@ -137,7 +137,7 @@ public class BeeminderService extends IntentService {
 					notifyVersionError(session.getError().message);
 				} else if (session.getError().type == Session.ErrorType.ERROR_UNAUTHORIZED) {
 					// TODO: Must remove this goal from the list of Beeminder
-					// links. Should normally not happen often
+					// links. This might happen when Beeminder app is uninstalled and reinstalled
 					notifyAuthorizationError(mPoint.user, mPoint.slug);
 				}
 				mLastError = session.getError().type;
@@ -233,6 +233,11 @@ public class BeeminderService extends IntentService {
 				//mBeeminder.close();
 			} catch (Session.SessionException e) {
 				Log.w(TAG, "createBeeminderPoint: Error opening session or submitting point. msg=" + e.getMessage());
+				Session.SessionError err = mBeeminder.getError(); 
+				if (err != null && err.type == Session.ErrorType.ERROR_UNAUTHORIZED) {
+					Log.w(TAG, "createBeeminderPoint: Unauthorized goal. Deleting link to goal "+goal_id);
+					mBeeDB.deleteGoal(goal_id);					
+				}
 			} catch (InterruptedException e) {
 				Log.w(TAG, "createBeeminderPoint: interrupted. msg=" + e.getMessage());
 			}
@@ -435,6 +440,14 @@ public class BeeminderService extends IntentService {
 			if (action.equals(ACTION_EDITPING)) {
 				// Ping edited. Retrieve changes in tags and manage datapoints
 
+				if (!TagTime.checkBeeminder()) {
+					Log.w(TAG, "onHandleIntent: Beeminder app is not installed. Unlinking goals and aborting.");
+					mBeeDB.open();
+					mBeeDB.deleteAllGoals();
+					mBeeDB.close();
+					return;
+				}
+				
 				mPingId = intent.getLongExtra(KEY_PID, -1);
 				mOldTagsIn = intent.getStringExtra(KEY_OLDTAGS);
 				mNewTagsIn = intent.getStringExtra(KEY_NEWTAGS);

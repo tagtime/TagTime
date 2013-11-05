@@ -159,6 +159,21 @@ public class BeeminderDbAdapter {
 		return mDb.insertOrThrow(GOALS_TABLE, null, initialValues);
 	}
 
+	public void deleteAllGoals() {
+		Cursor c = fetchAllGoals();
+		List<Long> goals = new ArrayList<Long>();
+		c.moveToFirst();
+		int idx = c.getColumnIndex(KEY_ROWID);
+		while (!c.isAfterLast()) {
+			long gid = c.getLong(idx);
+			goals.add(gid);
+			c.moveToNext();
+		}
+		c.close();
+		for (long goal : goals)
+			deleteGoal(goal);
+	}
+
 	public boolean deleteGoal(long rowId) {
 		updateGoalTags(rowId, new ArrayList<String>(0));
 		removeGoalPoints(rowId);

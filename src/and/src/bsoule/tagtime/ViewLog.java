@@ -17,12 +17,12 @@ import android.widget.TextView;
 
 public class ViewLog extends ListActivity {
 
-
-	private static final int ACTIVITY_EDIT=0;
+	private static final int ACTIVITY_EDIT = 0;
 	private static final String TAG = "ViewLog";
 	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
-	
+
 	private PingsDbAdapter mDbHelper;
+	private BeeminderDbAdapter mBeeDb;
 	private SimpleDateFormat mSDF;
 
 	/** Called when the activity is first created. */
@@ -31,7 +31,9 @@ public class ViewLog extends ListActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_viewlog);
 		mDbHelper = new PingsDbAdapter(this);
+		mBeeDb = new BeeminderDbAdapter(this);
 		mDbHelper.open();
+		mBeeDb.open();
 		mSDF = new SimpleDateFormat("yyyy.MM.dd'\n'HH:mm:ss", Locale.getDefault());
 		fillData();
 	}
@@ -40,54 +42,57 @@ public class ViewLog extends ListActivity {
 		Cursor pingsCursor = mDbHelper.fetchAllPings(true);
 		startManagingCursor(pingsCursor);
 		// Create an array to specify the fields we want to display in the list
-		String[] from = new String[]{PingsDbAdapter.KEY_PING, PingsDbAdapter.KEY_ROWID};
+		String[] from = new String[] { PingsDbAdapter.KEY_PING, PingsDbAdapter.KEY_ROWID, PingsDbAdapter.KEY_ROWID };
 		// and an array of the fields we want to bind those field to
-		int[] to = new int[]{R.id.viewlog_row_time, R.id.viewlog_row_tags};
+		int[] to = new int[] { R.id.viewlog_row_time, R.id.viewlog_row_tags, R.id.viewlog_row_beeminder };
 		// Now create a simple cursor adapter and set it to display
-		LogCursorAdapter pings =
-			new LogCursorAdapter(this, R.layout.tagtime_viewlog_ping_row,
-					pingsCursor, from, to);
+		LogCursorAdapter pings = new LogCursorAdapter(this, R.layout.tagtime_viewlog_ping_row, pingsCursor, from, to);
 		setListAdapter(pings);
 	}
 
 	private class LogCursorAdapter extends SimpleCursorAdapter {
 
-		public LogCursorAdapter(Context context, int layout, Cursor c,
-				String[] from, int[] to) {
+		public LogCursorAdapter(Context context, int layout, Cursor c, String[] from, int[] to) {
 			super(context, layout, c, from, to);
 
 			setViewBinder(new LogViewBinder());
 		}
 
-		public class LogViewBinder implements 
-		SimpleCursorAdapter.ViewBinder {
+		public class LogViewBinder implements SimpleCursorAdapter.ViewBinder {
 
-			public boolean setViewValue(View view, 
-					Cursor cursor, int columnIndex) {
+			public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
 				int pingIdx = cursor.getColumnIndex(PingsDbAdapter.KEY_PING);
-				if (pingIdx==columnIndex) { // if colidx given is the pingidx
-					TextView tv = (TextView)view;
+				if (pingIdx == columnIndex) { // if colidx given is the pingidx
+					TextView tv = (TextView) view;
 					long pingtime = cursor.getLong(columnIndex);
-					tv.setText(mSDF.format(new Date(pingtime*1000)));
+					tv.setText(mSDF.format(new Date(pingtime * 1000)));
 					return true;
 				} else { // should be tags case
-					TextView tv = (TextView)view;
-					try {
-						//ArrayList<String> tags = mDbHelper.getTagsAsList(PingsDbAdapter.KEY_ROWID,columnIndex);
-						String t = mDbHelper.fetchTagString(cursor.getLong(columnIndex));
-						tv.setText(t);
+					TextView tv = (TextView) view;
+					if (view.getId() == R.id.viewlog_row_beeminder) {
+						Cursor c = mBeeDb.fetchPointPings(cursor.getLong(columnIndex), BeeminderDbAdapter.KEY_PID);
+						if (c.getCount() != 0) tv.setVisibility(View.VISIBLE);
+						else tv.setVisibility(View.GONE);
+						c.close();
 						return true;
-					} catch (Exception e) {
-						Log.e(TAG,"error loading tags for viewlog.");
-						Log.e(TAG,e.getMessage());
-						tv.setText("");
-						return false;
+					} else {
+						try {
+							// ArrayList<String> tags =
+							// mDbHelper.getTagsAsList(PingsDbAdapter.KEY_ROWID,columnIndex);
+							String t = mDbHelper.fetchTagString(cursor.getLong(columnIndex));
+							tv.setText(t);
+							return true;
+						} catch (Exception e) {
+							Log.e(TAG, "error loading tags for viewlog.");
+							Log.e(TAG, e.getMessage());
+							tv.setText("");
+							return false;
+						}
 					}
 				}
 			}
 		}
 	}
-	
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
@@ -99,8 +104,7 @@ public class ViewLog extends ListActivity {
 	}
 
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode,
-			Intent intent) {
+	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
 		if (intent != null && intent.getExtras() != null) {
 			if (LOCAL_LOGV) Log.v(TAG, intent.getExtras().getString("tags"));
@@ -110,6 +114,7 @@ public class ViewLog extends ListActivity {
 
 	@Override
 	protected void onDestroy() {
+		mBeeDb.close();
 		mDbHelper.close();
 		super.onDestroy();
 	}
