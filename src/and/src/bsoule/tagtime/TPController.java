@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.TextView;
@@ -16,22 +17,22 @@ import android.widget.ToggleButton;
 public class TPController extends Activity {
 	private ToggleButton tog;
 	private SharedPreferences mSettings;
-	
+
 	public static boolean mRunning;
 	public static final String KEY_RUNNING = "running";
 	private static final int DIALOG_NOMOUNT = 0;
-	
+
 	public static boolean DEBUG = false;
 
 	/** Called when the activity is first created. */
-	@Override	
+	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_mainscreen);
 
 		mSettings = PreferenceManager.getDefaultSharedPreferences(this);
 		mRunning = mSettings.getBoolean(KEY_RUNNING, true);
-		
+
 		tog = (ToggleButton) findViewById(R.id.btnTog);
 		tog.setChecked(mRunning);
 		tog.setOnClickListener(mTogListener);
@@ -39,15 +40,15 @@ public class TPController extends Activity {
 		// TODO: verify that reinstall should be the only time
 		// that mRunning would be stored as "On" without having an alarm set
 		// for the next ping time...
-		//if (mRunning) {
-			Integer stored = Integer.parseInt(mSettings.getString("KEY_APP_VERSION", "-1"));
-			Integer manifest = Integer.parseInt(getText(R.string.app_version).toString());
-			if (stored < manifest || mSettings.getLong(PingService.KEY_NEXT, -1) < 0
-					              || mSettings.getLong(PingService.KEY_SEED, -1) < 0) {
-				startService(new Intent(this, PingService.class));
-			}
-		//}
-		
+		// if (mRunning) {
+		Integer stored = Integer.parseInt(mSettings.getString("KEY_APP_VERSION", "-1"));
+		Integer manifest = Integer.parseInt(getText(R.string.app_version).toString());
+		if (stored < manifest || mSettings.getLong(PingService.KEY_NEXT, -1) < 0
+				|| mSettings.getLong(PingService.KEY_SEED, -1) < 0) {
+			startService(new Intent(this, PingService.class));
+		}
+		// }
+
 		TextView view = (TextView) findViewById(R.id.Viewlog);
 		view.setClickable(true);
 		view.setOnClickListener(new OnClickListener() {
@@ -59,7 +60,7 @@ public class TPController extends Activity {
 		exp.setClickable(true);
 		exp.setOnClickListener(new OnClickListener() {
 			public void onClick(View arg0) {
-					startExport();
+				startExport();
 			}
 		});
 		TextView pref = (TextView) findViewById(R.id.PreferencesLink);
@@ -70,24 +71,38 @@ public class TPController extends Activity {
 			}
 		});
 
+		boolean gotBeeminder = TagTime.checkBeeminder();
 		TextView beeminder = (TextView) findViewById(R.id.BeeminderLink);
 		beeminder.setClickable(true);
-		beeminder.setOnClickListener(new OnClickListener() {
-			public void onClick(View arg0) {
-				startBeeminderLinks();
-			}
-		});
+		if (gotBeeminder) {
+			beeminder.setOnClickListener(new OnClickListener() {
+				public void onClick(View arg0) {
+					startBeeminderLinks();
+				}
+			});
+		} else {
+			beeminder.setOnClickListener(new OnClickListener() {
+				public void onClick(View arg0) {
+					Toast toast = Toast.makeText(TPController.this,
+							"You must install the Beeminder app to use this feature", Toast.LENGTH_SHORT);
+					TextView v = (TextView) toast.getView().findViewById(android.R.id.message);
+					if (v != null) v.setGravity(Gravity.CENTER);
+					toast.show();
+
+				}
+			});
+		}
 	}
-	
+
 	public void startExport() {
 		Intent exp = new Intent();
 		exp.setClass(this, Export.class);
-		startActivity(exp);		
+		startActivity(exp);
 	}
 
 	public void startLog() {
 		Intent log = new Intent();
-		log.setClass(this,ViewLog.class);
+		log.setClass(this, ViewLog.class);
 		startActivity(log);
 	}
 
@@ -99,20 +114,19 @@ public class TPController extends Activity {
 
 	public void startBeeminderLinks() {
 		Intent goals = new Intent();
-		goals.setClass(this,ViewGoals.class);
+		goals.setClass(this, ViewGoals.class);
 		startActivity(goals);
 	}
 
 	public void setAlarm() {
 		startService(new Intent(this, PingService.class));
 	}
-	
+
 	public void cancelAlarm() {
 		AlarmManager alarum = (AlarmManager) getSystemService(ALARM_SERVICE);
-		alarum.cancel(PendingIntent.getService(this, 0, 
-				new Intent(this, PingService.class), 0));		
+		alarum.cancel(PendingIntent.getService(this, 0, new Intent(this, PingService.class), 0));
 	}
-	
+
 	private OnClickListener mTogListener = new OnClickListener() {
 		public void onClick(View v) {
 			SharedPreferences.Editor editor = mSettings.edit();
@@ -132,6 +146,5 @@ public class TPController extends Activity {
 			editor.commit();
 		}
 	};
-
 
 }

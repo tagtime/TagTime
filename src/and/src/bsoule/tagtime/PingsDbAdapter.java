@@ -13,7 +13,7 @@ import android.util.Log;
 
 public class PingsDbAdapter {
 	private static final String TAG = "PingsDbAdapter";
-	private static final boolean LOCAL_LOGV = false && !Timepie.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
 
 	public static final String KEY_ROWID = "_id";
 	// Table for pings

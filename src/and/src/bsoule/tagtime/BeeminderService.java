@@ -26,7 +26,7 @@ import com.beeminder.beedroid.api.Session.SessionState;
 
 public class BeeminderService extends IntentService {
 	private static final String TAG = "BeeminderService";
-	private static final boolean LOCAL_LOGV = true && !Timepie.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
 	public static final String ACTION_EDITPING = "editping";
 

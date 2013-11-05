@@ -14,7 +14,7 @@ import android.util.Log;
 
 public class BeeminderDbAdapter {
 	private static final String TAG = "BeeminderDbAdapter";
-	private static final boolean LOCAL_LOGV = false && !Timepie.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
 
 	public static final String KEY_ROWID = "_id";
 

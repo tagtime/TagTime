@@ -20,7 +20,7 @@ public class ViewLog extends ListActivity {
 
 	private static final int ACTIVITY_EDIT=0;
 	private static final String TAG = "ViewLog";
-	private static final boolean LOCAL_LOGV = true && !Timepie.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 	
 	private PingsDbAdapter mDbHelper;
 	private SimpleDateFormat mSDF;

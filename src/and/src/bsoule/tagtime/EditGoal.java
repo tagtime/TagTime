@@ -32,7 +32,7 @@ import com.beeminder.beedroid.api.Session.SessionState;
 public class EditGoal extends Activity {
 
 	private final static String TAG = "EditGoal";
-	private static final boolean LOCAL_LOGV = true && !Timepie.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
 	private static final int ACTIVITY_EDIT = 0;
 

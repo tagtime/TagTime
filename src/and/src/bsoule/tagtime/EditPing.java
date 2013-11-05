@@ -48,7 +48,7 @@ import android.widget.TextView;
 public class EditPing extends Activity {
 
 	private final static String TAG = "EditPing";
-	private static final boolean LOCAL_LOGV = true && !Timepie.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
 	public static final String KEY_TAGS = "tags";
 
