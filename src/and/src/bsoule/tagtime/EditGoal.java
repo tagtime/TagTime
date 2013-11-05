@@ -176,7 +176,9 @@ public class EditGoal extends Activity {
 		}
 
 		Button select = (Button) findViewById(R.id.select);
-		if (mSession == null) {
+		if (mRowId >= 0) {
+			select.setVisibility(View.GONE);
+		} else if (mSession == null) {
 			select.setEnabled(false);
 		} else {
 			select.setEnabled(true);

@@ -217,7 +217,7 @@ public class BeeminderDbAdapter {
 	}
 
 	public Cursor fetchAllGoals() {
-		return mDb.query(GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN }, null, null, null,
+		return mDb.query(GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN, KEY_UPDATEDAT  }, null, null, null,
 				null, null);
 	}
 

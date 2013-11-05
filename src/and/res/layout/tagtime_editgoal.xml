@@ -10,8 +10,7 @@
         android:layout_width="fill_parent"
         android:layout_height="0dip"
         android:layout_marginTop="10dip"
-        android:layout_marginBottom="10dip"
-        android:layout_weight="0.7"
+        android:layout_weight="0.5"
         android:orientation="vertical" >
 
         <TextView
@@ -33,18 +32,19 @@
             android:layout_width="fill_parent"
             android:layout_height="0dip"
             android:layout_weight="1" />
-
-        <Button
-            android:id="@+id/select"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="10dip"
-            android:text="@string/editgoal_select"
-            android:textSize="16sp" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/select"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="10dip"
+        android:text="@string/editgoal_select"
+        android:textSize="16sp" />
+
     <TextView
+        android:layout_marginTop="10dip"
         android:layout_width="fill_parent"
         android:layout_height="2dip"
         android:layout_marginLeft="10dip"

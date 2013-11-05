@@ -1,5 +1,9 @@
 package bsoule.tagtime;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
@@ -19,12 +23,16 @@ public class ViewGoals extends ListActivity {
 	private static final String TAG = "ViewGoals";
 
 	private BeeminderDbAdapter mDbHelper;
+	private SimpleDateFormat mSDF;
 
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_viewgoals);
+
+		mSDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
+
 		mDbHelper = new BeeminderDbAdapter(this);
 		mDbHelper.open();
 		fillData();
@@ -44,9 +52,10 @@ public class ViewGoals extends ListActivity {
 		startManagingCursor(goalsCursor);
 		// Create an array to specify the fields we want to display in the list
 		String[] from = new String[] { BeeminderDbAdapter.KEY_USERNAME, BeeminderDbAdapter.KEY_SLUG,
-				BeeminderDbAdapter.KEY_ROWID };
+				BeeminderDbAdapter.KEY_UPDATEDAT, BeeminderDbAdapter.KEY_ROWID };
 		// and an array of the fields we want to bind those field to
-		int[] to = new int[] { R.id.viewgoals_row_user, R.id.viewgoals_row_slug, R.id.viewgoals_row_tags };
+		int[] to = new int[] { R.id.viewgoals_row_user, R.id.viewgoals_row_slug, R.id.viewgoals_row_time,
+				R.id.viewgoals_row_tags };
 		// Now create a simple cursor adapter and set it to display
 		GoalsCursorAdapter goals = new GoalsCursorAdapter(this, R.layout.tagtime_viewgoals_row, goalsCursor, from, to);
 		setListAdapter(goals);
@@ -65,17 +74,23 @@ public class ViewGoals extends ListActivity {
 			public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
 				int userIdx = cursor.getColumnIndex(BeeminderDbAdapter.KEY_USERNAME);
 				int slugIdx = cursor.getColumnIndex(BeeminderDbAdapter.KEY_SLUG);
+				int timeIdx = cursor.getColumnIndex(BeeminderDbAdapter.KEY_UPDATEDAT);
 				if (userIdx == columnIndex || slugIdx == columnIndex) {
 					TextView tv = (TextView) view;
 					String username = cursor.getString(columnIndex);
 					tv.setText(username);
+					return true;
+				} else if (timeIdx == columnIndex) {
+					TextView tv = (TextView) view;
+					long updated = cursor.getLong(columnIndex);
+					tv.setText("Linked to pings after: "+mSDF.format(new Date(updated * 1000)));
 					return true;
 				} else {
 					// should be tags case
 					TextView tv = (TextView) view;
 					try {
 						String t = mDbHelper.fetchTagString(cursor.getLong(columnIndex));
-						tv.setText("Tags: "+t);
+						tv.setText("Tags: " + t);
 						return true;
 					} catch (Exception e) {
 						Log.e(TAG, "error loading tags for viewlog.");

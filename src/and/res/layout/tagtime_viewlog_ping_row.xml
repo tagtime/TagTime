@@ -10,17 +10,19 @@
         android:id="@+id/viewlog_row_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="top"
+        android:layout_gravity="center_vertical"
+        android:gravity="center"
         android:textSize="10sp" />
 
     <TextView
         android:id="@+id/viewlog_row_tags"
         android:layout_width="0dip"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="4dip"
+        android:layout_weight="1"
         android:ellipsize="end"
         android:singleLine="true"
-        android:textSize="25sp" />
+        android:textSize="23sp" />
 
     <TextView
         android:id="@+id/viewlog_row_beeminder"

@@ -48,13 +48,25 @@
         android:textSize="15sp" />
 
     <TextView
+        android:id="@+id/viewgoals_row_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/viewgoals_row_logo"
+        android:layout_alignParentRight="true"
+        android:singleLine="true"
+        android:layout_below="@id/viewgoals_row_user"
+        android:layout_marginTop="2dip"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:textSize="13sp" />
+    <TextView
         android:id="@+id/viewgoals_row_tags"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@id/viewgoals_row_logo"
         android:layout_alignParentRight="true"
         android:singleLine="false"
-        android:layout_below="@id/viewgoals_row_user"
+        android:layout_below="@id/viewgoals_row_time"
         android:layout_marginTop="2dip"
         android:layout_marginLeft="10dip"
         android:layout_marginRight="10dip"
