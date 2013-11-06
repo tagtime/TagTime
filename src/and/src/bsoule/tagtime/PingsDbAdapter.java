@@ -73,8 +73,7 @@ public class PingsDbAdapter {
 				db.execSQL("DROP TABLE IF EXISTS tags");
 				db.execSQL("DROP TABLE IF EXISTS tag_ping");
 				onCreate(db);
-			}
-			if (oldVersion < 5 && newVersion >= 5) {
+			} else if (oldVersion < 5 && newVersion >= 5) {
 				Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion
 						+ " calculating caches..");
 				db.execSQL("ALTER TABLE tags ADD COLUMN used_cache integer");

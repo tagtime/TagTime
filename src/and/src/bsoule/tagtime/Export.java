@@ -29,6 +29,7 @@ import android.widget.Button;
 public class Export extends Activity {
 	public static final String TAG = "TPExport";
 	private PingsDbAdapter mDb;
+	private BeeminderDbAdapter mBeeDb;
 	private Button mDoSD;
 	private Button mDoEmail;
 
@@ -51,6 +52,8 @@ public class Export extends Activity {
 		setContentView(R.layout.tagtime_export);
 		mDb = new PingsDbAdapter(this);
 		mDb.open();
+		mBeeDb = new BeeminderDbAdapter(this);
+		mBeeDb.open();
 		mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		
 		Button doSD = (Button) findViewById(R.id.export_sd);
@@ -191,6 +194,7 @@ public class Export extends Activity {
 
 	private void deleteData() {
 		mDb.deleteAllData();
+		mBeeDb.deleteAllData();
 		SharedPreferences.Editor ed = mPrefs.edit();
 		ed.remove(PingService.KEY_NEXT);
 		ed.remove(PingService.KEY_SEED);
@@ -301,6 +305,7 @@ public class Export extends Activity {
 		// TODO Auto-generated method stub
 		super.onDestroy();
 		mDb.close();
+		mBeeDb.close();
 	}
 
 }
