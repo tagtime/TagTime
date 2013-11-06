@@ -1,36 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- PORTRAIT LAYOUT -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical" android:layout_width="fill_parent"
-	android:layout_height="fill_parent" android:id="@+id/parent">
+    android:id="@+id/parent"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
 
-	<LinearLayout android:orientation="horizontal"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:layout_gravity="center_horizontal"
-		android:layout_margin="5dip">
+    <TextView
+        android:id="@+id/pingtime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="5dip"
+        android:textSize="20sp" />
 
-		<TextView android:layout_width="wrap_content"
-			android:layout_height="wrap_content" android:textSize="20sp"
-			android:text="@string/editping_pingtime" />
-		<TextView android:id="@+id/pingtime"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" android:textSize="20sp" />
-	</LinearLayout>
+    <TextView
+        android:id="@+id/editping_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="2dip"
+        android:text="@string/editping_tags_port" />
 
-	<TextView android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:text="@string/editping_tags_port" />
-	<ScrollView android:layout_width="fill_parent"
-		android:layout_height="wrap_content" android:layout_weight="3">
-		<LinearLayout android:id="@+id/lintags"
-			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" android:orientation="vertical" />
-	</ScrollView>
+    <EditText
+        android:id="@+id/editping_tagedit_portrait"
+        android:layout_width="fill_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:gravity="top"
+        android:inputType="textMultiLine|textNoSuggestions"
+        android:maxLines="50"
+        android:scrollbars="vertical"
+        android:singleLine="false"
+        android:visibility="gone" />
 
-	<Button android:id="@+id/confirm" 
-	  android:text="@string/confirm"
-	  android:textSize="18px"
-		android:layout_height="wrap_content" android:layout_width="fill_parent"/>
+    <ScrollView
+        android:id="@+id/editping_tagselect"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1" >
+
+        <LinearLayout
+            android:id="@+id/lintags"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical" />
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/editping_switch"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/editping_keyboard"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/confirm"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/confirm"
+            android:textSize="16sp" />
+    </LinearLayout>
 
 </LinearLayout>

@@ -5,7 +5,7 @@
     <string name="status_bar_notes_ping_msg">Ping!</string>
     <string name="tp_stat">Tagtime notify is:</string>
     <string name="result">off</string>
-    <string name="editping_pingtime">Ping:  </string>
+    <string name="editping_pingtime">Ping:&#160;&#160;</string>
     <string name="confirm">Done</string>
     <string name="nodata">No ping data found.</string>
     <string name="nogoals">No Beeminder goals linked.</string>
@@ -15,9 +15,11 @@
     <string name="summary_toggle_notes">Tagtime will continue to log your pings, just quiet-like.</string>
     <string name="location_settings">Manage Locations</string>
     <string name="summary_loc_settings">Associate a tag, such as HOME, JOB, GYM, with your current location.</string>
-    <string name="editping_tags_land">Tags (space separated):</string>
-    <string name="editping_tags_port">Tags (open keyboard or switch to landscape view to add tags):</string>
+    <string name="editping_tags_land">Enter Tags (space separated):</string>
+    <string name="editping_tags_port">Select Tags:</string>
     <string name="saving_log">Saving... Please wait.</string>
+    <string name="editping_keyboard">Use Keyboard</string>
+    <string name="editping_buttons">Use Buttons</string>
     <string name="editgoal_create">Create Link</string>
     <string name="editgoal_confirm">Save</string>
     <string name="editgoal_delete">Unlink</string>

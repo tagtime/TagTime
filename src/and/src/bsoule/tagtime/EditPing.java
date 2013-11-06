@@ -9,6 +9,7 @@ import java.util.Locale;
 
 import android.app.Activity;
 import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -16,14 +17,18 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver;
 import android.view.ViewTreeObserver.OnPreDrawListener;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 /* 2013.10.26 Uluc: If the activity is invoked with RowId = null, it will let the user 
@@ -53,45 +58,96 @@ public class EditPing extends Activity {
 	public static final String KEY_TAGS = "tags";
 
 	private PingsDbAdapter mPingsDB;
+	private Cursor mTagsCursor;
+
+	private Button mModeButton = null;
+	private ScrollView mTagScroll = null;
+	private LinearLayout mTagParent;
 	private EditText mTagsEdit = null;
+	private TextView mEditTitle = null;
 	private TextView mPingTitle;
+
 	private Long mRowId;
 	private Long mPingUTC;
-	private LinearLayout tagParent;
-	private Cursor mTagsCursor;
-	private Cursor mTaggings;
 	private int FIXTAGS = R.layout.tagtime_editping;
 	private ViewTreeObserver mVto;
 
 	private boolean landscape;
+	private boolean editmode; // false: tags, true: edittext
+
 	private List<String> mCurrentTags;
 	private String mCurrentTagString = "";
 
-	public static int LAUNCH_VIEW = 0;
-	public static int LAUNCH_NOTE = 1;
+	private String mOrdering;
+
+	private void showSoftKeyboard() {
+		if (getCurrentFocus() != null && getCurrentFocus() instanceof EditText) {
+			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+			if (imm == null || mTagsEdit == null) return;
+			imm.showSoftInput(mTagsEdit, 0);
+		}
+	}
+
+	private void hideSoftKeyboard() {
+		if (getCurrentFocus() != null && getCurrentFocus() instanceof EditText) {
+			InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+			if (imm == null || mTagsEdit == null) return;
+			imm.hideSoftInputFromWindow(mTagsEdit.getWindowToken(), 0);
+		}
+	}
+
+	private void setEditMode() {
+		if (landscape) return;
+
+		if (editmode) {
+			mTagScroll.setVisibility(View.GONE);
+			mTagsEdit.setVisibility(View.VISIBLE);
+			if (mModeButton != null) mModeButton.setText(getText(R.string.editping_buttons));
+			mEditTitle.setText(getText(R.string.editping_tags_land));
+			mTagsEdit.requestFocus();
+			//showSoftKeyboard();
+		} else {
+			hideSoftKeyboard();
+			mTagScroll.setVisibility(View.VISIBLE);
+			mTagsEdit.setVisibility(View.GONE);
+			if (mModeButton != null) mModeButton.setText(getText(R.string.editping_keyboard));
+			mEditTitle.setText(getText(R.string.editping_tags_port));
+		}
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		if (LOCAL_LOGV) Log.v(TAG, "onCreate()");
-		
+
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_editping);
 
+		// If rowId is supplied, that means we are editing a ping
+		mRowId = getIntent().getLongExtra(PingsDbAdapter.KEY_ROWID, -1);
+
 		// Hack to figure out whether we are in landscape or portrait mode
-		View v = findViewById(R.id.tags_editText);
+		View v = findViewById(R.id.editping_tagedit_landscape);
 		if (v == null) {
 			landscape = false;
-			tagParent = (LinearLayout) findViewById(R.id.lintags);
-			mVto = tagParent.getViewTreeObserver();
+			mTagScroll = (ScrollView) findViewById(R.id.editping_tagselect);
+			mTagsEdit = (EditText) findViewById(R.id.editping_tagedit_portrait);
+
+			mTagParent = (LinearLayout) findViewById(R.id.lintags);
+			mVto = mTagParent.getViewTreeObserver();
 		} else {
 			landscape = true;
 			mTagsEdit = (EditText) v;
 		}
 		mPingTitle = (TextView) findViewById(R.id.pingtime);
+		mEditTitle = (TextView) findViewById(R.id.editping_title);
+		if (mRowId < 0) {
+			mPingTitle.setVisibility(View.GONE);
+			mEditTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+		}
 
 		// This is the sort ordering preference for the tag list
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		String ordering = prefs.getString("sortOrderPref", "FREQ");
+		mOrdering = prefs.getString("sortOrderPref", "FREQ");
 
 		// cancel the notification
 		// TODO: only cancel note if it is for same ping as we are editing
@@ -99,43 +155,34 @@ public class EditPing extends Activity {
 		NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		nm.cancel(R.layout.tagtime_editping);
 
-		// If rowId is supplied, that means we are editing a ping
-		mRowId = getIntent().getLongExtra(PingsDbAdapter.KEY_ROWID, -1);
-
-		if (LOCAL_LOGV) Log.w(TAG, "Getting Tags with order: " + ordering);
+		if (LOCAL_LOGV) Log.w(TAG, "Getting Tags with order: " + mOrdering);
 		mPingsDB = new PingsDbAdapter(this);
 		mPingsDB.open();
-		mTagsCursor = mPingsDB.fetchAllTags(ordering);
-		startManagingCursor(mTagsCursor);
-		if (mRowId >= 0) {
-			// Valid row ID, this is a ping edit
-			mTaggings = mPingsDB.fetchTaggings(mRowId, PingsDbAdapter.KEY_PID);
-			startManagingCursor(mTaggings);
-		} else {
-			// No row id supplied, this is just tag selection
-			mTaggings = null;
 
-			String savedtags = null;
-			if (savedInstanceState != null) {
-				// Check for previously saved tag list to handle orientation
-				// change
-				savedtags = savedInstanceState.getString("editping_tagsave").trim();
-			} else {
-				// Otherwise, look for tag information in the incoming intent
-				Bundle extras = getIntent().getExtras();
-				if (extras != null) savedtags = extras.getString(KEY_TAGS).trim();
-			}
-			if (savedtags != null) {
-				mCurrentTags = new ArrayList<String>(Arrays.asList(savedtags.split("\\s+")));
-				mCurrentTagString = TextUtils.join(" ", mCurrentTags);
-			}
+		mTagsCursor = mPingsDB.fetchAllTags(mOrdering);
+		startManagingCursor(mTagsCursor);
+
+		String savedtags = null;
+		if (savedInstanceState != null) {
+			// Check for previously saved tag list to handle orientation change
+			savedtags = savedInstanceState.getString("editping_tagsave").trim();
+			editmode = savedInstanceState.getBoolean("editping_editmode");
+		} else {
+			// Otherwise, look for tag information in the incoming intent
+			Bundle extras = getIntent().getExtras();
+			if (extras != null && extras.containsKey(KEY_TAGS)) savedtags = extras.getString(KEY_TAGS).trim();
+			editmode = false;
+		}
+		if (savedtags != null) {
+			mCurrentTags = new ArrayList<String>(Arrays.asList(savedtags.split("\\s+")));
+			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 		}
 
 		// Set confirm button behaviour
 		Button confirm = (Button) findViewById(R.id.confirm);
 		confirm.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				if (landscape) {
+				if (landscape || editmode) {
 					String[] newtagstrings = mTagsEdit.getText().toString().trim().split("\\s+");
 					mCurrentTags = new ArrayList<String>(Arrays.asList(newtagstrings));
 					mCurrentTagString = TextUtils.join(" ", mCurrentTags);
@@ -143,6 +190,21 @@ public class EditPing extends Activity {
 				finish();
 			}
 		});
+
+		// Set switch button behaviour
+		mModeButton = (Button) findViewById(R.id.editping_switch);
+		if (mModeButton != null) {
+			mModeButton.setOnClickListener(new OnClickListener() {
+				public void onClick(View v) {
+					saveState();
+					mTagsCursor = mPingsDB.fetchAllTags(mOrdering);
+					startManagingCursor(mTagsCursor);
+					editmode = !editmode;
+					setEditMode();
+					populateFields();
+				}
+			});
+		}
 	}
 
 	/*
@@ -159,7 +221,7 @@ public class EditPing extends Activity {
 				// set ping time title
 				mPingUTC = ping.getLong(ping.getColumnIndexOrThrow(PingsDbAdapter.KEY_PING));
 				SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
-				mPingTitle.setText(SDF.format(new Date(mPingUTC * 1000)));
+				mPingTitle.setText("Ping: " + SDF.format(new Date(mPingUTC * 1000)));
 
 				// get tags from the database
 				mCurrentTags = mPingsDB.fetchTagsForPing(mRowId);
@@ -177,10 +239,12 @@ public class EditPing extends Activity {
 			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 		}
 
-		if (!landscape) {
+		if (!landscape && !editmode) {
 			refreshTags();
-		} else {
-			if (mCurrentTags != null) mTagsEdit.setText(TextUtils.join(" ", mCurrentTags));
+		}
+		if (mCurrentTags != null) {
+			mTagsEdit.setText(TextUtils.join(" ", mCurrentTags) + " ");
+			mTagsEdit.setSelection(mTagsEdit.length(), mTagsEdit.length());
 		}
 	}
 
@@ -189,7 +253,7 @@ public class EditPing extends Activity {
 	 * the tag database.
 	 */
 	private void refreshTags() {
-		tagParent.removeAllViews();
+		mTagParent.removeAllViews();
 		mTagsCursor.moveToFirst();
 
 		LinearLayout ll = new LinearLayout(this);
@@ -207,7 +271,8 @@ public class EditPing extends Activity {
 
 			mTagsCursor.moveToNext();
 		}
-		tagParent.addView(ll);
+		mTagParent.addView(ll);
+		mVto = mTagParent.getViewTreeObserver();
 		mVto.addOnPreDrawListener(mDrawListener);
 	}
 
@@ -216,28 +281,30 @@ public class EditPing extends Activity {
 	 * screen width
 	 */
 	private void fixTags() {
-		LinearLayout ll = (LinearLayout) tagParent.getChildAt(0);
-		tagParent.removeAllViews();
-		int pwidth = tagParent.getWidth() - 15;
+		LinearLayout ll = (LinearLayout) mTagParent.getChildAt(0);
+		mTagParent.removeAllViews();
+		int pwidth = mTagParent.getWidth() - 15;
 		int twidth = 0;
-
 		LinearLayout tagrow = new LinearLayout(this);
 		tagrow.setOrientation(0);
-		tagrow.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+		tagrow.setGravity(Gravity.CENTER_HORIZONTAL);
+		tagrow.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 		while (ll.getChildCount() > 0) {
 			View tog = ll.getChildAt(0);
 			ll.removeViewAt(0);
-			if ((twidth + tog.getWidth()) > pwidth) {
-				tagParent.addView(tagrow);
+			int leftover = pwidth - twidth;
+			if (tog.getWidth() > leftover) {
+				mTagParent.addView(tagrow);
 				tagrow = new LinearLayout(this);// .removeAllViews();
 				tagrow.setOrientation(0);
-				tagrow.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+				tagrow.setGravity(Gravity.CENTER_HORIZONTAL);
+				tagrow.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 				twidth = 0;
 			}
 			tagrow.addView(tog);
 			twidth += tog.getWidth();
 		}
-		tagParent.addView(tagrow);
+		mTagParent.addView(tagrow);
 	}
 
 	@Override
@@ -250,25 +317,31 @@ public class EditPing extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		if (findViewById(R.id.tags_editText) == null) {
+		if (findViewById(R.id.editping_tagedit_landscape) == null) {
 			landscape = false;
-			tagParent = (LinearLayout) findViewById(R.id.lintags);
-			mVto = tagParent.getViewTreeObserver();
+			mTagScroll = (ScrollView) findViewById(R.id.editping_tagselect);
+			mTagsEdit = (EditText) findViewById(R.id.editping_tagedit_portrait);
+
+			mTagParent = (LinearLayout) findViewById(R.id.lintags);
+			mVto = mTagParent.getViewTreeObserver();
 			if (LOCAL_LOGV) Log.v(TAG, "onResume: PORTRAIT");
 		} else {
 			landscape = true;
 			if (LOCAL_LOGV) Log.v(TAG, "onResume: LANDSCAPE");
 		}
+		setEditMode();
 		populateFields();
 	}
 
-	/** Called from onPause(), this method saves the current tag selection into the database, 
-	 * or updates the outgoing intent to include current tag selection
+	/**
+	 * Called from onPause(), this method saves the current tag selection into
+	 * the database, or updates the outgoing intent to include current tag
+	 * selection
 	 */
 	private void saveState() {
 		if (LOCAL_LOGV) Log.v(TAG, "saveState()");
-		
-		if (landscape) {
+
+		if (landscape || editmode) {
 			String[] newtagstrings = mTagsEdit.getText().toString().trim().split("\\s+");
 			mCurrentTags = new ArrayList<String>(Arrays.asList(newtagstrings));
 			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
@@ -298,9 +371,9 @@ public class EditPing extends Activity {
 		Intent resultIntent = new Intent();
 		resultIntent.putExtra(KEY_TAGS, mCurrentTagString);
 		setResult(RESULT_OK, resultIntent);
-		
+
 		// Submit datapoint associated with the ping
-		if (mRowId >= 0 ){
+		if (mRowId >= 0) {
 			Intent intent = new Intent(this, BeeminderService.class);
 			intent.setAction(BeeminderService.ACTION_EDITPING);
 			intent.putExtra(BeeminderService.KEY_PID, mRowId);
@@ -308,16 +381,17 @@ public class EditPing extends Activity {
 			intent.putExtra(BeeminderService.KEY_NEWTAGS, mCurrentTagString);
 			this.startService(intent);
 		}
-		
+
 		super.finish();
 	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		if (mCurrentTags != null && mRowId < 0) {
+		if (mCurrentTags != null) {
 			mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 			outState.putString("editping_tagsave", mCurrentTagString);
+			outState.putBoolean("editping_editmode", editmode);
 		}
 	}
 
@@ -331,7 +405,7 @@ public class EditPing extends Activity {
 	private OnPreDrawListener mDrawListener = new OnPreDrawListener() {
 		public boolean onPreDraw() {
 			fixTags();
-			ViewTreeObserver vto = tagParent.getViewTreeObserver();
+			ViewTreeObserver vto = mTagParent.getViewTreeObserver();
 			vto.removeOnPreDrawListener(mDrawListener);
 			return true;
 		}
@@ -353,7 +427,7 @@ public class EditPing extends Activity {
 	};
 
 	@Override
-	public void onStop(){
+	public void onStop() {
 		if (LOCAL_LOGV) Log.v(TAG, "onStop()");
 		super.onStop();
 	}

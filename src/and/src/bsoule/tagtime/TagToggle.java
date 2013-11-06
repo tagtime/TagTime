@@ -10,7 +10,6 @@ public class TagToggle extends Button {
 
 	private boolean selected;
 	private long tagId;
-	private PingsDbAdapter mdb;
 	
 	public TagToggle(Context context) {
 		super(context);
@@ -29,7 +28,8 @@ public class TagToggle extends Button {
 		setChecked(defOn);
 		setText(tag);
 		tagId = id;
-		setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT));
+		LayoutParams p = new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
+		setLayoutParams(p);
 		setTextSize(24);
 	}
 	
@@ -64,6 +64,4 @@ public class TagToggle extends Button {
 	public boolean isSelected() {
 		return selected;
 	}
-	
-	
 }
