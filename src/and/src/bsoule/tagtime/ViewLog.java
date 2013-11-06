@@ -2,20 +2,30 @@ package bsoule.tagtime;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
-import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
+import android.support.v4.widget.CursorAdapter;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class ViewLog extends ListActivity {
+public class ViewLog extends FragmentActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
 	private static final int ACTIVITY_EDIT = 0;
 	private static final String TAG = "ViewLog";
@@ -23,93 +33,189 @@ public class ViewLog extends ListActivity {
 
 	private PingsDbAdapter mDbHelper;
 	private BeeminderDbAdapter mBeeDb;
-	private SimpleDateFormat mSDF;
+	private PingCursorAdapter mPingAdapter;
 
-	/** Called when the activity is first created. */
+	private SimpleDateFormat mSDF;
+	private Map<Long, String> mTagList = new HashMap<Long, String>();
+	private ListView mListView;
+	private ProgressBar mProgress;
+	private TextView mNoData;
+	
+
+	private void refreshTagList() {
+		Cursor c = mDbHelper.fetchAllTags("ROWID");
+		mTagList.clear();
+
+		int idxrow = c.getColumnIndex(PingsDbAdapter.KEY_ROWID);
+		int idxtag = c.getColumnIndex(PingsDbAdapter.KEY_TAG);
+
+		try {
+			c.moveToFirst();
+			while (!c.isAfterLast()) {
+				mTagList.put(c.getLong(idxrow), c.getString(idxtag));
+				c.moveToNext();
+			}
+		} finally {
+			c.close();
+		}
+	}
+
+	public static final class PingsCursorLoader extends SimpleCursorLoader {
+
+		private PingsDbAdapter mHelper;
+
+		public PingsCursorLoader(Context context, PingsDbAdapter helper) {
+			super(context);
+			mHelper = helper;
+		}
+
+		@Override
+		public Cursor loadInBackground() {
+			return mHelper.fetchAllPings(true);
+		}
+
+	}
+
+	public final class PingCursorAdapter extends CursorAdapter {
+
+		private Context mContext;
+
+		public class ViewHolder {
+			TextView pingText;
+			TextView tagText;
+			TextView yellowBeeText;
+			TextView redBeeText;
+		}
+
+		public PingCursorAdapter(Context context, Cursor c, int flags) {
+			super(context, c, flags);
+			mContext = context;
+		}
+
+		public PingCursorAdapter(Context context, Cursor c, boolean autoRequery) {
+			super(context, c, autoRequery);
+			mContext = context;
+		}
+
+		@Override
+		public View newView(Context context, Cursor cursor, ViewGroup parent) {
+			View view = LayoutInflater.from(mContext).inflate(R.layout.tagtime_viewlog_ping_row, parent, false);
+			ViewHolder viewHolder = new ViewHolder();
+			viewHolder.pingText = (TextView) view.findViewById(R.id.viewlog_row_time);
+			viewHolder.tagText = (TextView) view.findViewById(R.id.viewlog_row_tags);
+			viewHolder.yellowBeeText = (TextView) view.findViewById(R.id.viewlog_row_beeminder);
+			viewHolder.redBeeText = (TextView) view.findViewById(R.id.viewlog_row_beeminder_red);
+			view.setTag(viewHolder);
+			return view;
+		}
+
+		@Override
+		public void bindView(View view, Context context, Cursor cursor) {
+			ViewHolder vh = (ViewHolder) view.getTag();
+
+			// Convert ping time to readable text
+			int pingidx = cursor.getColumnIndex(PingsDbAdapter.KEY_PING);
+			long pingtime = cursor.getLong(pingidx);
+			vh.pingText.setText(mSDF.format(new Date(pingtime * 1000)));
+
+			// Figure out Beeminder submission status and update icons, also
+			// setting the tag string
+			try {
+				Cursor c = mBeeDb.fetchPointPings(cursor.getLong(0), BeeminderDbAdapter.KEY_PID);
+				List<Long> tags = mDbHelper.fetchTagsForPing(cursor.getLong(0));
+				Set<Long> goals = mBeeDb.findGoalsForTags(tags);
+				int numgoals = 0;
+				for (long gid : goals) {
+					// If goal was updated later than the ping, skip this goal
+					long updated_at = mBeeDb.getGoalUpdatedAt(gid);
+					if (updated_at < pingtime) numgoals++;
+				}
+				
+				if (c.getCount() != numgoals) {
+					// TODO: We should check whether existing points and
+					// goals match exactly instead of just checking the
+					// count
+					vh.yellowBeeText.setVisibility(View.GONE);
+					vh.redBeeText.setVisibility(View.VISIBLE);
+				} else if (c.getCount() != 0) {
+					vh.yellowBeeText.setVisibility(View.VISIBLE);
+					vh.redBeeText.setVisibility(View.GONE);
+				} else {
+					vh.yellowBeeText.setVisibility(View.GONE);
+					vh.redBeeText.setVisibility(View.GONE);
+				}
+				c.close();
+				String tagstr = "";
+				for (long tag : tags)
+					tagstr = tagstr + " " + mTagList.get(tag);
+				vh.tagText.setText(tagstr);
+			} catch (Exception e) {}
+		}
+
+	}
+
+	// Called when a new Loader needs to be created
+	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		// Now create and return a CursorLoader that will take care of
+		// creating a Cursor for the data being displayed.
+		return new PingsCursorLoader(ViewLog.this, mDbHelper);
+	}
+
+	// Called when a previously created loader has finished loading
+	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+		// Swap the new cursor in. (The framework will take care of closing the
+		// old cursor once we return.)
+		mProgress.setVisibility(View.GONE);
+		mListView.setEmptyView(mNoData);
+		mPingAdapter.swapCursor(data);
+	}
+
+	// Called when a previously created loader is reset, making the data
+	// unavailable
+	public void onLoaderReset(Loader<Cursor> loader) {
+		// This is called when the last Cursor provided to onLoadFinished()
+		// above is about to be closed. We need to make sure we are no
+		// longer using it.
+		mPingAdapter.swapCursor(null);
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_viewlog);
+
 		mDbHelper = new PingsDbAdapter(this);
-		mBeeDb = new BeeminderDbAdapter(this);
 		mDbHelper.open();
+		mBeeDb = new BeeminderDbAdapter(this);
 		mBeeDb.open();
+
 		mSDF = new SimpleDateFormat("yyyy.MM.dd'\n'HH:mm:ss", Locale.getDefault());
-		fillData();
-	}
+		mPingAdapter = new PingCursorAdapter(this, null, true);
+		mListView = (ListView) findViewById(R.id.listview);
+		mListView.setFastScrollEnabled(true);
+		mListView.setAdapter(mPingAdapter);
+		mListView.setOnItemClickListener(new OnItemClickListener() {
 
-	private void fillData() {
-		Cursor pingsCursor = mDbHelper.fetchAllPings(true);
-		startManagingCursor(pingsCursor);
-		// Create an array to specify the fields we want to display in the list
-		String[] from = new String[] { PingsDbAdapter.KEY_PING, PingsDbAdapter.KEY_ROWID, PingsDbAdapter.KEY_ROWID };
-		// and an array of the fields we want to bind those field to
-		int[] to = new int[] { R.id.viewlog_row_time, R.id.viewlog_row_tags, R.id.viewlog_row_beeminder };
-		// Now create a simple cursor adapter and set it to display
-		LogCursorAdapter pings = new LogCursorAdapter(this, R.layout.tagtime_viewlog_ping_row, pingsCursor, from, to);
-		setListAdapter(pings);
-	}
-
-	private class LogCursorAdapter extends SimpleCursorAdapter {
-
-		public LogCursorAdapter(Context context, int layout, Cursor c, String[] from, int[] to) {
-			super(context, layout, c, from, to);
-
-			setViewBinder(new LogViewBinder());
-		}
-
-		public class LogViewBinder implements SimpleCursorAdapter.ViewBinder {
-
-			public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
-				int pingIdx = cursor.getColumnIndex(PingsDbAdapter.KEY_PING);
-				if (pingIdx == columnIndex) { // if colidx given is the pingidx
-					TextView tv = (TextView) view;
-					long pingtime = cursor.getLong(columnIndex);
-					tv.setText(mSDF.format(new Date(pingtime * 1000)));
-					return true;
-				} else { // should be tags case
-					TextView tv = (TextView) view;
-					if (view.getId() == R.id.viewlog_row_beeminder) {
-						Cursor c = mBeeDb.fetchPointPings(cursor.getLong(columnIndex), BeeminderDbAdapter.KEY_PID);
-						if (c.getCount() != 0) tv.setVisibility(View.VISIBLE);
-						else tv.setVisibility(View.GONE);
-						c.close();
-						return true;
-					} else {
-						try {
-							// ArrayList<String> tags =
-							// mDbHelper.getTagsAsList(PingsDbAdapter.KEY_ROWID,columnIndex);
-							String t = mDbHelper.fetchTagString(cursor.getLong(columnIndex));
-							tv.setText(t);
-							return true;
-						} catch (Exception e) {
-							Log.e(TAG, "error loading tags for viewlog.");
-							Log.e(TAG, e.getMessage());
-							tv.setText("");
-							return false;
-						}
-					}
-				}
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View view, int position, long id) {
+				Intent i = new Intent(ViewLog.this, EditPing.class);
+				i.putExtra(PingsDbAdapter.KEY_ROWID, id);
+				startActivityForResult(i, ACTIVITY_EDIT);
 			}
-		}
-	}
+		});
+		mNoData = (TextView) findViewById(R.id.nodata);
+		mProgress = (ProgressBar) findViewById(R.id.progressbar);
+		mListView.setEmptyView(mProgress);
 
-	@Override
-	protected void onListItemClick(ListView l, View v, int position, long id) {
-		super.onListItemClick(l, v, position, id);
-		Intent i = new Intent(this, EditPing.class);
-		i.putExtra(PingsDbAdapter.KEY_ROWID, id);
-		i.putExtra("editorFlag", true);
-		startActivityForResult(i, ACTIVITY_EDIT);
+		getSupportLoaderManager().initLoader(0, null, this);
+		refreshTagList();
 	}
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
-		if (intent != null && intent.getExtras() != null) {
-			if (LOCAL_LOGV) Log.v(TAG, intent.getExtras().getString("tags"));
-		}
-		fillData();
+		refreshTagList();
+		mPingAdapter.notifyDataSetChanged();
 	}
 
 	@Override

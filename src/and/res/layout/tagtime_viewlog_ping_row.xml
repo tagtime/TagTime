@@ -31,4 +31,10 @@
         android:layout_margin="1dip"
         android:background="@drawable/beeminder_transparent" />
 
+    <TextView
+        android:id="@+id/viewlog_row_beeminder_red"
+        android:layout_width="20dip"
+        android:layout_height="20dip"
+        android:layout_margin="1dip"
+        android:background="@drawable/beeminder_transparent_red" />
 </LinearLayout>

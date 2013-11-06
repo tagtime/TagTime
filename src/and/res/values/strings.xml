@@ -17,7 +17,7 @@
     <string name="summary_loc_settings">Associate a tag, such as HOME, JOB, GYM, with your current location.</string>
     <string name="editping_tags_land">Enter Tags (space separated):</string>
     <string name="editping_tags_port">Select Tags:</string>
-    <string name="saving_log">Saving... Please wait.</string>
+    <string name="saving_log">Saving&#8230; Please wait.</string>
     <string name="editping_keyboard">Use Keyboard</string>
     <string name="editping_buttons">Use Buttons</string>
     <string name="editgoal_create">Create Link</string>

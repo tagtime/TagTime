@@ -2,7 +2,9 @@ package bsoule.tagtime;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -10,6 +12,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class BeeminderDbAdapter {
@@ -217,8 +220,8 @@ public class BeeminderDbAdapter {
 	}
 
 	public Cursor fetchAllGoals() {
-		return mDb.query(GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN, KEY_UPDATEDAT  }, null, null, null,
-				null, null);
+		return mDb.query(GOALS_TABLE, new String[] { KEY_ROWID, KEY_USERNAME, KEY_SLUG, KEY_TOKEN, KEY_UPDATEDAT },
+				null, null, null, null, null);
 	}
 
 	public boolean updateGoal(long goalId, String user, String slug, String token) {
@@ -227,13 +230,15 @@ public class BeeminderDbAdapter {
 		values.put(KEY_USERNAME, user);
 		values.put(KEY_SLUG, slug);
 		values.put(KEY_TOKEN, token);
-		values.put(KEY_UPDATEDAT, now());
+		// Uluc: We no longer invalidate existing datapoints on goal update
+		// values.put(KEY_UPDATEDAT, now());
 		int numrows = mDb.update(GOALS_TABLE, values, KEY_ROWID + " = " + goalId, null);
 
 		if (numrows == 1) {
+			// Uluc: We no longer invalidate existing datapoints on goal update
 			// We remove previous point associations since our latest update
 			// time now would not match previous pings
-			removeGoalPoints(goalId);
+			// removeGoalPoints(goalId);
 			return true;
 		} else return false;
 	}
@@ -254,6 +259,71 @@ public class BeeminderDbAdapter {
 	}
 
 	// ============== Goal-tag pair database utilities ===============
+	public Set<Long> findGoalsForTagNames(List<String> tags) {
+		PingsDbAdapter pingDB = new PingsDbAdapter(mCtx);
+		pingDB.open();
+
+		Set<Long> goals = new HashSet<Long>(0);
+		int idx;
+		long tid;
+		Cursor c;
+
+		for (String t : tags) {
+			if (t.length() == 0) continue;
+			tid = pingDB.getTID(t);
+			if (tid < 0) {
+				Log.w(TAG, "findGoalsForTags: Could not find tag \"" + t + "\" in the tags database!");
+				continue;
+			}
+			c = fetchGoalTags(tid, BeeminderDbAdapter.KEY_TID);
+			c.moveToFirst();
+			idx = c.getColumnIndex(BeeminderDbAdapter.KEY_GID);
+			while (!c.isAfterLast()) {
+				long gid = c.getLong(idx);
+				goals.add(gid);
+				c.moveToNext();
+			}
+			c.close();
+		}
+		if (LOCAL_LOGV) {
+			String goalstr = "";
+			for (long gid : goals) {
+				goalstr += Long.toString(gid) + " ";
+			}
+			if (LOCAL_LOGV) Log.v(TAG,
+					"findGoalsForTags: Found goals <" + goalstr + "> for new tags " + TextUtils.join(" ", tags));
+		}
+		pingDB.close();
+		return goals;
+	}
+
+	public Set<Long> findGoalsForTags(List<Long> tags) {
+		Set<Long> goals = new HashSet<Long>(0);
+		int idx;
+		Cursor c;
+
+		for (long tid : tags) {
+			c = fetchGoalTags(tid, BeeminderDbAdapter.KEY_TID);
+			c.moveToFirst();
+			idx = c.getColumnIndex(BeeminderDbAdapter.KEY_GID);
+			while (!c.isAfterLast()) {
+				long gid = c.getLong(idx);
+				goals.add(gid);
+				c.moveToNext();
+			}
+			c.close();
+		}
+		if (LOCAL_LOGV) {
+			String goalstr = "";
+			for (long gid : goals) {
+				goalstr += Long.toString(gid) + " ";
+			}
+			if (LOCAL_LOGV) Log.v(TAG,
+					"findGoalsForTags: Found goals <" + goalstr + "> for new tags " + TextUtils.join(" ", tags));
+		}
+		return goals;
+	}
+
 	public long newGoalTag(long goal_id, long tag_id) throws Exception {
 		ContentValues init = new ContentValues();
 		init.put(KEY_GID, goal_id);

@@ -1,8 +1,8 @@
 package bsoule.tagtime;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
@@ -18,7 +18,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.beeminder.beedroid.api.Session;
@@ -341,40 +340,6 @@ public class BeeminderService extends IntentService {
 		return points;
 	}
 
-	private Set<Long> findGoalsForTags(String[] tags) {
-		Set<Long> goals = new HashSet<Long>(0);
-		int idx;
-		long tid;
-		Cursor c;
-
-		for (String t : tags) {
-			if (t.length() == 0) continue;
-			tid = mPingDB.getTID(t);
-			if (tid < 0) {
-				Log.w(TAG, "findGoalsForTags: Could not find tag \"" + t + "\" in the tags database!");
-				continue;
-			}
-			c = mBeeDB.fetchGoalTags(tid, BeeminderDbAdapter.KEY_TID);
-			c.moveToFirst();
-			idx = c.getColumnIndex(BeeminderDbAdapter.KEY_GID);
-			while (!c.isAfterLast()) {
-				long gid = c.getLong(idx);
-				goals.add(gid);
-				c.moveToNext();
-			}
-			c.close();
-		}
-		if (LOCAL_LOGV) {
-			String goalstr = "";
-			for (long gid : goals) {
-				goalstr += Long.toString(gid) + " ";
-			}
-			if (LOCAL_LOGV) Log.v(TAG,
-					"findGoalsForTags: Found goals <" + goalstr + "> for new tags " + TextUtils.join(" ", tags));
-		}
-		return goals;
-	}
-
 	private long findGoalInPoints(long goal_id, List<Long> points) {
 		int idx;
 		Cursor ptc;
@@ -491,7 +456,7 @@ public class BeeminderService extends IntentService {
 
 				// Find all goals that match the new set of tags
 				String[] newtags = mNewTagsIn.trim().split(" ");
-				Set<Long> goals = findGoalsForTags(newtags);
+				Set<Long> goals = mBeeDB.findGoalsForTagNames(Arrays.asList(newtags));
 
 				// Create new data points for all goals matching the edited ping
 				// if they were not found in the database

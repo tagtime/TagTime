@@ -224,7 +224,7 @@ public class EditPing extends Activity {
 				mPingTitle.setText("Ping: " + SDF.format(new Date(mPingUTC * 1000)));
 
 				// get tags from the database
-				mCurrentTags = mPingsDB.fetchTagsForPing(mRowId);
+				mCurrentTags = mPingsDB.fetchTagNamesForPing(mRowId);
 				mCurrentTagString = TextUtils.join(" ", mCurrentTags);
 			} catch (Exception e) {
 				Log.i(TAG, "caught an exception in populateFields():");
