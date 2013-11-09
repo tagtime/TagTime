@@ -80,3 +80,5 @@ and then run the `adb` command again:
 
 Now you can go into Apps on your phone and start TagTime.
 
+Note: You will need the latest version of ActionBarSherlock to compile
+TagTime after recent updates.
