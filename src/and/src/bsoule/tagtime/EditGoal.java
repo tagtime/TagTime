@@ -3,7 +3,6 @@ package bsoule.tagtime;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -19,6 +18,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockActivity;
+import com.actionbarsherlock.view.MenuItem;
 import com.beeminder.beedroid.api.Session;
 import com.beeminder.beedroid.api.Session.SessionError;
 import com.beeminder.beedroid.api.Session.SessionException;
@@ -29,7 +31,7 @@ import com.beeminder.beedroid.api.Session.SessionState;
 /* 2013.10.26 Uluc: If the activity is invoked with RowId = null, it will let the user 
  * select a number of tags and send them back to the invking activity in the response. */
 
-public class EditGoal extends Activity {
+public class EditGoal extends SherlockActivity {
 
 	private final static String TAG = "EditGoal";
 	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
@@ -48,7 +50,7 @@ public class EditGoal extends Activity {
 	private String[] mTags;
 	private String mTagString = null;
 	private boolean mChanged = false;
-	
+
 	private TextView mGoalInfo;
 	private TextView mTagInfo;
 
@@ -87,8 +89,7 @@ public class EditGoal extends Activity {
 					// clearCurGoal();
 				}
 				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
-					Toast.makeText(EditGoal.this, "Protocol error: "+error.message, Toast.LENGTH_LONG)
-							.show();
+					Toast.makeText(EditGoal.this, "Protocol error: " + error.message, Toast.LENGTH_LONG).show();
 					notifyVersionError(session.getError().message);
 				}
 				resetFields();
@@ -143,10 +144,17 @@ public class EditGoal extends Activity {
 		}
 	}
 
+	ActionBar mAction;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_editgoal);
+
+		mAction = getSupportActionBar();
+		mAction.setHomeButtonEnabled(true);
+		mAction.setDisplayHomeAsUpEnabled(true);
+		mAction.setIcon(R.drawable.tagtime_03);
 
 		mRowId = getIntent().getLongExtra(PingsDbAdapter.KEY_ROWID, -1);
 		mBeeminderDB = new BeeminderDbAdapter(this);
@@ -263,9 +271,8 @@ public class EditGoal extends Activity {
 
 		if (requestCode == ACTIVITY_EDIT) {
 			if (intent != null && intent.getExtras() != null) {
-				String newtags =intent.getExtras().getString(EditPing.KEY_TAGS).trim();
-				if (!newtags.equals(mTagString))
-					mChanged = true;
+				String newtags = intent.getExtras().getString(EditPing.KEY_TAGS).trim();
+				if (!newtags.equals(mTagString)) mChanged = true;
 				mTagString = newtags;
 				mTags = mTagString.split(" ");
 				if (LOCAL_LOGV) Log.v(TAG, mTags.length + " tags:" + mTagString);
@@ -286,5 +293,22 @@ public class EditGoal extends Activity {
 		if (mSession != null) mSession.close();
 		mBeeminderDB.close();
 		super.onDestroy();
+	}
+
+	/** Handles menu item selections */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle item selection
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			// app icon in action bar clicked; go home
+			Intent intent = new Intent(this, ViewGoals.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			finish();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 }

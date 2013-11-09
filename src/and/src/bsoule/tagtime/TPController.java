@@ -1,6 +1,5 @@
 package bsoule.tagtime;
 
-import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -14,23 +13,31 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-public class TPController extends Activity {
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockActivity;
+
+public class TPController extends SherlockActivity {
 	private ToggleButton tog;
 	private SharedPreferences mSettings;
 
 	public static boolean mRunning;
 	public static final String KEY_RUNNING = "running";
-	private static final int DIALOG_NOMOUNT = 0;
 
 	public static boolean DEBUG = false;
 
+	private ActionBar mAction;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_mainscreen);
 
-		mSettings = PreferenceManager.getDefaultSharedPreferences(this);
+        mAction = getSupportActionBar();
+        mAction.setHomeButtonEnabled( false );
+        mAction.setIcon( R.drawable.tagtime_03 );
+
+        mSettings = PreferenceManager.getDefaultSharedPreferences(this);
 		mRunning = mSettings.getBoolean(KEY_RUNNING, true);
 
 		tog = (ToggleButton) findViewById(R.id.btnTog);

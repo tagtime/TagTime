@@ -7,12 +7,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
@@ -30,6 +30,10 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockActivity;
+import com.actionbarsherlock.view.MenuItem;
 
 /* 2013.10.26 Uluc: If the activity is invoked with RowId = null, it will let the user 
  * select a number of tags and send them back to the invoking activity in the response. */
@@ -50,10 +54,10 @@ import android.widget.TextView;
  * 
  * @formatter:on
  */
-public class EditPing extends Activity {
+public class EditPing extends SherlockActivity {
 
 	private final static String TAG = "EditPing";
-	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
 
 	public static final String KEY_TAGS = "tags";
 
@@ -105,7 +109,7 @@ public class EditPing extends Activity {
 			if (mModeButton != null) mModeButton.setText(getText(R.string.editping_buttons));
 			mEditTitle.setText(getText(R.string.editping_tags_land));
 			mTagsEdit.requestFocus();
-			//showSoftKeyboard();
+			// showSoftKeyboard();
 		} else {
 			hideSoftKeyboard();
 			mTagScroll.setVisibility(View.VISIBLE);
@@ -115,12 +119,19 @@ public class EditPing extends Activity {
 		}
 	}
 
+	ActionBar mAction;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		if (LOCAL_LOGV) Log.v(TAG, "onCreate()");
 
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_editping);
+
+		mAction = getSupportActionBar();
+		mAction.setHomeButtonEnabled(true);
+		mAction.setDisplayHomeAsUpEnabled(true);
+		mAction.setIcon(R.drawable.tagtime_03);
 
 		// If rowId is supplied, that means we are editing a ping
 		mRowId = getIntent().getLongExtra(PingsDbAdapter.KEY_ROWID, -1);
@@ -138,11 +149,24 @@ public class EditPing extends Activity {
 			landscape = true;
 			mTagsEdit = (EditText) v;
 		}
+
+		mPingsDB = new PingsDbAdapter(this);
+		mPingsDB.open();
+
+		Button prevButton = (Button) findViewById(R.id.prev);
+		Button nextButton = (Button) findViewById(R.id.next);
 		mPingTitle = (TextView) findViewById(R.id.pingtime);
 		mEditTitle = (TextView) findViewById(R.id.editping_title);
 		if (mRowId < 0) {
+			prevButton.setVisibility(View.GONE);
+			nextButton.setVisibility(View.GONE);
 			mPingTitle.setVisibility(View.GONE);
 			mEditTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+		} else {
+			if (mPingsDB.fetchPing(mRowId + 1).getCount() == 0)
+				nextButton.setVisibility(View.INVISIBLE);
+			if (mPingsDB.fetchPing(mRowId - 1).getCount() == 0)
+				prevButton.setVisibility(View.INVISIBLE);
 		}
 
 		// This is the sort ordering preference for the tag list
@@ -156,8 +180,6 @@ public class EditPing extends Activity {
 		nm.cancel(R.layout.tagtime_editping);
 
 		if (LOCAL_LOGV) Log.w(TAG, "Getting Tags with order: " + mOrdering);
-		mPingsDB = new PingsDbAdapter(this);
-		mPingsDB.open();
 
 		mTagsCursor = mPingsDB.fetchAllTags(mOrdering);
 		startManagingCursor(mTagsCursor);
@@ -221,7 +243,7 @@ public class EditPing extends Activity {
 				// set ping time title
 				mPingUTC = ping.getLong(ping.getColumnIndexOrThrow(PingsDbAdapter.KEY_PING));
 				SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
-				mPingTitle.setText("Ping: " + SDF.format(new Date(mPingUTC * 1000)));
+				mPingTitle.setText(SDF.format(new Date(mPingUTC * 1000)));
 
 				// get tags from the database
 				mCurrentTags = mPingsDB.fetchTagNamesForPing(mRowId);
@@ -305,6 +327,20 @@ public class EditPing extends Activity {
 			twidth += tog.getWidth();
 		}
 		mTagParent.addView(tagrow);
+	}
+
+	public void handlePrev(View v) {
+		Intent i = new Intent(this, EditPing.class);
+		i.putExtra(PingsDbAdapter.KEY_ROWID, mRowId - 1);
+		startActivity(i);
+		finish();
+	}
+
+	public void handleNext(View v) {
+		Intent i = new Intent(this, EditPing.class);
+		i.putExtra(PingsDbAdapter.KEY_ROWID, mRowId + 1);
+		startActivity(i);
+		finish();
 	}
 
 	@Override
@@ -430,5 +466,22 @@ public class EditPing extends Activity {
 	public void onStop() {
 		if (LOCAL_LOGV) Log.v(TAG, "onStop()");
 		super.onStop();
+	}
+
+	/** Handles menu item selections */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle item selection
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			// app icon in action bar clicked; go home
+			Intent intent = new Intent(this, ViewLog.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			finish();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 }

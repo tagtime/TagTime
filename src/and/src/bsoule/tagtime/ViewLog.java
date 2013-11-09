@@ -12,7 +12,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
@@ -25,7 +24,11 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class ViewLog extends FragmentActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.MenuItem;
+
+public class ViewLog extends SherlockFragmentActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
 	private static final int ACTIVITY_EDIT = 0;
 	private static final String TAG = "ViewLog";
@@ -40,7 +43,8 @@ public class ViewLog extends FragmentActivity implements LoaderManager.LoaderCal
 	private ListView mListView;
 	private ProgressBar mProgress;
 	private TextView mNoData;
-	
+
+	private ActionBar mAction;
 
 	private void refreshTagList() {
 		Cursor c = mDbHelper.fetchAllTags("ROWID");
@@ -130,7 +134,7 @@ public class ViewLog extends FragmentActivity implements LoaderManager.LoaderCal
 					long updated_at = mBeeDb.getGoalUpdatedAt(gid);
 					if (updated_at < pingtime) numgoals++;
 				}
-				
+
 				if (c.getCount() != numgoals) {
 					// TODO: We should check whether existing points and
 					// goals match exactly instead of just checking the
@@ -184,6 +188,10 @@ public class ViewLog extends FragmentActivity implements LoaderManager.LoaderCal
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_viewlog);
 
+		mAction = getSupportActionBar();
+		mAction.setHomeButtonEnabled(true);
+		mAction.setIcon(R.drawable.tagtime_03);
+
 		mDbHelper = new PingsDbAdapter(this);
 		mDbHelper.open();
 		mBeeDb = new BeeminderDbAdapter(this);
@@ -223,5 +231,22 @@ public class ViewLog extends FragmentActivity implements LoaderManager.LoaderCal
 		mBeeDb.close();
 		mDbHelper.close();
 		super.onDestroy();
+	}
+
+	/** Handles menu item selections */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle item selection
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			// app icon in action bar clicked; go home
+			Intent intent = new Intent(this, TPController.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			finish();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 }

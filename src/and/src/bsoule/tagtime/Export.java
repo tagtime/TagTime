@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -26,7 +25,11 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
-public class Export extends Activity {
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockActivity;
+import com.actionbarsherlock.view.MenuItem;
+
+public class Export extends SherlockActivity {
 	public static final String TAG = "TPExport";
 	private PingsDbAdapter mDb;
 	private BeeminderDbAdapter mBeeDb;
@@ -43,6 +46,8 @@ public class Export extends Activity {
 	private static final int DIALOG_CLEANUP_TAGS = 7;
 	private static final String FNAME = "timepie.log";
 
+	ActionBar mAction;
+	
 	SharedPreferences mPrefs;
 	ProgressDialog mProgress;
 	/** Called when the activity is first created. */
@@ -50,6 +55,11 @@ public class Export extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_export);
+
+		mAction = getSupportActionBar();
+		mAction.setHomeButtonEnabled(true);
+		mAction.setIcon(R.drawable.tagtime_03);
+		
 		mDb = new PingsDbAdapter(this);
 		mDb.open();
 		mBeeDb = new BeeminderDbAdapter(this);
@@ -308,38 +318,20 @@ public class Export extends Activity {
 		mBeeDb.close();
 	}
 
+	/** Handles menu item selections */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle item selection
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			// app icon in action bar clicked; go home
+			Intent intent = new Intent(this, TPController.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			finish();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
 }
-//private StringBuilder getLogString() {
-//SimpleDateFormat SDF = new SimpleDateFormat("[yyyy.MM.dd HH:mm:ss EEE]", Locale.getDefault());
-//StringBuilder logfile = new StringBuilder();
-
-//Cursor pings = mDb.fetchAllPings("ASC");
-////TODO debugging
-//if (pings == null) return logfile;
-//startManagingCursor(pings);
-//pings.moveToFirst();
-//if (pings.isAfterLast()) { return logfile.append("No pings yet!"); }
-//long lastPing=0;
-//String tagstr="";
-//String notes="";
-//while (!pings.isAfterLast()) {
-//try {
-//long pt = pings.getLong(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_PING));
-////get tags
-//String ts = pings.getString(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_TAG));
-//String ns = pings.getString(pings.getColumnIndexOrThrow(PingsDbAdapter.KEY_NOTES));
-//if (pt != lastPing && lastPing != 0) {
-////write, if not first time, i.e. lp=0
-//logfile.append(lastPing+" "+tagstr+" "+notes+" "+SDF.format(new Date(lastPing*1000))+"\n");		
-//tagstr = "";
-//}
-//lastPing = pt;
-//notes = ns.equals("") ? ns : "("+ns+")";
-//tagstr += ts + " ";
-//} catch (Exception e) {
-//Log.e(TAG,"DB exception: "+e.getMessage());
-//}
-//pings.moveToNext();
-//}
-//return logfile;
-//}

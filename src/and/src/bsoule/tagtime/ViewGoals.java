@@ -4,7 +4,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -17,7 +16,11 @@ import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
-public class ViewGoals extends ListActivity {
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockListActivity;
+import com.actionbarsherlock.view.MenuItem;
+
+public class ViewGoals extends SherlockListActivity {
 
 	private static final int ACTIVITY_EDIT = 0;
 	private static final String TAG = "ViewGoals";
@@ -25,11 +28,17 @@ public class ViewGoals extends ListActivity {
 	private BeeminderDbAdapter mDbHelper;
 	private SimpleDateFormat mSDF;
 
+	private ActionBar mAction;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tagtime_viewgoals);
+
+		mAction = getSupportActionBar();
+		mAction.setHomeButtonEnabled(true);
+		mAction.setIcon(R.drawable.tagtime_03);
 
 		mSDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
 
@@ -124,5 +133,22 @@ public class ViewGoals extends ListActivity {
 	protected void onDestroy() {
 		mDbHelper.close();
 		super.onDestroy();
+	}
+	
+	/** Handles menu item selections */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle item selection
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			// app icon in action bar clicked; go home
+			Intent intent = new Intent(this, TPController.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			finish();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 }
