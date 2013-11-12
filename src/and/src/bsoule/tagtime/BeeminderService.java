@@ -363,11 +363,12 @@ public class BeeminderService extends IntentService {
 		if (LOCAL_LOGV) Log.v(TAG, "newPointForPing: Creating new point for ping " + ping_id + " and goal " + goal_id);
 
 		Cursor ping = mPingDB.fetchPing(ping_id);
-		int idx = ping.getColumnIndex(PingsDbAdapter.KEY_PING);
-		long time = ping.getLong(idx);
+		int ping_idx = ping.getColumnIndex(PingsDbAdapter.KEY_PING);
+		int period_idx = ping.getColumnIndex(PingsDbAdapter.KEY_PERIOD);
+		long time = ping.getLong(ping_idx);
+		int period = ping.getInt(period_idx);
 		ping.close();
-		// TODO: This should depend on the time setting for the ping
-		double value = 0.75;
+		double value = 1.0/60.0 * period;
 		String comment = "TagTime ping: "+mNewTagsIn;
 
 		// Initiate creation of a Beeminder point submission. Will block until

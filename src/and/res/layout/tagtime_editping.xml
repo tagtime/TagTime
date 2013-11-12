@@ -16,24 +16,40 @@
             android:id="@+id/prev"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:layout_weight="0"
             android:onClick="handlePrev"
             android:text="@string/editping_prev"
             android:textSize="16sp" />
 
-        <TextView
-            android:id="@+id/pingtime"
+        <LinearLayout
             android:layout_width="0dip"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="1"
-            android:gravity="center"
-            android:textSize="20sp" />
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/pingtime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/pinggap"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/next"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:layout_weight="0"
             android:onClick="handleNext"
             android:text="@string/editping_next"
@@ -46,7 +62,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="2dip"
-        android:text="@string/editping_tags_port" />
+        android:text="@string/editping_tags_port"
+        android:textSize="16sp" />
 
     <EditText
         android:id="@+id/editping_tagedit_portrait"

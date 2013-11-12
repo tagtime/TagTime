@@ -12,7 +12,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
@@ -30,6 +29,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
@@ -70,8 +70,10 @@ public class EditPing extends SherlockActivity {
 	private EditText mTagsEdit = null;
 	private TextView mEditTitle = null;
 	private TextView mPingTitle;
+	private TextView mPingGap;
 
 	private Long mRowId;
+	private int mGap;
 	private Long mPingUTC;
 	private int FIXTAGS = R.layout.tagtime_editping;
 	private ViewTreeObserver mVto;
@@ -150,12 +152,26 @@ public class EditPing extends SherlockActivity {
 			mTagsEdit = (EditText) v;
 		}
 
+		// cancel the notification
+		// TODO: only cancel note if it is for same ping as we are editing
+		// TODO: We could make the notification auto-cancelling when clicked.
+		// NotificationManager nm = (NotificationManager)
+		// getSystemService(NOTIFICATION_SERVICE);
+		// nm.cancel(R.layout.tagtime_editping);
+
 		mPingsDB = new PingsDbAdapter(this);
 		mPingsDB.open();
+		if (mRowId >= 0 && mPingsDB.fetchPing(mRowId).getCount() == 0) {
+			Toast.makeText(this, getText(R.string.editping_noping), Toast.LENGTH_SHORT).show();
+			finish();
+			mPingsDB.close();
+			return;
+		}
 
 		Button prevButton = (Button) findViewById(R.id.prev);
 		Button nextButton = (Button) findViewById(R.id.next);
 		mPingTitle = (TextView) findViewById(R.id.pingtime);
+		mPingGap = (TextView) findViewById(R.id.pinggap);
 		mEditTitle = (TextView) findViewById(R.id.editping_title);
 		if (mRowId < 0) {
 			prevButton.setVisibility(View.GONE);
@@ -163,21 +179,13 @@ public class EditPing extends SherlockActivity {
 			mPingTitle.setVisibility(View.GONE);
 			mEditTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
 		} else {
-			if (mPingsDB.fetchPing(mRowId + 1).getCount() == 0)
-				nextButton.setVisibility(View.INVISIBLE);
-			if (mPingsDB.fetchPing(mRowId - 1).getCount() == 0)
-				prevButton.setVisibility(View.INVISIBLE);
+			if (mPingsDB.fetchPing(mRowId + 1).getCount() == 0) nextButton.setVisibility(View.INVISIBLE);
+			if (mPingsDB.fetchPing(mRowId - 1).getCount() == 0) prevButton.setVisibility(View.INVISIBLE);
 		}
 
 		// This is the sort ordering preference for the tag list
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		mOrdering = prefs.getString("sortOrderPref", "FREQ");
-
-		// cancel the notification
-		// TODO: only cancel note if it is for same ping as we are editing
-		// TODO: We could make the notification auto-cancelling when clicked.
-		NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-		nm.cancel(R.layout.tagtime_editping);
 
 		if (LOCAL_LOGV) Log.w(TAG, "Getting Tags with order: " + mOrdering);
 
@@ -242,9 +250,16 @@ public class EditPing extends SherlockActivity {
 			try {
 				// set ping time title
 				mPingUTC = ping.getLong(ping.getColumnIndexOrThrow(PingsDbAdapter.KEY_PING));
+				mGap = ping.getInt(ping.getColumnIndexOrThrow(PingsDbAdapter.KEY_PERIOD));
 				SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
 				mPingTitle.setText(SDF.format(new Date(mPingUTC * 1000)));
-
+				if (mGap != 0) {
+					mPingGap.setText(getText(R.string.editping_gap).toString()
+							.replaceAll("mmm", Integer.toString(mGap)));
+				} else {
+					mPingGap.setText(getText(R.string.editping_nogap));
+				}
+				
 				// get tags from the database
 				mCurrentTags = mPingsDB.fetchTagNamesForPing(mRowId);
 				mCurrentTagString = TextUtils.join(" ", mCurrentTags);
@@ -403,21 +418,25 @@ public class EditPing extends SherlockActivity {
 	@Override
 	public void finish() {
 		if (LOCAL_LOGV) Log.i(TAG, "finish()");
-		// Update result intent
-		Intent resultIntent = new Intent();
-		resultIntent.putExtra(KEY_TAGS, mCurrentTagString);
-		setResult(RESULT_OK, resultIntent);
 
-		// Submit datapoint associated with the ping
-		if (mRowId >= 0) {
-			Intent intent = new Intent(this, BeeminderService.class);
-			intent.setAction(BeeminderService.ACTION_EDITPING);
-			intent.putExtra(BeeminderService.KEY_PID, mRowId);
-			intent.putExtra(BeeminderService.KEY_OLDTAGS, "");
-			intent.putExtra(BeeminderService.KEY_NEWTAGS, mCurrentTagString);
-			this.startService(intent);
+		if (mCurrentTags == null) {
+			setResult(RESULT_CANCELED);
+		} else {
+			// Update result intent
+			Intent resultIntent = new Intent();
+			resultIntent.putExtra(KEY_TAGS, mCurrentTagString);
+			setResult(RESULT_OK, resultIntent);
+
+			// Submit datapoint associated with the ping
+			if (mRowId >= 0) {
+				Intent intent = new Intent(this, BeeminderService.class);
+				intent.setAction(BeeminderService.ACTION_EDITPING);
+				intent.putExtra(BeeminderService.KEY_PID, mRowId);
+				intent.putExtra(BeeminderService.KEY_OLDTAGS, "");
+				intent.putExtra(BeeminderService.KEY_NEWTAGS, mCurrentTagString);
+				this.startService(intent);
+			}
 		}
-
 		super.finish();
 	}
 

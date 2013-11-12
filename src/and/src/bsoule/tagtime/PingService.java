@@ -205,6 +205,8 @@ public class PingService extends Service {
 			note.flags |= Notification.FLAG_SHOW_LIGHTS;
 		}
 
+		note.flags |= Notification.FLAG_AUTO_CANCEL;
+
 		// And finally, send the notification. The PING_NOTES const is a unique
 		// id
 		// that gets assigned to the notification (we happen to pull it from a
