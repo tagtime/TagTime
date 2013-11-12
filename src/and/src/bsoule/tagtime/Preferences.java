@@ -26,7 +26,6 @@ public class Preferences extends SherlockPreferenceActivity {
 		mAction.setHomeButtonEnabled(true);
 		mAction.setIcon(R.drawable.tagtime_03);
 
-
 		ListPreference order = (ListPreference) findPreference("sortOrderPref");
 
 		order.setSummary(order.getEntry());

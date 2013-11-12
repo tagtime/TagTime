@@ -110,7 +110,7 @@ public class Export extends SherlockActivity {
 				PingService x = PingService.getInstance();
 				if (x != null) {
 					long timex = System.currentTimeMillis()/1000;
-					x.sendNote(timex, false, mDb.createPing(timex, "", Arrays.asList(new String[]{""})));
+					x.sendNote(timex, mDb.createPing(timex, "", Arrays.asList(new String[]{""})));
 				}
 			}
 		});
