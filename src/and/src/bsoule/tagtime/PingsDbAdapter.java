@@ -19,6 +19,7 @@ public class PingsDbAdapter {
 	// Table for pings
 	public static final String KEY_PING = "ping";
 	public static final String KEY_NOTES = "notes";
+	public static final String KEY_PERIOD = "period";
 	// Table for tags
 	public static final String KEY_TAG = "tag";
 	public static final String KEY_USED_CACHE = "used_cache";
@@ -35,7 +36,7 @@ public class PingsDbAdapter {
 
 	// a ping is a timestamp with optional notes
 	private static final String CREATE_PINGS = "create table pings (_id integer primary key autoincrement, "
-			+ "ping long not null, notes text, UNIQUE(ping));";
+			+ "ping long not null, notes text, period integer not null, UNIQUE(ping));";
 	// a tag is just a string (no spaces)
 	private static final String CREATE_TAGS = "create table tags (_id integer primary key autoincrement, "
 			+ "tag text not null, used_cache integer, UNIQUE (tag));";
@@ -47,7 +48,7 @@ public class PingsDbAdapter {
 	private static final String PINGS_TABLE = "pings";
 	private static final String TAGS_TABLE = "tags";
 	private static final String TAG_PING_TABLE = "tag_ping";
-	private static final int DATABASE_VERSION = 5;
+	private static final int DATABASE_VERSION = 6;
 
 	private final Context mCtx;
 
@@ -73,34 +74,62 @@ public class PingsDbAdapter {
 				db.execSQL("DROP TABLE IF EXISTS tags");
 				db.execSQL("DROP TABLE IF EXISTS tag_ping");
 				onCreate(db);
-			} else if (oldVersion < 5 && newVersion >= 5) {
-				Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion
-						+ " calculating caches..");
-				db.execSQL("ALTER TABLE tags ADD COLUMN used_cache integer");
-				db.beginTransaction();
-				try {
-					// Calculate the first cache.
-					Cursor all_tags = db.query(TAGS_TABLE, new String[] { KEY_ROWID, KEY_TAG }, null, null, null, null,
-							null);
-					Integer current_tag_id = 0;
-					ContentValues uses_values = new ContentValues();
+			} else {
+				if (oldVersion < 5 && newVersion >= 5) {
+					Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion
+							+ " calculating caches..");
+					db.execSQL("ALTER TABLE tags ADD COLUMN used_cache integer");
+					db.beginTransaction();
+					try {
+						// Calculate the first cache.
+						Cursor all_tags = db.query(TAGS_TABLE, new String[] { KEY_ROWID, KEY_TAG }, null, null, null,
+								null, null);
+						Integer current_tag_id = 0;
+						ContentValues uses_values = new ContentValues();
 
-					all_tags.moveToFirst();
-					while (!all_tags.isAfterLast()) {
-						current_tag_id = all_tags.getInt(0);
-						Cursor count_cr = db.rawQuery("SELECT COUNT(_id) FROM tag_ping WHERE tag_id = ?",
-								new String[] { current_tag_id.toString() });
-						count_cr.moveToFirst();
-						uses_values.put(KEY_USED_CACHE, count_cr.getInt(0));
+						all_tags.moveToFirst();
+						while (!all_tags.isAfterLast()) {
+							current_tag_id = all_tags.getInt(0);
+							Cursor count_cr = db.rawQuery("SELECT COUNT(_id) FROM tag_ping WHERE tag_id = ?",
+									new String[] { current_tag_id.toString() });
+							count_cr.moveToFirst();
+							uses_values.put(KEY_USED_CACHE, count_cr.getInt(0));
 
-						if (LOCAL_LOGV) Log.v(TAG, "upgrading the tag entry cache - " + all_tags.getString(1) + " has "
-								+ uses_values.getAsString(KEY_USED_CACHE));
-						db.update(TAGS_TABLE, uses_values, "_id = ?", new String[] { current_tag_id.toString() });
-						all_tags.moveToNext();
+							if (LOCAL_LOGV) Log.v(TAG, "upgrading the tag entry cache - " + all_tags.getString(1)
+									+ " has " + uses_values.getAsString(KEY_USED_CACHE));
+							db.update(TAGS_TABLE, uses_values, "_id = ?", new String[] { current_tag_id.toString() });
+							all_tags.moveToNext();
+						}
+						db.setTransactionSuccessful();
+					} finally {
+						db.endTransaction();
 					}
-					db.setTransactionSuccessful();
-				} finally {
-					db.endTransaction();
+				}
+
+				if (oldVersion < 6 && newVersion >= 6) {
+					Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion
+							+ " adding missing ping durations (45 mins)...");
+					db.execSQL("ALTER TABLE pings ADD COLUMN period integer");
+					db.beginTransaction();
+					try {
+						// Calculate the first cache.
+						Cursor all_pings = db.query(PINGS_TABLE, new String[] { KEY_ROWID }, null,
+								null, null, null, null);
+						Integer current_ping_id = 0;
+						ContentValues period_values = new ContentValues();
+						period_values.put(KEY_PERIOD, 45);
+
+						all_pings.moveToFirst();
+						while (!all_pings.isAfterLast()) {
+							current_ping_id = all_pings.getInt(0);
+
+							db.update(PINGS_TABLE, period_values, "_id = ?", new String[] { current_ping_id.toString() });
+							all_pings.moveToNext();
+						}
+						db.setTransactionSuccessful();
+					} finally {
+						db.endTransaction();
+					}
 				}
 			}
 		}
@@ -129,9 +158,9 @@ public class PingsDbAdapter {
 	 * Creates a ping with the supplied time and notes. Also creates ping/tag
 	 * pairs corresponding to the given tag list.
 	 */
-	public long createPing(long pingtime, String notes, List<String> tags) {
+	public long createPing(long pingtime, String notes, List<String> tags, int period) {
 		if (LOCAL_LOGV) Log.v(TAG, "createPing()");
-		long pid = newPing(pingtime, notes);
+		long pid = newPing(pingtime, notes, period);
 		if (!updateTaggings(pid, tags)) {
 			Log.e(TAG, "createPing: error creating the tag-ping entries");
 		}
@@ -139,10 +168,11 @@ public class PingsDbAdapter {
 	}
 
 	/** Internal function to insert a new ping into the pings table */
-	private long newPing(long pingtime, String pingnotes) {
+	private long newPing(long pingtime, String pingnotes, int period) {
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(KEY_PING, pingtime);
 		initialValues.put(KEY_NOTES, pingnotes);
+		initialValues.put(KEY_PERIOD, period);
 		return mDb.insert(PINGS_TABLE, null, initialValues);
 	}
 
@@ -163,10 +193,10 @@ public class PingsDbAdapter {
 	 */
 	public Cursor fetchAllPings(boolean reverse) {
 		if (reverse) {
-			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES }, null, null, null, null,
+			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, null, null, null, null,
 					KEY_PING + " DESC");
 		} else {
-			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES }, null, null, null, null,
+			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, null, null, null, null,
 					KEY_PING + " ASC");
 		}
 	}
@@ -381,7 +411,7 @@ public class PingsDbAdapter {
 	 *             if note could not be found/retrieved
 	 */
 	public Cursor fetchPing(long pingid) throws SQLException {
-		Cursor pCursor = mDb.query(true, PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES }, KEY_ROWID + "="
+		Cursor pCursor = mDb.query(true, PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, KEY_ROWID + "="
 				+ pingid, null, null, null, null, null);
 		if (pCursor != null) {
 			pCursor.moveToFirst();
@@ -518,7 +548,7 @@ public class PingsDbAdapter {
 			}
 		}
 
-		//Update usage counts for all tags affected
+		// Update usage counts for all tags affected
 		for (String tag : cacheUpdates) {
 			updateTagCache(getTID(tag));
 		}
@@ -529,7 +559,7 @@ public class PingsDbAdapter {
 	public void cleanupUnusedTags() {
 		BeeminderDbAdapter bdb = new BeeminderDbAdapter(mCtx);
 		bdb.open();
-		
+
 		Cursor c = fetchAllTags();
 		c.moveToFirst();
 		int idx = c.getColumnIndex(KEY_ROWID);
@@ -537,8 +567,8 @@ public class PingsDbAdapter {
 		while (!c.isAfterLast()) {
 			long tagid = c.getLong(idx);
 			// Check ping tag pairs
-			Cursor tids = mDb.query(TAG_PING_TABLE, new String[] { KEY_ROWID }, KEY_TID + "=" + tagid, null, null, null,
-					null);
+			Cursor tids = mDb.query(TAG_PING_TABLE, new String[] { KEY_ROWID }, KEY_TID + "=" + tagid, null, null,
+					null, null);
 			int usecount = tids.getCount();
 			tids.close();
 

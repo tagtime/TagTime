@@ -33,8 +33,6 @@ public class Export extends SherlockActivity {
 	public static final String TAG = "TPExport";
 	private PingsDbAdapter mDb;
 	private BeeminderDbAdapter mBeeDb;
-	private Button mDoSD;
-	private Button mDoEmail;
 
 	//private static final int DIALOG_PROGRESS = 0;
 	private static final int DIALOG_NOMOUNT = 1;
@@ -110,7 +108,7 @@ public class Export extends SherlockActivity {
 				PingService x = PingService.getInstance();
 				if (x != null) {
 					long timex = System.currentTimeMillis()/1000;
-					x.sendNote(timex, mDb.createPing(timex, "", Arrays.asList(new String[]{""})));
+					x.sendNote(timex, mDb.createPing(timex, "", Arrays.asList(new String[]{""}), 0));
 				}
 			}
 		});

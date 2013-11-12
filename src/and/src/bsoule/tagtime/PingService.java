@@ -47,6 +47,7 @@ public class PingService extends Service {
 	public static final String KEY_NEXT = "nextping";
 	public static final String KEY_SEED = "RNG_seed";
 	private boolean mNotify;
+	private int mGap;
 
 	// seed is a variable that is really the state of the RNG.
 	private static long SEED;
@@ -76,12 +77,11 @@ public class PingService extends Service {
 		NEXT = mPrefs.getLong(KEY_NEXT, -1);
 		SEED = mPrefs.getLong(KEY_SEED, -1);
 
-		int gap;
 		try {
-			gap = Integer.parseInt(mPrefs.getString("pingGap", "45"));
+			mGap = Integer.parseInt(mPrefs.getString("pingGap", "45"));
 		} catch (NumberFormatException e) {
 			Log.w(TAG, "onCreate: Invalid gap: " + mPrefs.getString("pingGap", "not set"));
-			gap = 45;
+			mGap = 45;
 		}
 
 		// First do a quick check to see if next ping is still in the future...
@@ -98,7 +98,7 @@ public class PingService extends Service {
 		// If we make it here then it's time to do something
 		// ---------------------
 		if (NEXT == -1 || SEED == -1) { // then need to recalc from beg.
-			NEXT = nextping(prevping(launchTime, gap), gap);
+			NEXT = nextping(prevping(launchTime, mGap), mGap);
 		}
 
 		pingsDB = new PingsDbAdapter(this);
@@ -109,7 +109,7 @@ public class PingService extends Service {
 		// apparent reason, then assume the computer was off and auto-log them.
 		while (NEXT < launchTime - RETROTHRESH) {
 			logPing(NEXT, "", Arrays.asList(new String[] { "OFF" }));
-			NEXT = nextping(NEXT, gap);
+			NEXT = nextping(NEXT, mGap);
 		}
 		// Next, ping for any pings in the last retrothresh seconds.
 		do {
@@ -121,7 +121,7 @@ public class PingService extends Service {
 					long rowID = logPing(NEXT, "", Arrays.asList(new String[] { tag }));
 					sendNote(NEXT, rowID);
 				}
-				NEXT = nextping(NEXT, gap);
+				NEXT = nextping(NEXT, mGap);
 			}
 		} while (NEXT <= now());
 
@@ -138,7 +138,7 @@ public class PingService extends Service {
 
 	private long logPing(long time, String notes, List<String> tags) {
 		if (LOCAL_LOGV) Log.v(TAG, "logPing(" + tags + ")");
-		return pingsDB.createPing(time, notes, tags);
+		return pingsDB.createPing(time, notes, tags, mGap);
 	}
 
 	// ////////////////////////////////////////////////////////////////////
