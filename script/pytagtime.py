@@ -1,29 +1,10 @@
 #!/usr/bin/python
 
 """
+Visualize data collected by TagTime in many different ways.
 
-Reads a TagTime logfile, as for example produced by the TagTime app, and
-displays it in various ways.
-
-Currently supported are:
-
-    - A pie chart of the total percentage time spent on a task
-    - Bar charts showing which tags were active
-      - on a specific day of the week
-      - on a specific hour of the day
-    - A line plot showing (long term) trends, summed over specified intervals
-
-The plots can be configured from command line, especially:
-
-    - which tags are to be shown (specific)
-    - automatically select the top N tags
-    - whether to show the 'other' category in the plots as well
-    - the hour resolution in the hour of the day plot
-    - the color map (http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps)
-
-REQUIREMENTS
-
-This script relies heavily on the pandas module, which does most of the work.
+author: Hannes Schulz <schulz@ais.uni-bonn.de>
+license: 3 clause BSD
 
 """
 
