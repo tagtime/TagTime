@@ -155,20 +155,26 @@ class TagTimeLog:
         D = D.fillna(0)
         if ewmaspan is not None:
             ewma = pd.ewma(D, span=ewmaspan)
-            ewmstd = 3 * pd.ewmstd(D, span=2 * ewmaspan)
+            ewmstd = pd.ewmstd(D, span=2 * ewmaspan)
             if cumulative:
+                ewmstd = ewmstd * 3
                 ewma = ewma.cumsum()
         if cumulative:
             D = D.cumsum()
-        ax = D.plot(linewidth=2, colormap=self.cmapname, legend=False)
+
+        alpha = 0.5 if not cumulative and ewmaspan is not None else 1
+        ax = D.plot(linewidth=2, colormap=self.cmapname,
+                    legend=False, alpha=alpha)
         if ewmaspan is not None:
             colors = self.cmap(np.linspace(0., 1., len(D.keys())))
-            for idx, k in enumerate(tags):
-                ax.fill_between(D.index, np.array(ewma[k] + ewmstd[k]).ravel(),
-                                np.array(ewma[k] - ewmstd[k]).ravel(),
-                                facecolor=colors[idx], alpha=0.2)
+            if cumulative:
+                for idx, k in enumerate(tags):
+                    ax.fill_between(D.index, np.array(ewma[k] + ewmstd[k]).ravel(),
+                                    np.array(ewma[k] - ewmstd[k]).ravel(),
+                                    facecolor=colors[idx], alpha=0.2,
+                                    linewidth=1)
             ewma.plot(style='--', legend=False, ax=ax,
-                      colormap=self.cmapname, linewidth=1)
+                      colormap=self.cmapname, linewidth=2)
         ax.legend(ax.lines[:len(D.keys())],
                     map(lambda x:x.get_label(), ax.lines[:len(D.keys())]), loc='best')
         ax.grid(True)
@@ -279,35 +285,30 @@ class TagTimeLog:
         for k in D.keys():
             D[k] = D[k] * n_hours / V
         self._obfuscate(D)
-        colors = self.cmap(np.linspace(0., 1., len(D.keys())))
         if self.multitag == 'double':
             if len(D.keys()) < 8:
                 Dmax = D.max().max()
-                axes = D.plot(style=["-*" for c in colors],
+                axes = D.plot(style="*-",
                               subplots=True, sharex=True, linewidth=2)
-                for c, ax in zip(colors, axes):
-                    #from IPython import embed; embed()
+                for ax in axes:
                     if self.show_now:
                         ax.axvline(x=(datetime.datetime.now().weekday()),
                                    label='today', color='black')
-                    ax.get_lines()[0].set_c(c)
                     ax.set_xlim(-0.1, 6.1)
                     ax.set_ylim(0, Dmax)
                     ax.grid(True)
                 plt.gcf().subplots_adjust(hspace=0.0, wspace=0.0)
             else:
-                ax = D.plot(style=["-*" for c in D.keys()], linewidth=3)
+                ax = D.plot(style="*-", linewidth=3)
                 if self.show_now:
                     ax.axvline(x=(datetime.datetime.now().weekday()),
                                label='today', color='black')
-                for c, l in zip(colors, ax.get_lines()):
-                    l.set_c(c)
                 ax.set_ylim(0)
                 ax.set_xlim(-0.1, 6.1)
                 ax.grid(True)
             plt.xticks(np.arange(7), list("MTWTFSS"))
         else:
-            D.plot(kind='bar', stacked=True, color=colors)
+            D.plot(kind='bar', stacked=True, colormap=self.cmapname)
             plt.ylim(0, n_hours)
             plt.xticks(np.arange(7) + 0.5, list("MTWTFSS"))
         plt.suptitle(self.rng)
