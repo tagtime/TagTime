@@ -21,7 +21,6 @@ use strict;
 use warnings;
 
 sub longer
-# Note that this counts the length of text input, not the number of tags
 {
 	(length($_[0]) >= length($_[1])) ? $_[0] : $_[1];
 }
@@ -58,31 +57,22 @@ my $l2 = <$f2>;
 while (defined $l1 and defined $l2) {
 	my @l1a = &parse($l1);
 	my @l2a = &parse($l2);
-#	print $l1a[0], " ", $l2a[0], " ";
-#	print "Less than: ", ($l1a[0] < $l2a[0]);
-#	print "Greater than: ", ($l1a[0] > $l2a[0]);
-#	print "Equal: ", ($l1a[0] == $l2a[0]);
-#	exit();
 	if (not defined $l1a[0] or not defined $l2a[0])
 	{
-#		print "Spurious blank line.\n";
 		last; # Spurious blank line
 	}
 	if ($l1a[0] < $l2a[0]) {
 		# f1 has ping not in f2
-#		print $l1a[0], " ", $l2a[0], " <: Writing l1.\n", $l1; 
 		print $fo $l1;
 		$l1 = <$f1>;
 	} elsif ($l1a[0] > $l2a[0]) {
 		# f2 has ping not in f1
-#		print $l1a[0], " ", $l2a[0], " >: Writing l2.\n", $l2; 
 		print $fo $l2;
 		$l2 = <$f2>;
 	} else {
 		# both f1 and f2 have a ping
 		if ($l1 eq $l2) {
 			# Identical. Print one copy and get new data
-#			print "Identical. Writing l1.\n", $l1; 
 			print $fo $l1;
 			$l1 = <$f1>;
 			$l2 = <$f2>;
@@ -90,21 +80,17 @@ while (defined $l1 and defined $l2) {
 			# Different content.
 			if (index($l1, " RETRO ") != -1) {
 				if (index($l2, " RETRO ") != -1) {
-#					print "Both RETRO: Writing the longer.\n", $l1, $l2, &longer($l1,$l2); 
 					# Both RETRO - print longer
 					print $fo &longer($l1, $l2);
 				} else {
 					# 1 RETRO, 2 not
-#					print "1 RETRO, 2 not. Writing l2.\n", $l1, $l2; 
 					print $fo $l2;
 				} 
 			} elsif (index($l2, "RETRO") != -1) {
-#				print "2 RETRO, 1 not. Writing l1.\n", $l1, $l2; 
 				# 2 RETRO, 1 not
 				print $fo $l1;
 			} else {
 				 # Both non-RETRO (shouldn't really happen)
-#				print "Neither RETRO. Strange. Writing the longer.\n", $l1, $l2, &longer($l1,$l2); 
 				print $fo &longer($l1, $l2);
 			}
 			# Get new lines from both files
