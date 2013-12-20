@@ -114,4 +114,4 @@ if (defined $l1) {
 	} while ($l2 = <$f2>);
 }			
 
-exit(0)
+exit(0);
