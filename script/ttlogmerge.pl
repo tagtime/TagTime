@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Syntax: ttlogmerge logfile1 logfile2 outputlogfile
+# Syntax: ttlogmerge.pl logfile1 logfile2 outputlogfile
 #
 # A helper script for the Unison file synchroniser. One option for Unison is to
 # use an external program to merge two files which have been change in both
@@ -16,6 +16,11 @@
 # If a ping exists in both files and both or neither are tagged "RETRO",
 #    then use the one with the most tags entered.
 # Note that it is assumed that both files have timestamps in ascending order.
+#
+# This is best used by adding something like the following to your Unison
+# preferences file:
+#
+# merge = Path path/to/tagtime/*.log -> /path/to/ttlogmerge.pl CURRENT1 CURRENT2 NEW
 
 use strict;
 use warnings;
