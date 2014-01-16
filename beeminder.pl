@@ -35,7 +35,7 @@ $crit = $beeminder{$usrslug} or die "Can't determine which tags match $usrslug";
 # ph (ping hash) maps "y-m-d" to number of pings on that day.
 # sh (string hash) maps "y-m-d" to the beeminder comment string for that day.
 # bh (beeminder hash) maps "y-m-d" to the bmndr ID of the datapoint on that day.
-# ph1 and sh1 are based on the current tagtime long and
+# ph1 and sh1 are based on the current tagtime log and
 # ph0 and sh0 are based on the cached .bee file or beeminder-fetched data.
 
 my $start = time;  # start and end are the earliest and latest times we will
@@ -109,19 +109,24 @@ if($bflag) { # re-slurp all the datapoints from beeminder
   # take one pass to delete any duplicates on bmndr; must be one datapt per day
   my $i = 0;
   undef %remember;
+  my @todelete;
   for my $x (@$data) {
     my($y,$m,$d) = dt($x->{"timestamp"});
     my $ts = "$y-$m-$d";
     my $b = $x->{"id"};
     if(defined($remember{$ts})) {
-      print "Beeminder has multiple datapoints for the same day. " , 
-            "Deleting this one:\n";
+      print "Beeminder has multiple datapoints for the same day. " ,
+            "The other id is $remember{$ts}. Deleting this one:\n";
       print Dumper $x;
       beemdelete($usr, $slug, $b);
-      delete $data->[$i];
+      push(@todelete,$i);
     }
-    $remember{$ts} = 1;
+    $remember{$ts} = $b;
     $i++;
+  }
+
+  for my $x (reverse(@todelete)) {
+    splice(@$data,$x,1);
   }
 
   for my $x (@$data) { # parse the bmndr data into %ph0, %sh0, %bh
@@ -136,6 +141,8 @@ if($bflag) { # re-slurp all the datapoints from beeminder
     $ph0{$ts} = 0+$c; # ping count is first thing in the comment
     $sh0{$ts} = $c;
     $sh0{$ts} =~ s/[^\:]*\:\s+//; # drop the "n pings:" comment prefix
+    # This really shouldn't happen.
+    if(defined($bh{$ts})) { die "Duplicate cached/fetched id datapoints for $y-$m-$d: $bh{$ts}, $b.\n", Dumper $x, "\n"; }
     $bh{$ts} = $b;
   }
 }
@@ -194,6 +201,15 @@ for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
     if   ($p1 > $p0) { $plus  += ($p1-$p0); } 
     elsif($p1 < $p0) { $minus += ($p0-$p1); }
     beemupdate($usr, $slug, $b, $t, ($p1*$ping), splur($p1,"ping").": ".$s1);
+    # If this fails, it may well be because the point being updated was deleted/
+    # replaced on another machine (possibly as the result of a merge) and is no
+    # longer on the server. In which case we should probably fail gracefully
+    # rather than failing with an ERROR (see beemupdate()) and not fixing
+    # the problem, which requires manual cache-deleting intervention.
+    # Restarting the script after deleting the offending cache is one option,
+    # though simply deleting the cache file and waiting for next time is less
+    # Intrusive. Deleting the cache files when merging two TT logs would reduce
+    # the scope for this somewhat.
   } else {
     print "ERROR: can't tell what to do with this datapoint (old/new):\n";
     print "$y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\"\n";

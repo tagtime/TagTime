@@ -35,6 +35,9 @@ sub parse
 {
 	my $s = $_[0];
 	my @tokens = split(/\s+/, $s);
+	# XXX FIXME: This may fail where huge numbers of tags are added:
+	# It appears TT shortens the human-readable date string to stay
+	# under 80 characters per line.
 	for my $i (1..3) { pop(@tokens) } # Discard date string
 #	print "parse: ", $_[0], @tokens;
 	return @tokens;
