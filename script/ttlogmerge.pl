@@ -27,7 +27,16 @@ use warnings;
 
 sub longer
 {
-	(length($_[0]) >= length($_[1])) ? $_[0] : $_[1];
+    my $a = shift;
+    my $b = shift;
+	length(&removeautotags($a)) >= length(&removeautotags($b)) ? $a : $b;
+}
+
+sub removeautotags
+{
+    my $s = shift;
+    $s =~ s/\b(afk|off|RETRO)\b//g;
+    return $s;
 }
 
 sub parse
