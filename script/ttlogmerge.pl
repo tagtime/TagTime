@@ -63,6 +63,7 @@ sub parse_timestamp
 
 open(my $f1, "<", $ARGV[0]) or die;
 open(my $f2, "<", $ARGV[1]) or die;
+# TODO: make third argument optional, defaulting to stdout.
 open(my $fo, ">", $ARGV[2]) or die;
 
 # Read initial lines from files
