@@ -19,7 +19,7 @@ $ttlf    = shift;  # tagtime log filename
 $usrslug = shift;  # like alice/weight
 $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
-$beef = "$usr+$slug.bee"; # beef = bee file (cache of data on bmndr)
+$beef = "${path}$usr+$slug.bee"; # beef = bee file (cache of data on bmndr)
 
 if(defined(@beeminder)) { # for backward compatibility
   print "Deprecation warning: Get your settings file in line!\n";
