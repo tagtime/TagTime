@@ -35,7 +35,7 @@ sub longer
 sub removeautotags
 {
     my $s = shift;
-    $s =~ s/\b(afk|off|RETRO)\b//g;
+    $s =~ s/\b(afk|off|RETRO|\[missed ping from \d+s ago\])\b//g;
     return $s;
 }
 
