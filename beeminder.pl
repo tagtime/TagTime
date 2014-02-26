@@ -41,9 +41,9 @@ $crit = $beeminder{$usrslug} or die "Can't determine which tags match $usrslug";
 my $start = time;  # start and end are the earliest and latest times we will
 my $end   = 0;     # need to care about when updating beeminder.
 # bflag is true if we need to regenerate the beeminder cache file. reasons we'd
-# need to: 1. it doesn't exist; 2. any beeminder IDs are missing from the 
-# cache file; 3. there are multiple datapoints for the same day.
-$bflag = (!-e $beef);
+# need to: 1. it doesn't exist or is empty; 2. any beeminder IDs are missing
+# from the cache file; 3. there are multiple datapoints for the same day.
+$bflag = (!-s $beef);
 my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; # why bflag?
 $bf1 = 1 if $bflag;
 undef %remember; # remember which dates we've already seen in the cache file
@@ -93,7 +93,7 @@ if($bflag) { # re-slurp all the datapoints from beeminder
 
   my $tmp = $beef;  $tmp =~ s/(?:[^\/]*\/)*//; # strip path from filename
   if($bf1) {
-    print "Cache file missing ($tmp); recreating... ";
+    print "Cache file missing or empty ($tmp); recreating... ";
   } elsif($bf2) {
     print "Cache file doesn't have all the Bmndr IDs; recreating... ";
   } elsif($bf3) {
@@ -185,15 +185,20 @@ for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
     $nadd++;
     $plus += $p1;
     $bh{$ts} = beemcreate($usr,$slug,$t, $p1*$ping, splur($p1,"ping").": ".$s1);
+    #print "Created: $y $m $d  ",$p1*$ping," \"$p1 pings: $s1\"\n";
   } elsif($p0 > 0 && $p1 <= 0) { # on beeminder but not in tagtime log: DELETE
     $ndel++;
     $minus += $p0;
     beemdelete($usr, $slug, $b);
+    #print "Deleted: $y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\"\n";
   } elsif($p0 != $p1 || $s0 ne $s1) { # bmndr & tagtime log differ: UPDATE
     $nchg++;
     if   ($p1 > $p0) { $plus  += ($p1-$p0); } 
     elsif($p1 < $p0) { $minus += ($p0-$p1); }
     beemupdate($usr, $slug, $b, $t, ($p1*$ping), splur($p1,"ping").": ".$s1);
+    #print "Updated:\n";
+    #print "$y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\" to:\n";
+    #print "$y $m $d  ",$p1*$ping," \"$p1 pings: $s1\"\n";
   } else {
     print "ERROR: can't tell what to do with this datapoint (old/new):\n";
     print "$y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\"\n";
