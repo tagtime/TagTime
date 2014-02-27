@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Syntax: ttlogmerge.pl logfile1 logfile2 outputlogfile
+# Syntax: ttlogmerge.pl logfile1 logfile2 [outputlogfile]
 #
 # A helper script for the Unison file synchroniser. One option for Unison is to
 # use an external program to merge two files which have been change in both
@@ -27,7 +27,16 @@ use warnings;
 
 sub longer
 {
-	(length($_[0]) >= length($_[1])) ? $_[0] : $_[1];
+    my $a = shift;
+    my $b = shift;
+	length(&removeautotags($a)) >= length(&removeautotags($b)) ? $a : $b;
+}
+
+sub removeautotags
+{
+    my $s = shift;
+    $s =~ s/\b(afk|off|RETRO|\[missed ping from \d+s ago\])\b//g;
+    return $s;
 }
 
 sub parse
@@ -37,9 +46,9 @@ sub parse
 	my @tokens = split(/\s+/, $s);
 	# XXX FIXME: This may fail where huge numbers of tags are added:
 	# It appears TT shortens the human-readable date string to stay
-	# under 80 characters per line.
+	# under 80 characters per line if possible.
 	for my $i (1..3) { pop(@tokens) } # Discard date string
-#	print "parse: ", $_[0], @tokens;
+#	print STDERR "parse: ", $_[0], @tokens;
 	return @tokens;
 }
 
@@ -48,13 +57,19 @@ sub parse_timestamp
 {
 	my $s = $_[0];
 	my @tokens = split(/\s+/, $s);
-	print "parse_timestamp: ", $tokens[0];
+	print STDERR "parse_timestamp: ", $tokens[0];
 	return $tokens[0];
 }
 
-open(my $f1, "<", $ARGV[0]) or die;
-open(my $f2, "<", $ARGV[1]) or die;
-open(my $fo, ">", $ARGV[2]) or die;
+open(my $f1, "<", shift) or die;
+open(my $f2, "<", shift) or die;
+my $outn = shift;
+my $fo;
+if ($outn) {
+    open($fo, ">", $outn) or die;
+} else {
+    open($fo, '>&', \*STDOUT) or die;
+}
 
 # Read initial lines from files
 my $l1 = <$f1>;
@@ -112,12 +127,12 @@ while (defined $l1 and defined $l2) {
 # Any non-undefined files have unprocessed data in $lx
 if (defined $l1) {
 	do {
-#		print "Extra line in f1. Writing.\n", $l1; 
+#		print STDERR "Extra line in f1. Writing.\n", $l1; 
 		print $fo $l1
 	} while ($l1 = <$f1>);
 } elsif (defined $l2) {
 	do {
-#		print "Extra line in f2. Writing.\n", $l2; 
+#		print STDERR "Extra line in f2. Writing.\n", $l2; 
 		print $fo $l2
 	} while ($l2 = <$f2>);
 }			
