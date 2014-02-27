@@ -55,8 +55,8 @@ $enforcenums = 0;  # Whether it forces you to include a number in your
                    # of month to override). This is for task editor integration.
 
 # System command that will play a sound for pings.
-# If you've compiled playsound in sound subdir you can change this to, eg:
-# $playsound = "${path}sound/playsound ${path}sound/blip-twang.wav";
+# Often "play" or "playsound" on Linux, or "afplay" on Mac osx.
+# $playsound = "afplay ${path}sound/blip-twang.wav";
 # $playsound = "echo -e '\a'"; # this is the default if $playsound not defined.
 # $playsound = "";  # makes tagtime stay quiet.
 

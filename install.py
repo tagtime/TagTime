@@ -68,4 +68,5 @@ if os.path.isfile(symlink) :
    os.remove(symlink)
 
 os.system("ln -s %s %s"%(target,symlink))
+print "Done! Take a look at settings.pl to see if it looks ok..."
 
