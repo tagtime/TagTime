@@ -21,54 +21,54 @@ public class BeeminderDbAdapter {
 	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
 
 	// Private members to handle the Singleton pattern
-    private static BeeminderDbAdapter instance;
+	private static BeeminderDbAdapter instance;
 	private static DatabaseHelper mDbHelper = null;
-	protected BeeminderDbAdapter() {}
 
-    public static synchronized void initializeInstance(Context ctx) {
-        if (instance == null) {
-            instance = new BeeminderDbAdapter();
-    		if (mDbHelper == null) mDbHelper = new DatabaseHelper(ctx);
-        }
-    }
+	protected BeeminderDbAdapter() {
+	}
 
-    public static synchronized BeeminderDbAdapter getInstance() {
-        if (instance == null) {
-            throw new IllegalStateException(BeeminderDbAdapter.class.getSimpleName() +
-                    " is not initialized, call initializeInstance(..) method first.");
-        }
-        return instance;
-    }
+	/** This singleton initialization method should be called from Application::onCreate()*/
+	public static synchronized void initializeInstance(Context ctx) {
+		if (instance == null) {
+			instance = new BeeminderDbAdapter();
+			if (mDbHelper == null) mDbHelper = new DatabaseHelper(ctx);
+		}
+	}
+	public static synchronized BeeminderDbAdapter getInstance() {
+		if (instance == null) {
+			throw new IllegalStateException(BeeminderDbAdapter.class.getSimpleName()
+					+ " is not initialized, call initializeInstance(..) method first.");
+		}
+		return instance;
+	}
 
 	// Private members to handle the database reference counter
 	private SQLiteDatabase mDb = null;
 	private AtomicInteger mOpenCounter = new AtomicInteger();
+
 	public synchronized SQLiteDatabase openDatabase() throws SQLException {
-        if(mOpenCounter.incrementAndGet() == 1) {
-    		mDb = mDbHelper.getWritableDatabase();
-        }
+		if (mOpenCounter.incrementAndGet() == 1) {
+			mDb = mDbHelper.getWritableDatabase();
+		}
 		return mDb;
 	}
-
 	public void closeDatabase() {
-        if(mOpenCounter.decrementAndGet() == 0) {
-            mDbHelper.close();
-            mDb = null;
-        }
+		if (mOpenCounter.decrementAndGet() == 0) {
+			mDbHelper.close();
+			mDb = null;
+		}
 	}
-    
-	public static final String KEY_ROWID = "_id";
 
+	// Column name for ID fields 
+	public static final String KEY_ROWID = "_id";
 	// Table for goal registrations
 	public static final String KEY_USERNAME = "user";
 	public static final String KEY_SLUG = "slug";
 	public static final String KEY_TOKEN = "token";
 	public static final String KEY_UPDATEDAT = "updatedat";
-
 	// Table for goal tags
 	public static final String KEY_GID = "goal_id";
 	public static final String KEY_TID = "tag_id";
-
 	// Table for datapoint submissions
 	public static final String KEY_REQID = "req_id";
 	public static final String KEY_VALUE = "value";
@@ -76,20 +76,11 @@ public class BeeminderDbAdapter {
 	public static final String KEY_COMMENT = "comment";
 	// Uses KEY_GID
 	public static final String KEY_PID = "ping_id";
-
 	// Table for point ping pairs
 	public static final String KEY_POINTID = "point_id";
 	// Uses KEY_PID
 
-	private static final String DATABASE_NAME = "timepie_beeminder";
-	private static final int DATABASE_VERSION = 2;
-
-	private static final String GOALS_TABLE = "goals";
-	private static final String GOALTAGS_TABLE = "goaltags";
-	private static final String POINTS_TABLE = "points";
-	private static final String POINTPINGS_TABLE = "pointpings";
-
-	/** Database creation sql statement */
+	/* ****** SQL statements for database creation. ****** */
 
 	// a goal is a user/slug with a Beeminder token for submission
 	private static final String CREATE_GOALS = "create table goals (_id integer primary key autoincrement, "
@@ -109,6 +100,16 @@ public class BeeminderDbAdapter {
 	private static final String CREATE_POINTPINGS = "create table pointpings (_id integer primary key autoincrement, "
 			+ "point_id integer not null, ping_id integer not null," + "UNIQUE (point_id, ping_id));";
 
+	/* ****** Database and table names ****** */
+	
+	private static final String DATABASE_NAME = "timepie_beeminder";
+	private static final int DATABASE_VERSION = 2;
+
+	private static final String GOALS_TABLE = "goals";
+	private static final String GOALTAGS_TABLE = "goaltags";
+	private static final String POINTS_TABLE = "points";
+	private static final String POINTPINGS_TABLE = "pointpings";
+
 	private static long now() {
 		// Note that getTimeInMillis returns GMT unixtime anyway, so timezone is
 		// irrelevant
@@ -116,6 +117,7 @@ public class BeeminderDbAdapter {
 	}
 
 	// ===================== General Database Management =====================
+	/** Database helper class for the Beeminder link database. Handles creation, upgrade operations. */
 	private static class DatabaseHelper extends SQLiteOpenHelper {
 
 		DatabaseHelper(Context context) {

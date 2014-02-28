@@ -21,6 +21,7 @@ public class PingsDbAdapter {
 	private static DatabaseHelper mDbHelper = null;
 	protected PingsDbAdapter() {}
 
+	/** This singleton initialization method should be called from Application::onCreate()*/
     public static synchronized void initializeInstance(Context ctx) {
         if (instance == null) {
             instance = new PingsDbAdapter();

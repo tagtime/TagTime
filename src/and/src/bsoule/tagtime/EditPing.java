@@ -57,7 +57,7 @@ import com.actionbarsherlock.view.MenuItem;
 public class EditPing extends SherlockActivity {
 
 	private final static String TAG = "EditPing";
-	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
 	public static final String KEY_TAGS = "tags";
 
