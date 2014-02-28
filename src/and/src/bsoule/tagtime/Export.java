@@ -58,10 +58,10 @@ public class Export extends SherlockActivity {
 		mAction.setHomeButtonEnabled(true);
 		mAction.setIcon(R.drawable.tagtime_03);
 		
-		mDb = new PingsDbAdapter(this);
-		mDb.open();
-		mBeeDb = new BeeminderDbAdapter(this);
-		mBeeDb.open();
+		mDb = PingsDbAdapter.getInstance();
+		mDb.openDatabase();
+		mBeeDb = BeeminderDbAdapter.getInstance();
+		mBeeDb.openDatabase();
 		mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		
 		Button doSD = (Button) findViewById(R.id.export_sd);
@@ -312,8 +312,8 @@ public class Export extends SherlockActivity {
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
 		super.onDestroy();
-		mDb.close();
-		mBeeDb.close();
+		mDb.closeDatabase();
+		mBeeDb.closeDatabase();
 	}
 
 	/** Handles menu item selections */

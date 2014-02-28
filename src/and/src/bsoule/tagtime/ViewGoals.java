@@ -42,8 +42,8 @@ public class ViewGoals extends SherlockListActivity {
 
 		mSDF = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
 
-		mDbHelper = new BeeminderDbAdapter(this);
-		mDbHelper.open();
+		mDbHelper = BeeminderDbAdapter.getInstance();
+		mDbHelper.openDatabase();
 		fillData();
 
 		Button beeminder = (Button) findViewById(R.id.vg_add);
@@ -131,7 +131,7 @@ public class ViewGoals extends SherlockListActivity {
 
 	@Override
 	protected void onDestroy() {
-		mDbHelper.close();
+		mDbHelper.closeDatabase();
 		super.onDestroy();
 	}
 	

@@ -8,7 +8,7 @@ import android.util.Log;
 public class TagTime extends Application {
 	private final static String TAG = "TagTime";
 
-	public final static boolean DISABLE_LOGV = true;
+	public final static boolean DISABLE_LOGV = false;
 
 	private static Context sContext = null;
 
@@ -24,9 +24,13 @@ public class TagTime extends Application {
 			Log.w(TAG, "getPackageInfo() failed! Msg:" + e.getMessage());
 			version = "???";
 		}
+
+		BeeminderDbAdapter.initializeInstance(this);
+		PingsDbAdapter.initializeInstance(this);
+
 		Log.v(TAG, "Starting TagTime. Package=" + pkgname + ", Version=" + version);
 	}
-
+	
 	public static boolean checkBeeminder() {
 		if (sContext == null) return false;
 		PackageManager pm = sContext.getPackageManager();

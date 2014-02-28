@@ -159,12 +159,12 @@ public class EditPing extends SherlockActivity {
 		// getSystemService(NOTIFICATION_SERVICE);
 		// nm.cancel(R.layout.tagtime_editping);
 
-		mPingsDB = new PingsDbAdapter(this);
-		mPingsDB.open();
+		mPingsDB = PingsDbAdapter.getInstance();
+		mPingsDB.openDatabase();
 		if (mRowId >= 0 && mPingsDB.fetchPing(mRowId).getCount() == 0) {
 			Toast.makeText(this, getText(R.string.editping_noping), Toast.LENGTH_SHORT).show();
 			finish();
-			mPingsDB.close();
+			mPingsDB.closeDatabase();
 			return;
 		}
 
@@ -453,7 +453,7 @@ public class EditPing extends SherlockActivity {
 	@Override
 	protected void onDestroy() {
 
-		mPingsDB.close();
+		mPingsDB.closeDatabase();
 		super.onDestroy();
 	}
 

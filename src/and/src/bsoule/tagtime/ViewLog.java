@@ -192,10 +192,10 @@ public class ViewLog extends SherlockFragmentActivity implements LoaderManager.L
 		mAction.setHomeButtonEnabled(true);
 		mAction.setIcon(R.drawable.tagtime_03);
 
-		mDbHelper = new PingsDbAdapter(this);
-		mDbHelper.open();
-		mBeeDb = new BeeminderDbAdapter(this);
-		mBeeDb.open();
+		mDbHelper = PingsDbAdapter.getInstance();
+		mDbHelper.openDatabase();
+		mBeeDb = BeeminderDbAdapter.getInstance();
+		mBeeDb.openDatabase();
 
 		mSDF = new SimpleDateFormat("yyyy.MM.dd'\n'HH:mm:ss", Locale.getDefault());
 		mPingAdapter = new PingCursorAdapter(this, null, true);
@@ -228,8 +228,8 @@ public class ViewLog extends SherlockFragmentActivity implements LoaderManager.L
 
 	@Override
 	protected void onDestroy() {
-		mBeeDb.close();
-		mDbHelper.close();
+		mBeeDb.closeDatabase();
+		mDbHelper.closeDatabase();
 		super.onDestroy();
 	}
 

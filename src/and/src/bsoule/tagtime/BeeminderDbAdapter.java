@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -19,6 +20,43 @@ public class BeeminderDbAdapter {
 	private static final String TAG = "BeeminderDbAdapter";
 	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
 
+	// Private members to handle the Singleton pattern
+    private static BeeminderDbAdapter instance;
+	private static DatabaseHelper mDbHelper = null;
+	protected BeeminderDbAdapter() {}
+
+    public static synchronized void initializeInstance(Context ctx) {
+        if (instance == null) {
+            instance = new BeeminderDbAdapter();
+    		if (mDbHelper == null) mDbHelper = new DatabaseHelper(ctx);
+        }
+    }
+
+    public static synchronized BeeminderDbAdapter getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException(BeeminderDbAdapter.class.getSimpleName() +
+                    " is not initialized, call initializeInstance(..) method first.");
+        }
+        return instance;
+    }
+
+	// Private members to handle the database reference counter
+	private SQLiteDatabase mDb = null;
+	private AtomicInteger mOpenCounter = new AtomicInteger();
+	public synchronized SQLiteDatabase openDatabase() throws SQLException {
+        if(mOpenCounter.incrementAndGet() == 1) {
+    		mDb = mDbHelper.getWritableDatabase();
+        }
+		return mDb;
+	}
+
+	public void closeDatabase() {
+        if(mOpenCounter.decrementAndGet() == 0) {
+            mDbHelper.close();
+            mDb = null;
+        }
+	}
+    
 	public static final String KEY_ROWID = "_id";
 
 	// Table for goal registrations
@@ -51,9 +89,6 @@ public class BeeminderDbAdapter {
 	private static final String POINTS_TABLE = "points";
 	private static final String POINTPINGS_TABLE = "pointpings";
 
-	private DatabaseHelper mDbHelper;
-	private SQLiteDatabase mDb;
-
 	/** Database creation sql statement */
 
 	// a goal is a user/slug with a Beeminder token for submission
@@ -73,8 +108,6 @@ public class BeeminderDbAdapter {
 	// a point ping is a point-ping pairing
 	private static final String CREATE_POINTPINGS = "create table pointpings (_id integer primary key autoincrement, "
 			+ "point_id integer not null, ping_id integer not null," + "UNIQUE (point_id, ping_id));";
-
-	private final Context mCtx;
 
 	private static long now() {
 		// Note that getTimeInMillis returns GMT unixtime anyway, so timezone is
@@ -109,32 +142,8 @@ public class BeeminderDbAdapter {
 		}
 	}
 
-	public BeeminderDbAdapter(Context ctx) {
-		this.mCtx = ctx;
-	}
-
 	protected void deleteAllData() {
 		mDbHelper.onUpgrade(mDb, 1, DATABASE_VERSION);
-	}
-
-	/**
-	 * Open the database. If it cannot be opened, try to create a new instance
-	 * of the database. If it cannot be created, throw an exception to signal
-	 * the failure
-	 * 
-	 * @return this (self reference, allowing this to be chained in an
-	 *         initialization call)
-	 * @throws SQLException
-	 *             if the database could be neither opened or created
-	 */
-	public BeeminderDbAdapter open() throws SQLException {
-		mDbHelper = new DatabaseHelper(mCtx);
-		mDb = mDbHelper.getWritableDatabase();
-		return this;
-	}
-
-	public void close() {
-		mDbHelper.close();
 	}
 
 	// ===================== Goal database utilities =====================
@@ -260,8 +269,8 @@ public class BeeminderDbAdapter {
 
 	// ============== Goal-tag pair database utilities ===============
 	public Set<Long> findGoalsForTagNames(List<String> tags) {
-		PingsDbAdapter pingDB = new PingsDbAdapter(mCtx);
-		pingDB.open();
+		PingsDbAdapter pingDB = PingsDbAdapter.getInstance();
+		pingDB.openDatabase();
 
 		Set<Long> goals = new HashSet<Long>(0);
 		int idx;
@@ -293,7 +302,7 @@ public class BeeminderDbAdapter {
 			if (LOCAL_LOGV) Log.v(TAG,
 					"findGoalsForTags: Found goals <" + goalstr + "> for new tags " + TextUtils.join(" ", tags));
 		}
-		pingDB.close();
+		pingDB.closeDatabase();
 		return goals;
 	}
 
@@ -358,9 +367,9 @@ public class BeeminderDbAdapter {
 		Cursor c = mDb.query(GOALTAGS_TABLE, new String[] { KEY_GID, KEY_TID }, KEY_GID + "=" + goal_id, null, null,
 				null, null);
 		String s = "";
-		PingsDbAdapter db = new PingsDbAdapter(mCtx);
+		PingsDbAdapter db = PingsDbAdapter.getInstance();
 		try {
-			db.open();
+			db.openDatabase();
 			c.moveToFirst();
 			int idx = c.getColumnIndex(KEY_TID);
 			while (!c.isAfterLast()) {
@@ -375,7 +384,7 @@ public class BeeminderDbAdapter {
 			}
 		} finally {
 			c.close();
-			db.close();
+			db.closeDatabase();
 		}
 		return s;
 	}
@@ -385,13 +394,13 @@ public class BeeminderDbAdapter {
 		List<String> ret = new ArrayList<String>();
 		c.moveToFirst();
 		int idx = c.getColumnIndex(KEY_TID);
-		PingsDbAdapter db = new PingsDbAdapter(mCtx);
-		db.open();
+		PingsDbAdapter db = PingsDbAdapter.getInstance();
+		db.openDatabase();
 		while (!c.isAfterLast()) {
 			long tid = c.getLong(idx);
 			String t = db.getTagName(tid);
 			if (t.equals("")) {
-				db.close();
+				db.closeDatabase();
 				Exception e = new Exception("Could not find tag with id=" + tid);
 				throw e;
 			}
@@ -399,7 +408,7 @@ public class BeeminderDbAdapter {
 			c.moveToNext();
 		}
 		c.close();
-		db.close();
+		db.closeDatabase();
 		return ret;
 	}
 
@@ -415,8 +424,8 @@ public class BeeminderDbAdapter {
 		}
 		cacheUpdates.addAll(newTags);
 		mDb.delete(GOALTAGS_TABLE, KEY_GID + "=" + goalId, null);
-		PingsDbAdapter db = new PingsDbAdapter(mCtx);
-		db.open();
+		PingsDbAdapter db = PingsDbAdapter.getInstance();
+		db.openDatabase();
 		for (String t : newTags) {
 			if (t.trim() == "") {
 				continue;
@@ -434,7 +443,7 @@ public class BeeminderDbAdapter {
 		for (String tag : cacheUpdates) {
 			db.updateTagCache(db.getTID(tag));
 		}
-		db.close();
+		db.closeDatabase();
 		return true;
 	}
 

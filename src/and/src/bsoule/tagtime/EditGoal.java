@@ -69,7 +69,7 @@ public class EditGoal extends SherlockActivity {
 
 	private class SessionStatusCallback implements Session.StatusCallback {
 		@Override
-		public void call(Session session, SessionState state) {
+		public void call(Session session, SessionState state, SessionError error) {
 			Log.v(TAG, "Beeminder status changed:" + state);
 
 			if (state == SessionState.OPENED) {
@@ -84,11 +84,10 @@ public class EditGoal extends SherlockActivity {
 				updateFields();
 
 			} else if (state == SessionState.CLOSED_ON_ERROR) {
-				SessionError error = mSession.getError();
 				if (error.type == Session.ErrorType.ERROR_UNAUTHORIZED) {
 					// clearCurGoal();
 				}
-				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
+				if (error.type == Session.ErrorType.ERROR_BADVERSION) {
 					Toast.makeText(EditGoal.this, "Protocol error: " + error.message, Toast.LENGTH_LONG).show();
 					notifyVersionError(session.getError().message);
 				}
@@ -157,8 +156,8 @@ public class EditGoal extends SherlockActivity {
 		mAction.setIcon(R.drawable.tagtime_03);
 
 		mRowId = getIntent().getLongExtra(PingsDbAdapter.KEY_ROWID, -1);
-		mBeeminderDB = new BeeminderDbAdapter(this);
-		mBeeminderDB.open();
+		mBeeminderDB = BeeminderDbAdapter.getInstance();
+		mBeeminderDB.openDatabase();
 
 		mGoalInfo = (TextView) findViewById(R.id.goalinfo);
 		mTagInfo = (TextView) findViewById(R.id.tags);
@@ -291,7 +290,7 @@ public class EditGoal extends SherlockActivity {
 	@Override
 	protected void onDestroy() {
 		if (mSession != null) mSession.close();
-		mBeeminderDB.close();
+		mBeeminderDB.closeDatabase();
 		super.onDestroy();
 	}
 
