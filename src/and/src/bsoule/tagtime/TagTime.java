@@ -8,7 +8,7 @@ import android.util.Log;
 public class TagTime extends Application {
 	private final static String TAG = "TagTime";
 
-	public final static boolean DISABLE_LOGV = false;
+	public final static boolean DISABLE_LOGV = true;
 
 	private static Context sContext = null;
 
@@ -43,4 +43,5 @@ public class TagTime extends Application {
 		}
 		return app_installed;
 	}
+
 }

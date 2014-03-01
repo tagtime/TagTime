@@ -3,9 +3,11 @@ package bsoule.tagtime;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -29,18 +31,21 @@ import com.beeminder.beedroid.api.Session.SessionState;
 // ChangeLog:
 
 /* 2013.10.26 Uluc: If the activity is invoked with RowId = null, it will let the user 
- * select a number of tags and send them back to the invking activity in the response. */
+ * select a number of tags and send them back to the invoking activity in the response. */
 
 public class EditGoal extends SherlockActivity {
 
 	private final static String TAG = "EditGoal";
-	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
 
 	private static final int ACTIVITY_EDIT = 0;
 
 	public static final String KEY_EDIT = "editor";
 
 	private BeeminderDbAdapter mBeeminderDB;
+
+	public static final String KEY_USERNAME = "user";
+	public static final String KEY_GOALNAME = "goal";
 
 	// private EditText mNotesEdit;
 	private Long mRowId;
@@ -53,7 +58,8 @@ public class EditGoal extends SherlockActivity {
 
 	private TextView mGoalInfo;
 	private TextView mTagInfo;
-
+	private Button mVisitGoal;
+	
 	Session mSession;
 
 	private void notifyVersionError(String submsg) {
@@ -104,10 +110,14 @@ public class EditGoal extends SherlockActivity {
 		mGoalSlug = null;
 		mGoalInfo.setText("not selected");
 		mTagInfo.setText("not selected");
+		mVisitGoal.setVisibility(View.GONE);
 	}
 
 	private void updateFields() {
 		mGoalInfo.setText(mUsername + "/" + mGoalSlug);
+		if (mUsername != null && mGoalSlug != null) {
+			mVisitGoal.setVisibility(View.VISIBLE);
+		}
 	}
 
 	private void updateWithGoal(Cursor goal) {
@@ -165,6 +175,8 @@ public class EditGoal extends SherlockActivity {
 		mTags = new String[0];
 		mTagString = "";
 
+		mVisitGoal = (Button) findViewById(R.id.visit);
+
 		if (mRowId >= 0) {
 			Cursor goal = mBeeminderDB.fetchGoal(mRowId);
 			updateWithGoal(goal);
@@ -184,10 +196,13 @@ public class EditGoal extends SherlockActivity {
 
 		Button select = (Button) findViewById(R.id.select);
 		if (mRowId >= 0) {
+			mVisitGoal.setVisibility(View.VISIBLE);
 			select.setVisibility(View.GONE);
 		} else if (mSession == null) {
+			mVisitGoal.setVisibility(View.GONE);
 			select.setEnabled(false);
 		} else {
+			mVisitGoal.setVisibility(View.GONE);
 			select.setEnabled(true);
 			select.setOnClickListener(new OnClickListener() {
 				public void onClick(View v) {
@@ -200,6 +215,17 @@ public class EditGoal extends SherlockActivity {
 				}
 			});
 		}
+
+		mVisitGoal.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				try {
+					if (mSession != null && mUsername != null && mGoalSlug != null) mSession.visitGoal(mUsername,
+							mGoalSlug);
+				} catch (SessionException e) {
+					Log.v(TAG, "Exception visiting goal: " + e.getMessage());
+				}
+			}
+		});
 
 		Button selecttags = (Button) findViewById(R.id.select_tags);
 		selecttags.setOnClickListener(new OnClickListener() {
