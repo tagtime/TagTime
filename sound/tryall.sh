@@ -2,11 +2,11 @@
 
 foreach i (*.wav *.WAV)
   echo $i
-  ./playsound $i
+  afplay $i
   sleep 1
-  ./playsound $i
+  afplay $i
   sleep 1
-  ./playsound $i
+  afplay $i
   sleep 3
 end
 
