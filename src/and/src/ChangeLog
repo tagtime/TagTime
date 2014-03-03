@@ -1,0 +1,7 @@
+1.3.3
+
+ - New: Added an about dialog
+ - Fix: Crashes on ping and Beeminder database race conditions
+ - Fix: Crash on closing Beeminder session with errors
+ 
+ 

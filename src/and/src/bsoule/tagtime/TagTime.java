@@ -10,9 +10,15 @@ public class TagTime extends Application {
 
 	public final static boolean DISABLE_LOGV = true;
 
+    public static final String APP_PNAME = "bsoule.tagtime";
+
 	private static Context sContext = null;
 
-	public void onCreate() {
+    public static Context getAppContext() {
+        return TagTime.sContext;
+    }
+
+    public void onCreate() {
 		super.onCreate();
 
 		sContext = getApplicationContext();

@@ -48,4 +48,9 @@
 	   /> 
 
   </PreferenceCategory>
+    <PreferenceCategory android:title="TagTime App" >
+        <Preference
+            android:key="aboutPref"
+            android:title="About TagTime" />
+    </PreferenceCategory>
 </PreferenceScreen>
