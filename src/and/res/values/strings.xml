@@ -35,7 +35,7 @@
     <string name="editgoal_nogoal">You must select a valid goal!</string>
     
     <string name="app_title">TagTime</string>
-    <string name="export_title">TagTime Manage Data</string>
+    <string name="managedata_title">TagTime Manage Data</string>
     <string name="viewlog_title">TagTime Ping Log</string>
     <string name="editping_title">Edit TagTime Ping</string>
     <string name="viewgoals_title">TagTime Beeminder Links</string>

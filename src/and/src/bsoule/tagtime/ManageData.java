@@ -29,8 +29,8 @@ import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.MenuItem;
 
-public class Export extends SherlockActivity {
-	public static final String TAG = "TPExport";
+public class ManageData extends SherlockActivity {
+	public static final String TAG = "TPManageData";
 	private PingsDbAdapter mDb;
 	private BeeminderDbAdapter mBeeDb;
 
@@ -48,11 +48,12 @@ public class Export extends SherlockActivity {
 	
 	SharedPreferences mPrefs;
 	ProgressDialog mProgress;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.tagtime_export);
+		setContentView(R.layout.tagtime_managedata);
 
 		mAction = getSupportActionBar();
 		mAction.setHomeButtonEnabled(true);
@@ -62,6 +63,7 @@ public class Export extends SherlockActivity {
 		mDb.openDatabase();
 		mBeeDb = BeeminderDbAdapter.getInstance();
 		mBeeDb.openDatabase();
+		
 		mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		
 		Button doSD = (Button) findViewById(R.id.export_sd);
@@ -134,7 +136,7 @@ public class Export extends SherlockActivity {
 			title = "Done!";
 			break;
 		case DIALOG_DELETE_DATA:
-			return new AlertDialog.Builder(Export.this)
+			return new AlertDialog.Builder(ManageData.this)
 			.setTitle("WAIT!")
 			.setMessage("You are about to delete ALL of your timepie data. This cannot be undone! Are you really really really sure?")
 			.setPositiveButton("Yes Really!", new DialogInterface.OnClickListener() {
@@ -146,7 +148,7 @@ public class Export extends SherlockActivity {
 				public void onClick(DialogInterface dialog, int whichButton) {}
 			}).create();
 		case DIALOG_REALLY:
-			return new AlertDialog.Builder(Export.this)
+			return new AlertDialog.Builder(ManageData.this)
 			.setTitle("Really?")
 			.setPositiveButton("Goodness me no.",new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int whichButton) {}
@@ -158,7 +160,7 @@ public class Export extends SherlockActivity {
 				}
 			}).create();
 		case DIALOG_CLEANUP_TAGS:
-			return new AlertDialog.Builder(Export.this)
+			return new AlertDialog.Builder(ManageData.this)
 			.setTitle("Clean up unused tags?")
 			.setPositiveButton("Clean", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int which) {
@@ -167,7 +169,7 @@ public class Export extends SherlockActivity {
 				}
 			}).create();
 		}
-		AlertDialog.Builder adb = new AlertDialog.Builder(Export.this);
+		AlertDialog.Builder adb = new AlertDialog.Builder(ManageData.this);
 		adb.setTitle(title);
 		if (!body.equals("")) adb.setMessage(body);
 		return adb.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
@@ -214,7 +216,7 @@ public class Export extends SherlockActivity {
 	}
 
 	private Dialog progressDialog() {
-		mProgress = new ProgressDialog(Export.this);
+		mProgress = new ProgressDialog(ManageData.this);
 		mProgress.setIcon(R.drawable.alert_dialog_icon);
 		mProgress.setTitle(R.string.saving_log);
 		mProgress.setProgressStyle(ProgressDialog.STYLE_SPINNER);

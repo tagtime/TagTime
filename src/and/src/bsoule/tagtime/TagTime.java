@@ -2,7 +2,9 @@ package bsoule.tagtime;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.util.Log;
 
 public class TagTime extends Application {
@@ -13,6 +15,16 @@ public class TagTime extends Application {
     public static final String APP_PNAME = "bsoule.tagtime";
 
 	private static Context sContext = null;
+
+    public static final String PING_UPDATE_EVENT = "bsoule.tagtime.ping_update";
+    public static final String KEY_PING_ISNEW = "bsoule.tagtime.ping_isnew";
+
+    public static void broadcastPingUpdate( boolean pingisnew ) {
+        // Send a broadcast Intent informing interested parties that this goal has been updated.
+        Intent pingIntent = new Intent( TagTime.PING_UPDATE_EVENT );
+        pingIntent.putExtra(TagTime.KEY_PING_ISNEW, pingisnew );
+        getAppContext().sendBroadcast( pingIntent );
+    }
 
     public static Context getAppContext() {
         return TagTime.sContext;

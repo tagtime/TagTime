@@ -56,6 +56,26 @@ public class Preferences extends SherlockPreferenceActivity {
 			}
 		});
 
+        Preference backup = (Preference) findPreference( "backupPref" );
+        if (backup != null) {
+        	backup.setOnPreferenceClickListener( new Preference.OnPreferenceClickListener() {
+
+                public boolean onPreferenceClick( Preference preference ) {
+                    return true;
+                }
+            } );
+        }
+
+        Preference restore = (Preference) findPreference( "restorePref" );
+        if (restore!= null) {
+        	restore.setOnPreferenceClickListener( new Preference.OnPreferenceClickListener() {
+
+                public boolean onPreferenceClick( Preference preference ) {
+                    return true;
+                }
+            } );
+        }
+
         Preference about = (Preference) findPreference( "aboutPref" );
         if (about != null) {
             about.setOnPreferenceClickListener( new Preference.OnPreferenceClickListener() {

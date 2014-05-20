@@ -14,7 +14,7 @@ import android.util.Log;
 
 public class PingsDbAdapter {
 	private static final String TAG = "PingsDbAdapter";
-	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
 	// Private members to handle the Singleton pattern
     private static PingsDbAdapter instance;
@@ -189,6 +189,7 @@ public class PingsDbAdapter {
 		if (!updateTaggings(pid, tags)) {
 			Log.e(TAG, "createPing: error creating the tag-ping entries");
 		}
+		TagTime.broadcastPingUpdate( true );
 		return pid;
 	}
 

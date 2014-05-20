@@ -1,9 +1,12 @@
 package bsoule.tagtime;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -228,6 +231,7 @@ public class BeeminderService extends IntentService {
 				mLastError = session.getError().type;
 			}
 			mSubmitSem.release();
+			TagTime.broadcastPingUpdate( false );
 		}
 	}
 
@@ -451,7 +455,8 @@ public class BeeminderService extends IntentService {
 		int period = ping.getInt(period_idx);
 		ping.close();
 		double value = 1.0 / 60.0 * period;
-		String comment = "TagTime ping: " + mNewTagsIn;
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+		String comment = "TagTime ping: " + mNewTagsIn +" ["+sdf.format(new Date(time * 1000))+"]";
 
 		// Initiate creation of a Beeminder point submission. Will block until
 		// response with request ID is received

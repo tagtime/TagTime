@@ -437,6 +437,7 @@ public class EditPing extends SherlockActivity {
 				this.startService(intent);
 			}
 		}
+		TagTime.broadcastPingUpdate( false );
 		super.finish();
 	}
 
