@@ -2,6 +2,7 @@ package bsoule.tagtime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -13,8 +14,47 @@ import android.util.Log;
 
 public class PingsDbAdapter {
 	private static final String TAG = "PingsDbAdapter";
-	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
+	// Private members to handle the Singleton pattern
+    private static PingsDbAdapter instance;
+	private static DatabaseHelper mDbHelper = null;
+	protected PingsDbAdapter() {}
+
+	/** This singleton initialization method should be called from Application::onCreate()*/
+    public static synchronized void initializeInstance(Context ctx) {
+        if (instance == null) {
+            instance = new PingsDbAdapter();
+    		if (mDbHelper == null) mDbHelper = new DatabaseHelper(ctx);
+        }
+    }
+
+    public static synchronized PingsDbAdapter getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException(PingsDbAdapter.class.getSimpleName() +
+                    " is not initialized, call initializeInstance(..) method first.");
+        }
+        return instance;
+    }
+
+	// Private members to handle the database reference counter
+	private SQLiteDatabase mDb = null;
+	private AtomicInteger mOpenCounter = new AtomicInteger();
+	public synchronized SQLiteDatabase openDatabase() throws SQLException {
+        if(mOpenCounter.incrementAndGet() == 1) {
+    		mDb = mDbHelper.getWritableDatabase();
+        }
+		return mDb;
+	}
+
+	public void closeDatabase() {
+        if(mOpenCounter.decrementAndGet() == 0) {
+            mDbHelper.close();
+            mDb = null;
+        }
+	}
+    
+	// Column name for ID fields 
 	public static final String KEY_ROWID = "_id";
 	// Table for pings
 	public static final String KEY_PING = "ping";
@@ -29,10 +69,7 @@ public class PingsDbAdapter {
 	public static final String KEY_PID = "ping_id";
 	public static final String KEY_TID = "tag_id";
 
-	private DatabaseHelper mDbHelper;
-	private SQLiteDatabase mDb;
-
-	/** Database creation sql statement */
+	/* ****** SQL statements for database creation. ****** */
 
 	// a ping is a timestamp with optional notes
 	private static final String CREATE_PINGS = "create table pings (_id integer primary key autoincrement, "
@@ -44,14 +81,15 @@ public class PingsDbAdapter {
 	private static final String CREATE_TAGPINGS = "create table tag_ping (_id integer primary key autoincrement, "
 			+ "ping_id integer not null, tag_id integer not null," + "UNIQUE (ping_id, tag_id));";
 
+	/* ****** Database and table names ****** */
+	
 	private static final String DATABASE_NAME = "timepiedata";
 	private static final String PINGS_TABLE = "pings";
 	private static final String TAGS_TABLE = "tags";
 	private static final String TAG_PING_TABLE = "tag_ping";
 	private static final int DATABASE_VERSION = 6;
 
-	private final Context mCtx;
-
+	/** Database helper class for the Pings database. Handles creation, upgrade operations. */
 	private static class DatabaseHelper extends SQLiteOpenHelper {
 
 		DatabaseHelper(Context context) {
@@ -113,8 +151,8 @@ public class PingsDbAdapter {
 					db.beginTransaction();
 					try {
 						// Calculate the first cache.
-						Cursor all_pings = db.query(PINGS_TABLE, new String[] { KEY_ROWID }, null,
-								null, null, null, null);
+						Cursor all_pings = db.query(PINGS_TABLE, new String[] { KEY_ROWID }, null, null, null, null,
+								null);
 						Integer current_ping_id = 0;
 						ContentValues period_values = new ContentValues();
 						period_values.put(KEY_PERIOD, 45);
@@ -123,7 +161,8 @@ public class PingsDbAdapter {
 						while (!all_pings.isAfterLast()) {
 							current_ping_id = all_pings.getInt(0);
 
-							db.update(PINGS_TABLE, period_values, "_id = ?", new String[] { current_ping_id.toString() });
+							db.update(PINGS_TABLE, period_values, "_id = ?",
+									new String[] { current_ping_id.toString() });
 							all_pings.moveToNext();
 						}
 						db.setTransactionSuccessful();
@@ -135,22 +174,8 @@ public class PingsDbAdapter {
 		}
 	}
 
-	public PingsDbAdapter(Context ctx) {
-		this.mCtx = ctx;
-	}
-
 	protected void deleteAllData() {
 		mDbHelper.onUpgrade(mDb, 1, DATABASE_VERSION);
-	}
-
-	public PingsDbAdapter open() throws SQLException {
-		mDbHelper = new DatabaseHelper(mCtx);
-		mDb = mDbHelper.getWritableDatabase();
-		return this;
-	}
-
-	public void close() {
-		mDbHelper.close();
 	}
 
 	// =============== Methods for the Pings table =====================
@@ -164,6 +189,7 @@ public class PingsDbAdapter {
 		if (!updateTaggings(pid, tags)) {
 			Log.e(TAG, "createPing: error creating the tag-ping entries");
 		}
+		TagTime.broadcastPingUpdate( true );
 		return pid;
 	}
 
@@ -193,11 +219,11 @@ public class PingsDbAdapter {
 	 */
 	public Cursor fetchAllPings(boolean reverse) {
 		if (reverse) {
-			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, null, null, null, null,
-					KEY_PING + " DESC");
+			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, null, null,
+					null, null, KEY_PING + " DESC");
 		} else {
-			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, null, null, null, null,
-					KEY_PING + " ASC");
+			return mDb.query(PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, null, null,
+					null, null, KEY_PING + " ASC");
 		}
 	}
 
@@ -411,8 +437,8 @@ public class PingsDbAdapter {
 	 *             if note could not be found/retrieved
 	 */
 	public Cursor fetchPing(long pingid) throws SQLException {
-		Cursor pCursor = mDb.query(true, PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD }, KEY_ROWID + "="
-				+ pingid, null, null, null, null, null);
+		Cursor pCursor = mDb.query(true, PINGS_TABLE, new String[] { KEY_ROWID, KEY_PING, KEY_NOTES, KEY_PERIOD },
+				KEY_ROWID + "=" + pingid, null, null, null, null, null);
 		if (pCursor != null) {
 			pCursor.moveToFirst();
 		}
@@ -557,8 +583,8 @@ public class PingsDbAdapter {
 
 	/** Cleans up the tags database, removing all unused tags */
 	public void cleanupUnusedTags() {
-		BeeminderDbAdapter bdb = new BeeminderDbAdapter(mCtx);
-		bdb.open();
+		BeeminderDbAdapter bdb = BeeminderDbAdapter.getInstance();
+		bdb.openDatabase();
 
 		Cursor c = fetchAllTags();
 		c.moveToFirst();
@@ -587,6 +613,6 @@ public class PingsDbAdapter {
 			c.moveToNext();
 		}
 		c.close();
-		bdb.close();
+		bdb.closeDatabase();
 	}
 }

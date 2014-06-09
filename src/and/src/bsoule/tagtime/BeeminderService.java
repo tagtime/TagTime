@@ -1,9 +1,12 @@
 package bsoule.tagtime;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -21,11 +24,18 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.beeminder.beedroid.api.Session;
+import com.beeminder.beedroid.api.Session.SessionError;
 import com.beeminder.beedroid.api.Session.SessionState;
 
+/**
+ * This service is used by the rest of TagTime to access Beeminder through its
+ * API. The onHandleIntent() method listens for incoming intents, currently
+ * supporting ping editing action with the ping id, old tag list and the new tag
+ * list supplied.
+ */
 public class BeeminderService extends IntentService {
 	private static final String TAG = "BeeminderService";
-	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
 	public static final String ACTION_EDITPING = "editping";
 
@@ -47,6 +57,7 @@ public class BeeminderService extends IntentService {
 	private boolean mWaitingOpen = false;
 	private Session.ErrorType mLastError = null;
 
+	/** Class used to record and maintain points to be submitted */
 	private class Point {
 		public int submissionId;
 		public String requestId;
@@ -62,8 +73,17 @@ public class BeeminderService extends IntentService {
 		}
 	};
 
+	/**
+	 * Global Beeminder point object initialized for submission and later
+	 * accessed by callback functions
+	 */
 	private Point mPoint = new Point();
 
+	/**
+	 * This method generates a Notification that indicates a protocol version
+	 * mismatch between the Beeminder API library and the Beeminder version
+	 * installed on the device
+	 */
 	private void notifyVersionError(String submsg) {
 		String msg = "Error opening Beeminder session.";
 		Intent intent = new Intent(getApplicationContext(), TPController.class);
@@ -75,6 +95,13 @@ public class BeeminderService extends IntentService {
 		nm.notify(0, notif);
 	}
 
+	/**
+	 * This method generates a Notification that indicates an authorization
+	 * error generated while attempting to authorize a particular goal with the
+	 * Beeminder app. This might happen if, for some reason, the Beeminder app's
+	 * authorization database has been reset. TODO: Is this correct? Also, is
+	 * soft recovery through re-authorization possible?
+	 */
 	private void notifyAuthorizationError(String user, String goal) {
 		String msg = "Authorization lost for " + user + "/" + goal;
 		String submsg = "You should re-link to this goal";
@@ -87,6 +114,12 @@ public class BeeminderService extends IntentService {
 		nm.notify(0, notif);
 	}
 
+	/**
+	 * This method resends the edit ping request (with a delay) to
+	 * BeeminderService in cases where point submission failed. We will keep
+	 * retrying until submission succeeds, or until MAX_RETRIES is reached
+	 * (checked by onHandleIntent()).
+	 */
 	private void retryIntent() {
 		Intent intent = new Intent(getApplicationContext(), BeeminderService.class);
 		intent.setAction(ACTION_EDITPING);
@@ -103,6 +136,12 @@ public class BeeminderService extends IntentService {
 		am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), sender);
 	}
 
+	/**
+	 * This method generates a notification that indicates that the maximum
+	 * number of retries for point submission has been reached. If the user
+	 * clicks the notification, the offending will be opened so the user can
+	 * re-edit it and attempt submission.
+	 */
 	private void notifyForResubmit() {
 		String msg = "Error updating ping " + mPingId;
 		String submsg = "Click to re-edit ping";
@@ -116,46 +155,69 @@ public class BeeminderService extends IntentService {
 		nm.notify(mPoint.submissionId, notif);
 	}
 
+	/**
+	 * This callback tracks Beeminder API library status changes. It uses
+	 * semaphores to synchronize with the rest of the service execution. This
+	 * will be called from the main thread (depends on the implementation of the
+	 * Beeminder API library), so proper thread synchronization will be
+	 * necessary.
+	 */
 	private class SessionStatusCallback implements Session.StatusCallback {
 		@Override
-		public void call(Session session, SessionState state) {
+		public void call(Session session, SessionState state, SessionError error) {
 			if (LOCAL_LOGV) Log.v(TAG,
 					"Session Callback: Beeminder status changed:" + state + ", error=" + session.getError());
 
 			if (state == SessionState.OPENED) {
+				// Successful open. Signal the service thread to continue.
 				if (mWaitingOpen) {
 					mOpenSem.release();
 					mWaitingOpen = false;
 				}
 			} else if (state == SessionState.CLOSED_ON_ERROR) {
+				// Failed with error. Signal the service thread to continue.
 				if (mWaitingOpen) {
 					mOpenSem.release();
 					mWaitingOpen = false;
 				}
-				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
-					notifyVersionError(session.getError().message);
-				} else if (session.getError().type == Session.ErrorType.ERROR_UNAUTHORIZED) {
-					// TODO: Must remove this goal from the list of Beeminder
-					// links. This might happen when Beeminder app is uninstalled and reinstalled
-					notifyAuthorizationError(mPoint.user, mPoint.slug);
+				// Generate a notification depending on the type of error
+				if (error == null) {
+					Log.w(TAG, "Session closed with unknown error");
+				} else { 
+					if (error.type == Session.ErrorType.ERROR_BADVERSION) {
+						notifyVersionError(session.getError().message);
+					} else if (error.type == Session.ErrorType.ERROR_UNAUTHORIZED) {
+						// TODO: Must remove this goal from the list of
+						// Beeminder
+						// links. This might happen when Beeminder app is
+						// uninstalled and reinstalled
+						notifyAuthorizationError(mPoint.user, mPoint.slug);
+					}
+					mLastError = session.getError().type;
 				}
-				mLastError = session.getError().type;
-
 			} else if (state == SessionState.CLOSED) {
 				// Nothing here since it is a normal close.
 			}
 		}
 	}
 
+	/**
+	 * This class implements a callback handling the response at the end of
+	 * datapoint submission. This will be called from the main thread (depends
+	 * on the implementation of the Beeminder API library), so proper thread
+	 * synchronization will be necessary.
+	 */
 	private class PointSubmissionCallback implements Session.SubmissionCallback {
 		@Override
 		public void call(Session session, int submission_id, String request_id, String error) {
 			if (LOCAL_LOGV) Log.v(TAG, "Point Callback: Point operation completed, id=" + submission_id + ", req_id="
 					+ request_id + ", error=" + error);
 			if (error == null && submission_id == mPoint.submissionId) {
+				// All is well. Record the returned request ID.
 				mPoint.requestId = request_id;
 				mLastError = null;
 			} else {
+				// Point submission failed. Figure out why and inform the user.
 				Log.w(TAG, "Point Callback: Submission error or ID mismatch. msg=" + error);
 				if (session.getError().type == Session.ErrorType.ERROR_BADVERSION) {
 					notifyVersionError(session.getError().message);
@@ -169,9 +231,15 @@ public class BeeminderService extends IntentService {
 				mLastError = session.getError().type;
 			}
 			mSubmitSem.release();
+			TagTime.broadcastPingUpdate( false );
 		}
 	}
 
+	/**
+	 * This method initializes the global point object from user and slug
+	 * details associated with a goal in the Beeminder goal database. It assumes
+	 * mBeeDB is opened and ready.
+	 */
 	private boolean initializePointFromGoal(long goal_id) {
 		Cursor c = mBeeDB.fetchGoal(goal_id);
 		if (c.getCount() == 0) return false;
@@ -182,6 +250,10 @@ public class BeeminderService extends IntentService {
 		return true;
 	}
 
+	/**
+	 * This method initializes the global point object from an existing point in
+	 * the Beeminder goal database. It assumes mBeeDB is opened and ready.
+	 */
 	private boolean initializePoint(long point_id) {
 		Cursor c = mBeeDB.fetchPoint(point_id);
 		if (c.getCount() == 0) return false;
@@ -191,6 +263,12 @@ public class BeeminderService extends IntentService {
 		return true;
 	}
 
+	/**
+	 * This method starts the process for creating a Beeminder point. It first
+	 * reopens a session using the Beeminder API library for the specified goal
+	 * and waits for the result. It then issues a point creation request through
+	 * the API and waits for it to finish. Called by the worker thread.
+	 */
 	private String createBeeminderPoint(long goal_id, double value, long time, String comment) {
 		mLastError = null;
 		if (!initializePointFromGoal(goal_id)) return null;
@@ -206,12 +284,14 @@ public class BeeminderService extends IntentService {
 				mWaitingOpen = true;
 				mBeeminder.reopenForGoal(mPoint.user, mPoint.slug);
 
-				//if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open finished, waiting for open semaphore.");
+				// if (LOCAL_LOGV) Log.v(TAG,
+				// "createBeeminderPoint: Open finished, waiting for open semaphore.");
 
 				// Try to acquire semaphore with a timeout of 2 seconds
 				boolean opened = mOpenSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
 
-				//if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Open semaphore acquired:" + opened);
+				// if (LOCAL_LOGV) Log.v(TAG,
+				// "createBeeminderPoint: Open semaphore acquired:" + opened);
 
 				if (mBeeminder.getState() == Session.SessionState.OPENED) {
 
@@ -219,7 +299,8 @@ public class BeeminderService extends IntentService {
 
 					mPoint.submissionId = mBeeminder.createPoint(mPoint.value, mPoint.timestamp, mPoint.comment);
 
-					//if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Submission done, waiting for point semaphore");
+					// if (LOCAL_LOGV) Log.v(TAG,
+					// "createBeeminderPoint: Submission done, waiting for point semaphore");
 
 					// Try to acquire semaphore with a timeout of 2 seconds
 					boolean submitted = mSubmitSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
@@ -229,13 +310,13 @@ public class BeeminderService extends IntentService {
 
 				if (LOCAL_LOGV) Log.v(TAG, "createBeeminderPoint: Closing session.");
 
-				//mBeeminder.close();
+				// mBeeminder.close();
 			} catch (Session.SessionException e) {
 				Log.w(TAG, "createBeeminderPoint: Error opening session or submitting point. msg=" + e.getMessage());
-				Session.SessionError err = mBeeminder.getError(); 
+				Session.SessionError err = mBeeminder.getError();
 				if (err != null && err.type == Session.ErrorType.ERROR_UNAUTHORIZED) {
-					Log.w(TAG, "createBeeminderPoint: Unauthorized goal. Deleting link to goal "+goal_id);
-					mBeeDB.deleteGoal(goal_id);					
+					Log.w(TAG, "createBeeminderPoint: Unauthorized goal. Deleting link to goal " + goal_id);
+					mBeeDB.deleteGoal(goal_id);
 				}
 			} catch (InterruptedException e) {
 				Log.w(TAG, "createBeeminderPoint: interrupted. msg=" + e.getMessage());
@@ -251,6 +332,7 @@ public class BeeminderService extends IntentService {
 		return mPoint.requestId;
 	}
 
+	/** Called by the worker thread */
 	private boolean deleteBeeminderPoint(long point_id) {
 		boolean result = false;
 		mLastError = null;
@@ -264,12 +346,14 @@ public class BeeminderService extends IntentService {
 				mWaitingOpen = true;
 				mBeeminder.reopenForGoal(mPoint.user, mPoint.slug);
 
-				//if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open finished, waiting for open semaphore.");
+				// if (LOCAL_LOGV) Log.v(TAG,
+				// "deleteBeeminderPoint: Open finished, waiting for open semaphore.");
 
 				// Try to acquire semaphore with a timeout of 2 seconds
 				boolean opened = mOpenSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
 
-				//if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Open semaphore acquired:" + opened);
+				// if (LOCAL_LOGV) Log.v(TAG,
+				// "deleteBeeminderPoint: Open semaphore acquired:" + opened);
 
 				if (mBeeminder.getState() == Session.SessionState.OPENED) {
 
@@ -277,7 +361,8 @@ public class BeeminderService extends IntentService {
 
 					mPoint.submissionId = mBeeminder.deletePoint(mPoint.requestId);
 
-					//if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Submission done, waiting for point semaphore");
+					// if (LOCAL_LOGV) Log.v(TAG,
+					// "deleteBeeminderPoint: Submission done, waiting for point semaphore");
 
 					// Try to acquire semaphore with a timeout of 2 seconds
 					boolean submitted = mSubmitSem.tryAcquire(1, SEMAPHORE_TIMEOUT, TimeUnit.SECONDS);
@@ -288,7 +373,7 @@ public class BeeminderService extends IntentService {
 
 				if (LOCAL_LOGV) Log.v(TAG, "deleteBeeminderPoint: Closing session.");
 
-				//mBeeminder.close();
+				// mBeeminder.close();
 			} catch (Session.SessionException e) {
 				Log.w(TAG, "deleteBeeminderPoint: Error opening session or deleting point. msg=" + e.getMessage());
 			} catch (InterruptedException e) {
@@ -306,8 +391,9 @@ public class BeeminderService extends IntentService {
 		super.onCreate();
 		if (LOCAL_LOGV) Log.v(TAG, "onCreate: Beeminder service created.");
 
-		mBeeDB = new BeeminderDbAdapter(this);
-		mPingDB = new PingsDbAdapter(this);
+		mBeeDB = BeeminderDbAdapter.getInstance();
+		mPingDB = PingsDbAdapter.getInstance();
+		
 		try {
 			mBeeminder = new Session(getApplicationContext());
 			mBeeminder.setStatusCallback(new SessionStatusCallback());
@@ -368,8 +454,9 @@ public class BeeminderService extends IntentService {
 		long time = ping.getLong(ping_idx);
 		int period = ping.getInt(period_idx);
 		ping.close();
-		double value = 1.0/60.0 * period;
-		String comment = "TagTime ping: "+mNewTagsIn;
+		double value = 1.0 / 60.0 * period;
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+		String comment = "TagTime ping: " + mNewTagsIn +" ["+sdf.format(new Date(time * 1000))+"]";
 
 		// Initiate creation of a Beeminder point submission. Will block until
 		// response with request ID is received
@@ -394,6 +481,7 @@ public class BeeminderService extends IntentService {
 	private String mNewTagsIn;
 	private int mRetries = 0;
 
+	/** Method to handle incoming intents within the worker thread. */
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		if (intent != null) {
@@ -408,12 +496,12 @@ public class BeeminderService extends IntentService {
 
 				if (!TagTime.checkBeeminder()) {
 					Log.w(TAG, "onHandleIntent: Beeminder app is not installed. Unlinking goals and aborting.");
-					mBeeDB.open();
+					mBeeDB.openDatabase();
 					mBeeDB.deleteAllGoals();
-					mBeeDB.close();
+					mBeeDB.closeDatabase();
 					return;
 				}
-				
+
 				mPingId = intent.getLongExtra(KEY_PID, -1);
 				mOldTagsIn = intent.getStringExtra(KEY_OLDTAGS);
 				mNewTagsIn = intent.getStringExtra(KEY_NEWTAGS);
@@ -438,8 +526,8 @@ public class BeeminderService extends IntentService {
 					return;
 				}
 
-				mBeeDB.open();
-				mPingDB.open();
+				mBeeDB.openDatabase();
+				mPingDB.openDatabase();
 
 				// Find data points that were previously generated by this ping.
 				List<Long> points = findPingPoints(mPingId);
@@ -500,8 +588,8 @@ public class BeeminderService extends IntentService {
 					}
 				}
 
-				mPingDB.close();
-				mBeeDB.close();
+				mPingDB.closeDatabase();
+				mBeeDB.closeDatabase();
 			}
 		} else {
 			Log.w(TAG, "onHandleIntent: No intent received!");

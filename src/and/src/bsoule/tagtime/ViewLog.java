@@ -8,13 +8,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -183,6 +186,18 @@ public class ViewLog extends SherlockFragmentActivity implements LoaderManager.L
 		mPingAdapter.swapCursor(null);
 	}
 
+	private BroadcastReceiver pingUpdateReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (LOCAL_LOGV) Log.v(TAG, "ping update");
+			Bundle extras = intent.getExtras();
+			boolean newping = false;
+			if (extras != null) newping = intent.getBooleanExtra(TagTime.KEY_PING_ISNEW, true);
+			if (newping) getSupportLoaderManager().restartLoader(0, null, ViewLog.this);
+			else mPingAdapter.notifyDataSetChanged();
+		}
+	};
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -192,10 +207,10 @@ public class ViewLog extends SherlockFragmentActivity implements LoaderManager.L
 		mAction.setHomeButtonEnabled(true);
 		mAction.setIcon(R.drawable.tagtime_03);
 
-		mDbHelper = new PingsDbAdapter(this);
-		mDbHelper.open();
-		mBeeDb = new BeeminderDbAdapter(this);
-		mBeeDb.open();
+		mDbHelper = PingsDbAdapter.getInstance();
+		mDbHelper.openDatabase();
+		mBeeDb = BeeminderDbAdapter.getInstance();
+		mBeeDb.openDatabase();
 
 		mSDF = new SimpleDateFormat("yyyy.MM.dd'\n'HH:mm:ss", Locale.getDefault());
 		mPingAdapter = new PingCursorAdapter(this, null, true);
@@ -217,19 +232,23 @@ public class ViewLog extends SherlockFragmentActivity implements LoaderManager.L
 
 		getSupportLoaderManager().initLoader(0, null, this);
 		refreshTagList();
+
+		registerReceiver(pingUpdateReceiver, new IntentFilter(TagTime.PING_UPDATE_EVENT));
 	}
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
 		refreshTagList();
-		mPingAdapter.notifyDataSetChanged();
+		// mPingAdapter.notifyDataSetChanged(); // Uluc: Subsumed by
+		// pingUpdateReceiver
 	}
 
 	@Override
 	protected void onDestroy() {
-		mBeeDb.close();
-		mDbHelper.close();
+		unregisterReceiver(pingUpdateReceiver);
+		mBeeDb.closeDatabase();
+		mDbHelper.closeDatabase();
 		super.onDestroy();
 	}
 

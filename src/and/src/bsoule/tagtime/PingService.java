@@ -101,8 +101,8 @@ public class PingService extends Service {
 			NEXT = nextping(prevping(launchTime, mGap), mGap);
 		}
 
-		pingsDB = new PingsDbAdapter(this);
-		pingsDB.open();
+		pingsDB = PingsDbAdapter.getInstance();
+		pingsDB.openDatabase();
 
 		// First, if we missed any pings by more than $retrothresh seconds for
 		// no
@@ -131,7 +131,7 @@ public class PingService extends Service {
 		editor.commit();
 
 		setAlarm(NEXT);
-		pingsDB.close();
+		pingsDB.closeDatabase();
 		wl.release();
 		this.stopSelf();
 	}

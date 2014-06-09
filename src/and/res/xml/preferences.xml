@@ -48,4 +48,17 @@
 	   /> 
 
   </PreferenceCategory>
+    <PreferenceCategory android:title="TagTime App" >
+<!--         <Preference -->
+<!--             android:key="backupPref" -->
+<!--             android:title="Backup Data to SD" /> -->
+
+<!--         <Preference -->
+<!--             android:key="restorePref" -->
+<!--             android:title="Restore Data from SD" /> -->
+
+        <Preference
+            android:key="aboutPref"
+            android:title="About TagTime" />
+    </PreferenceCategory>
 </PreferenceScreen>

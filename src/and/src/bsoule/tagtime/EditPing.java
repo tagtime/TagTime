@@ -57,7 +57,7 @@ import com.actionbarsherlock.view.MenuItem;
 public class EditPing extends SherlockActivity {
 
 	private final static String TAG = "EditPing";
-	private static final boolean LOCAL_LOGV = false && !TagTime.DISABLE_LOGV;
+	private static final boolean LOCAL_LOGV = true && !TagTime.DISABLE_LOGV;
 
 	public static final String KEY_TAGS = "tags";
 
@@ -159,12 +159,12 @@ public class EditPing extends SherlockActivity {
 		// getSystemService(NOTIFICATION_SERVICE);
 		// nm.cancel(R.layout.tagtime_editping);
 
-		mPingsDB = new PingsDbAdapter(this);
-		mPingsDB.open();
+		mPingsDB = PingsDbAdapter.getInstance();
+		mPingsDB.openDatabase();
 		if (mRowId >= 0 && mPingsDB.fetchPing(mRowId).getCount() == 0) {
 			Toast.makeText(this, getText(R.string.editping_noping), Toast.LENGTH_SHORT).show();
 			finish();
-			mPingsDB.close();
+			mPingsDB.closeDatabase();
 			return;
 		}
 
@@ -437,6 +437,7 @@ public class EditPing extends SherlockActivity {
 				this.startService(intent);
 			}
 		}
+		TagTime.broadcastPingUpdate( false );
 		super.finish();
 	}
 
@@ -453,7 +454,7 @@ public class EditPing extends SherlockActivity {
 	@Override
 	protected void onDestroy() {
 
-		mPingsDB.close();
+		mPingsDB.closeDatabase();
 		super.onDestroy();
 	}
 

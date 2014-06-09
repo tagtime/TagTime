@@ -103,7 +103,7 @@ public class TPController extends SherlockActivity {
 
 	public void startExport() {
 		Intent exp = new Intent();
-		exp.setClass(this, Export.class);
+		exp.setClass(this, ManageData.class);
 		startActivity(exp);
 	}
 

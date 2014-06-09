@@ -1,0 +1,20 @@
+1.3.4
+
+ - New: Time of day for Beeminder data points
+ - Fix: Ping list refresh following ping update
+ 
+1.3.3
+
+ - New: Added an about dialog
+ - New: Visit goal button (requires an update to the Beeminder app)
+ - Fix: Crashes on ping and Beeminder database race conditions
+ - Fix: Crash on closing Beeminder session with errors
+ 
+1.3.2
+
+ - New: Beeminder submissions respect ping gap
+ - New: Navigation and home buttons for ping editing 
+ - New: Beeminder integration
+ - New: option to silence pings while charging
+ - Fix: Notification sound for silent setting
+ 

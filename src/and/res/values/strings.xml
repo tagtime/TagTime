@@ -29,16 +29,26 @@
     <string name="editgoal_confirm">Save</string>
     <string name="editgoal_delete">Unlink</string>
     <string name="editgoal_select">Select Goal</string>
+    <string name="editgoal_visit">Visit Goal</string>
     <string name="editgoal_tags">Select Tags</string>
     <string name="editgoal_notags">You must select at least one tag!</string>
     <string name="editgoal_nogoal">You must select a valid goal!</string>
     
     <string name="app_title">TagTime</string>
-    <string name="export_title">TagTime Manage Data</string>
+    <string name="managedata_title">TagTime Manage Data</string>
     <string name="viewlog_title">TagTime Ping Log</string>
     <string name="editping_title">Edit TagTime Ping</string>
     <string name="viewgoals_title">TagTime Beeminder Links</string>
     <string name="editgoal_title">Edit Beeminder Link</string>
     <string name="prefs_title">TagTime Preferences</string>
+    <string name="about_title">TagTime for Android</string>
+    
+	<!-- ABOUT DIALOG ########################################################## -->
+	<string name="about_title">TagTime for Android</string>
+	<string name="about_version">Version vvv build bbb</string>
+	<string name="about_text">TagTime is a stochastic sampler to measure what you spend your time on.\nhttp://messymatters.com/tagtime</string>
+	<string name="about_dismiss">Dismiss</string>
+	<string name="about_changelog">ChangeLog</string>
+	<string name="about_googleplay">Visit on Google Play</string>
 
 </resources>
