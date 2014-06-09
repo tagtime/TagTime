@@ -21,15 +21,15 @@ $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
 $beef = "${path}$usr+$slug.bee"; # beef = bee file (cache of data on bmndr)
 
-if(defined(@beeminder)) { # for backward compatibility
-  print "Deprecation warning: Get your settings file in line!\n";
-  print "Specifically, 'beeminder' should be a hash, not an arry.\n";
-  for(@beeminder) {
-    @stuff = split(/\s+/, $_); # usrslug and tags
-    $us = shift(@stuff);
-    $beeminder{$us} = [@stuff];
-  }
-}
+#if(defined(@beeminder)) { # for backward compatibility
+#  print "Deprecation warning: Get your settings file in line!\n";
+#  print "Specifically, 'beeminder' should be a hash, not an arry.\n";
+#  for(@beeminder) {
+#    @stuff = split(/\s+/, $_); # usrslug and tags
+#    $us = shift(@stuff);
+#    $beeminder{$us} = [@stuff];
+#  }
+#}
 $crit = $beeminder{$usrslug} or die "Can't determine which tags match $usrslug";
 
 # ph (ping hash) maps "y-m-d" to number of pings on that day.
