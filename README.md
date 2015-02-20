@@ -131,6 +131,8 @@ Each goal on Beeminder will track a collection of one or more tags on TagTime.
 Regular expressions are encouraged! 
 See `settings.pl` for more details. 
 
+**WARNING: TagTime will replace all existing data for the goal to make it match your TagTime log. In other words, your TagTime log is the master copy and TagTime will keep Beeminder in sync with it, including deleting data that's not found in your TagTime log.**
+
 # Android App
 
 There is an Android app available [on Google
