@@ -137,7 +137,7 @@ if ($pie==1) {
     <div id='container'>
     <h1>${username}'s time pie</h1>
     <pre>$globalStats</pre>
-    <img src='pie-$username.png';
+    <img src='pie-$username.png'>
     <pre>$toprint</pre>
     </div>
   </body>
