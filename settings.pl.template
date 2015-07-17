@@ -17,6 +17,9 @@ $XT = "__XT__";    # CHANGEME to your path to xterm
 #   https://www.beeminder.com/api/v1/auth_token.json
 $beemauth = "abc123";  # CHANGEME to your personal beeminder auth token
 
+# WARNING WARNING WARNING: 
+#   if you point this at a beeminder goal with data that was not generated from
+#   this tagtime log, it will DELETE ALL OF YOUR DATA
 # CHANGEME by adding entries for each beeminder graph you want to auto-update:
 %beeminder = (
   #"alice/work" => "job",  # all "job" pings get added to bmndr.com/alice/work

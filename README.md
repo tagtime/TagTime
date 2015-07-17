@@ -121,6 +121,8 @@ The probability of waiting over 10 hours for a ping is one in a million.
 
 # Beeminder Integration
 
+**WARNING: If you point TagTime at an existing Beeminder goal, TagTime will DELETE ALL YOUR DATA.** 
+
 To set up TagTime to automatically send reports to 
 [Beeminder](http://www.beeminder.com/), 
 first set up a goal there (either a "Do More" or "Do Less" goal). 
