@@ -42,9 +42,7 @@
     <string name="editgoal_title">Edit Beeminder Link</string>
     <string name="prefs_title">TagTime Preferences</string>
     <string name="about_title">TagTime for Android</string>
-    
-	<!-- ABOUT DIALOG ########################################################## -->
-	<string name="about_title">TagTime for Android</string>
+
 	<string name="about_version">Version vvv build bbb</string>
 	<string name="about_text">TagTime is a stochastic sampler to measure what you spend your time on.\nhttp://messymatters.com/tagtime</string>
 	<string name="about_dismiss">Dismiss</string>
