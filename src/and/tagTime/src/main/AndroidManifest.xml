@@ -19,6 +19,7 @@
         android:name="bsoule.tagtime.TagTime"
         android:allowBackup="true"
         android:label="@string/app_name"
+        android:icon="@drawable/tagtime"
         android:theme="@style/Theme.Sherlock" >
         <activity
             android:name=".TPController"
