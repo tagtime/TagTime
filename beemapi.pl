@@ -13,6 +13,17 @@ use HTTP::Request::Common;  # pjf recomends cpanmin.us
 use Data::Dumper; $Data::Dumper::Terse = 1;
 $beembase = 'https://www.beeminder.com/api/v1/';
 
+# Fetch the Beeminder deadline for the relevant TagTime goal
+sub beemdeadline { my($u, $g) = @_;
+  my $ua = LWP::UserAgent->new;
+  my $uri = $beembase . 
+            "users/$u/goals/$g.json?auth_token=$beemauth";
+  my $resp = $ua->get($uri);
+  beemerr('GET', $uri, {}, $resp);
+  my $x = decode_json($resp->content);
+  return $x->{"deadline"};
+}
+
 # Delete datapoint with given id for beeminder.com/u/g
 sub beemdelete { my($u, $g, $id) = @_;
   my $ua = LWP::UserAgent->new;

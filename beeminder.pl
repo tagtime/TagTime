@@ -21,6 +21,8 @@ $usrslug =~ /^(?:.*?(?:\.\/)?data\/)?([^\+\/\.]*)[\+\/]([^\.]*)/;
 ($usr, $slug) = ($1, $2);
 $beef = "${path}$usr+$slug.bee"; # beef = bee file (cache of data on bmndr)
 
+$deadl = beemdeadline($usr, $slug);
+
 #if(defined(@beeminder)) { # for backward compatibility
 #  print "Deprecation warning: Get your settings file in line!\n";
 #  print "Specifically, 'beeminder' should be a hash, not an arry.\n";
@@ -142,7 +144,10 @@ if($bflag) { # re-slurp all the datapoints from beeminder
     $sh0{$ts} = $c;
     $sh0{$ts} =~ s/[^\:]*\:\s+//; # drop the "n pings:" comment prefix
     # This really shouldn't happen.
-    if(defined($bh{$ts})) { die "Duplicate cached/fetched id datapoints for $y-$m-$d: $bh{$ts}, $b.\n", Dumper $x, "\n"; }
+    if(defined($bh{$ts})) { 
+      die "Duplicate cached/fetched id datapoints for $y-$m-$d: $bh{$ts}, $b\n",
+          Dumper $x, "\n"; 
+    }
     $bh{$ts} = $b;
   }
 }
@@ -152,6 +157,7 @@ $np = 0; # number of lines (pings) in the tagtime log that match
 while(<T>) { # parse the tagtime log file
   if(!/^(\d+)\s*(.*)$/) { die "Bad line in TagTime log: $_"; }
   my $t = $1;     # timestamp as parsed from the tagtime log
+  $t -= $deadl;   # adjust for the goal's deadline
   my $stuff = $2; # tags and comments for this line of the log
   my $tags = strip($stuff);
   if(tagmatch($tags, $crit)) {
