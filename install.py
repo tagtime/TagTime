@@ -30,6 +30,11 @@ if not vals["XT"] :
   macxt = "/usr/X11R6/bin/xterm"
   if os.path.isfile(macxt) :
     vals["XT"] = macxt
+  # hack for OS X El Capitan
+  else :
+    macxt = "/usr/X11/bin/xterm"
+    if os.path.isfile(macxt) :
+      vals["XT"] = macxt
 
 globals().update(vals)
 
