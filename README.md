@@ -55,7 +55,7 @@ contributions to the code.
 
 0. Clone the repository on Github
 1. cd into your local tagtime directory
-2. Run: python install.py USERNAME
+2. Run: python2 install.py USERNAME
 3. Verify in settings.pl (wherever it says CHANGEME) that the install
    script filled in everything correctly
 4. Make sure you have X11 (on Mac) or Cygwin (on Windows) running (not an issue
