@@ -2,13 +2,13 @@ To determine how you spend your time, TagTime literally randomly samples you.
 At random times it pops up and asks what you're doing *right at that moment*.
 You answer with tags.
 
-See 
+See
 [messymatters.com/tagtime](http://messymatters.com/tagtime )
 for the whole story.
 
 We're currently auto-tweeting git commits: [@tagtm](http://twitter.com/tagtm ).
 
-# Code 
+# Code
 
 The core Perl implementation of TagTime itself is in the following files:
 
@@ -34,21 +34,21 @@ In addition are the following files:
 * beemapi.pl -- partial Perl implementation of the Beeminder API
 
 The script directory contains various scripts we've used, like for various games
-and contests and commitment contracts and whatnot. 
+and contests and commitment contracts and whatnot.
 Basically, incentive schemes for getting ourselves to procrastinate less.
-We view TagTime as the foundation for all such lifehacks, since it's a way to 
+We view TagTime as the foundation for all such lifehacks, since it's a way to
 guarantee you always have data on where your time is going.
 It's hard to flake out on reporting to TagTime since it actively pings you.
 You can be perfectly passive -- just responding when prompted.
 That's why we call it "time-tracking for space cadets".
 
-The src directory currently contains Python code contributed by Jonathan Chang 
+The src directory currently contains Python code contributed by Jonathan Chang
 for a new back-end for TagTime. It hasn't yet been integrated. Same with pyqt
 which was contributed by Arthur Breitman.
-The src directory also contains the source for an Android app by Bethany Soule 
+The src directory also contains the source for an Android app by Bethany Soule
 (bsoule) with contributions by Michael Janssen (jamuraa).
 
-Thanks also to Paul Fenwick, Jesse Aldridge, Kevin Lochner, and Rob Felty for 
+Thanks also to Paul Fenwick, Jesse Aldridge, Kevin Lochner, and Rob Felty for
 contributions to the code.
 
 # Installation and Quick Start
@@ -68,19 +68,19 @@ contributions to the code.
 
 1. Run: sudo cpan
 2. At the cpan prompt run: upgrade (this may not actually be necessary)
-3. For each thing that TagTime complains about, like 
+3. For each thing that TagTime complains about, like
    'can't find LWP::UserAgent', run: install LWP::UserAgent
 
 # Advanced Usage
 
-TagTime's Task Manager is documented in the file template.tsk  
+TagTime's Task Manager is documented in the file template.tsk
 It's for vim users only. You don't need it to use TagTime.
 
-Basic ping-tallying: 
+Basic ping-tallying:
 
     ./cntpings.pl username.log  (run w/o args for options)
 
-    (Special tags: 
+    (Special tags:
      off = tagtime (launch.pl) didn't run;
      afk = away from keyboard;
      err = you closed the window without answering the ping)
@@ -89,9 +89,9 @@ How to make the tagtime daemon automatically start on bootup in OSX:
 
     sudo ln -s /path/to/tagtimed.pl /Library/StartupItems/tagtimed.pl
 
-Pick a distinctive sound for your pings by setting $playsound in 
+Pick a distinctive sound for your pings by setting $playsound in
 settings.pl.
-Sample sounds are in the sound directory. 
+Sample sounds are in the sound directory.
 Non-mac users, see README file in sound directory.
 
 A handy vim macro for duplicating the previous line's tags in the tagtime log:
@@ -102,10 +102,10 @@ A handy vim macro for duplicating the previous line's tags in the tagtime log:
 
 # Extra Features
 
-Editor: If you hit enter instead of answering the ping it will open up the 
+Editor: If you hit enter instead of answering the ping it will open up the
 editor.
 
-Ditto: If you enter just a double-quote character (") it will enter whatever 
+Ditto: If you enter just a double-quote character (") it will enter whatever
 pings you entered last time. (Thanks to Paul Fenwick for implementing that.)
 
 # The Math
@@ -121,20 +121,20 @@ The probability of waiting over 10 hours for a ping is one in a million.
 
 # Beeminder Integration
 
-**WARNING: If you point TagTime at an existing Beeminder goal, TagTime will DELETE ALL YOUR DATA.** 
+**WARNING: If you point TagTime at an existing Beeminder goal, TagTime will DELETE ALL YOUR DATA.**
 
-To set up TagTime to automatically send reports to 
-[Beeminder](http://www.beeminder.com/), 
-first set up a goal there (either a "Do More" or "Do Less" goal). 
-Copy the url and plug it into your 
-`settings.pl` file under the Beeminder section. 
+To set up TagTime to automatically send reports to
+[Beeminder](http://www.beeminder.com/),
+first set up a goal there (either a "Do More" or "Do Less" goal).
+Copy the url and plug it into your
+`settings.pl` file under the Beeminder section.
 
-Each goal on Beeminder will track a collection of one or more tags on TagTime. 
-Regular expressions are encouraged! 
-See `settings.pl` for more details. 
+Each goal on Beeminder will track a collection of one or more tags on TagTime.
+Regular expressions are encouraged!
+See `settings.pl` for more details.
 
 Note that TagTime sends times to Beeminder in hours.
-Here's a handy tool if you like skating the edge of a TagTime-based Beeminder goal: [tminder](http://tminder.meteor.com).
+Here's a handy tool if you like skating the edge of a TagTime-based Beeminder goal: [tminder](http://tminder.meteor.com/).
 
 **WARNING: TagTime will replace all existing data for the goal to make it match your TagTime log. In other words, your TagTime log is the master copy and TagTime will keep Beeminder in sync with it, including deleting data that's not found in your TagTime log.**
 
@@ -146,5 +146,5 @@ The source and build instructions are in `src/and`.
 
 # Google Group
 
-For discussion and questions: 
+For discussion and questions:
 [TagTime Google Group](https://groups.google.com/forum/?fromgroups#!forum/tagtime ).
