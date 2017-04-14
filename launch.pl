@@ -87,6 +87,7 @@ do {
   }
 } while($nxtping <= time());
 
+system("scp -C $logf $remote_log/$usr.$remote_id.log");
 unlock();
 
 
