@@ -25,7 +25,7 @@ if(!lockn()) {
   exit(1); 
 } # Don't wait if we can't get the lock.
 
-if($remote_id ne "" && $nxtping < $launchTime-$retrothresh) {
+if($remote_id ne "" && $nxtping < $launchTime) {
   # If we have a gap, first try to fill in with stuff from the most recent remote log
   $lastremlog = `ssh $remote_server 'cd $remote_path && ls -tr1 $usr.*.log | tail -n1'`;
   chomp $lastremlog;
