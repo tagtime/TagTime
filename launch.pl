@@ -25,7 +25,7 @@ if(!lockn()) {
   exit(1); 
 } # Don't wait if we can't get the lock.
 
-if($nxtping < $launchTime-$retrothresh) {
+if($remote_id ne "" && $nxtping < $launchTime-$retrothresh) {
   # If we have a gap, first try to fill in with stuff from the most recent remote log
   $lastremlog = `ssh $remote_server ls -tr1 $remote_path | tail -n1`;
   chomp $lastremlog;
@@ -103,8 +103,10 @@ do {
   }
 } while($nxtping <= time());
 
-print "Backing up log to remote server...\n" unless $quiet;
-system("scp -C $logf $remote_log/$usr.$remote_id.log");
+if($remote_id ne "") {
+    print "Backing up log to remote server...\n" unless $quiet;
+    system("scp -C $logf $remote_log/$usr.$remote_id.log");
+}
 unlock();
 
 

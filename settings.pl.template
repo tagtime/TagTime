@@ -10,7 +10,8 @@ $logf = "$path$usr.log";  # log file for pings
 $remote_server = "__REMSERV__"; # CHANGEME to your backup server
 $remote_path = "__REMPATH__"; # CHANGEME to the path on your backup server
                if($remote_path !~ /\/$/) { $path.="/"; }
-$remote_id = "__REMID__"; # CHANGEME to the unique tag for this machine on the backup server
+$remote_id = ""; # CHANGEME to a unique tag for this machine on the backup server
+                 # Leaving this blank will disable backup functionality
 
 $remote_log = "$remote_server:$remote_path";
 
