@@ -83,7 +83,7 @@ if($cygwin) { unlock(); }  # on cygwin may have stray lock files around.
 $cmd = "${path}launch.pl";        # Catch up on any old pings.
 system($cmd) == 0 or print "SYSERR: $cmd\n";
 
-print STDERR "TagTime is watching you! Last ping would've been ",
+print "TagTime is watching you! Last ping would've been ",
   ss(time()-$lstping), " ago.\n";
 
 my $start = time();
@@ -102,10 +102,10 @@ while(1) {
     #   pings while answering this one:
     $cmd = "${path}launch.pl quiet &";
     system($cmd) == 0 or print "SYSERR: $cmd\n";
-    print STDERR annotime(padl($i," ",4).": PING! gap ".
-			  ss($nxtping-$lstping)."  avg ".
-                          ss((0.0+time()-$start)/$i). " tot ".
-                          ss(0.0+time()-$start), $nxtping, 72), "\n";
+    print annotime(padl($i," ",4).": PING! gap ".
+                   ss($nxtping-$lstping)."  avg ".
+                   ss((0.0+time()-$start)/$i). " tot ".
+                   ss(0.0+time()-$start), $nxtping, 72), "\n";
     $lstping = $nxtping;
     $nxtping = nextping($nxtping);
     $i++;

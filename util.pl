@@ -8,8 +8,19 @@ $lockf = "${path}tagtime.lock";
 
 $| = 1;  # autoflush STDOUT
 
-my $IA = 16807;       # constant used for RNG (see p37 of Simulation by Ross)
-my $IM = 2147483647;  # constant used for RNG (2^31-1)
+my $IA = 16807;          # constant used for RNG (see p37 of Simulation by Ross)
+my $IM = 2147483647;     # constant used for RNG (2^31-1)
+my $URPING = 1184083200; # ur-ping, ie, the birth of timepie/tagtime! (unixtime)
+
+# Alternative ur-pings and initial seeds that yield the exact same universal 
+# ping schedule: 
+#   seed=85333798,   urping=5843 (~1970)       # By choosing a non-random
+#   seed=8992,       urping=1035903364 (~2002) #  initial seed of 666 in 2007 we
+#   seed=1210011908, urping=1184042737 (~2007) #  slightly messed up the
+#   seed=666,        urping=1184083200 (~2007) #  distribution (ie, there's an 
+#   seed=11193462,   urping=1184097393 (~2007) #  improbably long max gap) iff
+#   seed=85014,      urping=1234180122 (~2009) #  you use an ur-ping before 
+#   seed=26506,      urping=1443641796 (~2015) #  1184083200.
 
 # $seed is a global variable that is really the state of the RNG.
 # Should be set in .tagtimerc but set to a default value here if not.
@@ -20,11 +31,7 @@ if(!defined($linelen)) { $linelen = 80; }  # default line length.
 
 # Returns a random integer in [1,$IM-1]; changes $seed, ie, RNG state.
 # (This is ran0 from Numerical Recipes and has a period of ~2 billion.)
-sub ran0 {
-  #if ($seed == 666) { print "WARNING: seed uninitialized!\n"; }
-  $seed = $IA*$seed % $IM;
-  return $seed;
-}
+sub ran0 { return $seed = $IA*$seed % $IM; }
 
 # Returns a U(0,1) random number.
 sub ran01 { return ran0()/$IM; }
@@ -51,7 +58,7 @@ sub prevping {
   $seed = $initseed;
   # Starting at the beginning of time, walk forward computing next pings
   # until the next ping is >= t.
-  my $nxtping = 1184083200;  # the birth of timepie/tagtime!
+  my $nxtping = $URPING;
   my $lstping = $nxtping;
   my $lstseed = $seed;
   while($nxtping < $t) {
