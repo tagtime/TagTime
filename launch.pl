@@ -27,7 +27,7 @@ if(!lockn()) {
 
 if($remote_id ne "" && $nxtping < $launchTime-$retrothresh) {
   # If we have a gap, first try to fill in with stuff from the most recent remote log
-  $lastremlog = `ssh $remote_server ls -tr1 $remote_path | tail -n1`;
+  $lastremlog = `ssh $remote_server 'cd $remote_path && ls -tr1 $usr.*.log | tail -n1`;
   chomp $lastremlog;
   system(`scp -C $remote_server:$remote_path$lastremlog .`);
   if(-e $logf) {
