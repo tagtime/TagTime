@@ -18,25 +18,41 @@ if($test) {  # just pop up the editor and exit; mainly for testing.
 }
 
 # figure out the next ping after the last one that's in the log file
-if(-e $logf) {
-  $lll = `tail -1 $logf`;  # last log line
-  $lll =~ /^\s*(\d+)/; # parse out the timestamp for the last line, which better
-  $lstping = $1;       # be equal to nextping@prevping of itself.
-  $tmp = nextping(prevping($lstping)); # NB: must call prevping before nextping
-  if($lstping == $tmp) {
-    $nxtping = nextping($lstping);
-  } else {
-    print "TagTime log file ($logf) has bad last line:\n$lll";
-    $nxtping = prevping($launchTime);
-  }
-} else {
-  $nxtping = prevping($launchTime);
-}
+$nxtping = parseping($logf);
 
 if(!lockn()) { 
   print "Can't get lock. Exiting.\n" unless $quiet; 
   exit(1); 
 } # Don't wait if we can't get the lock.
+
+if($nxtping < $launchTime-$retrothresh) {
+  # If we have a gap, first try to fill in with stuff from the most recent remote log
+  $lastremlog = `ssh $remote_server ls -tr1 $remote_path | tail -n1`;
+  chomp $lastremlog;
+  system(`scp -C $remote_server:$remote_path$lastremlog .`);
+  if(-e $logf) {
+    print "Filling in pings from remote file $lastremlog...\n" unless $quiet;
+    system(`cp $logf $logf.backup`);
+    open REMLOG, "<", $lastremlog;
+    open OURLOG, ">>", $logf;
+    $numfill = 0;
+    while(<REMLOG>) {
+      /^\s*(\d+)/; # parse out the timestamp for the current line
+      $curping = $1;
+      if($curping >= $nxtping) {
+        print OURLOG $_;
+        $numfill++;
+      }
+    }
+    print "Filled in $numfill pings\n" unless $quiet;
+  } else {
+    print "No previous logfile found, using entirety of $lastremlog\n" unless $quiet;
+    system(`cp $lastremlog $logf`)
+  }
+
+  # Re-sync nxtping with any new loglines
+  $nxtping = parseping($logf);
+}
 
 my $editorFlag = 0;
 
@@ -87,6 +103,7 @@ do {
   }
 } while($nxtping <= time());
 
+print "Backing up log to remote server...\n" unless $quiet;
 system("scp -C $logf $remote_log/$usr.$remote_id.log");
 unlock();
 
@@ -132,6 +149,27 @@ sub editor {
   }
 }
 
+sub parseping {
+  local $nxtping, $lastping;
+  local ($logf) = @_;
+  # figure out the next ping after the last one that's in the log file
+  if(-e $logf) {
+    $lll = `tail -1 $logf`;  # last log line
+    $lll =~ /^\s*(\d+)/; # parse out the timestamp for the last line, which better
+    $lstping = $1;       # be equal to nextping@prevping of itself.
+    $tmp = nextping(prevping($lstping)); # NB: must call prevping before nextping
+    if($lstping == $tmp) {
+      $nxtping = nextping($lstping);
+    } else {
+      print "TagTime log file ($logf) has bad last line:\n$lll";
+      $nxtping = prevping($launchTime);
+    }
+  } else {
+    $nxtping = prevping($launchTime);
+  }
+
+  return $nxtping;
+}
 
 # SCHDEL (SCHEDULED FOR DELETION): (discussion and code for artificial gaps)
 # It can happen that 2 pings can both occur since we last checked (a minute
