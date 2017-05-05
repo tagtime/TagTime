@@ -134,7 +134,7 @@ Regular expressions are encouraged!
 See `settings.pl` for more details.
 
 Note that TagTime sends times to Beeminder in hours.
-Here's a handy tool if you like skating the edge of a TagTime-based Beeminder goal: [tminder](http://tminder.meteorapp.com/).
+Here's a handy tool if you like skating the edge of a TagTime-based Beeminder goal: [tminder](http://mind.tagti.me).
 
 **WARNING: TagTime will replace all existing data for the goal to make it match your TagTime log. In other words, your TagTime log is the master copy and TagTime will keep Beeminder in sync with it, including deleting data that's not found in your TagTime log.**
 
