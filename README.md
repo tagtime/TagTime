@@ -112,12 +112,17 @@ pings you entered last time. (Thanks to Paul Fenwick for implementing that.)
 
 If your tagtime gap is g minutes then the probability of at least one ping
 in any x minute window is 1-exp(-x/g).
-The window corresponding to probability p is -g*ln(1-p).
+The window corresponding to probability p is -g\*ln(1-p).
 For example, with g=45, there's a 10% chance of getting pinged in any window
 of duration 4 minutes 44 seconds.
 There's a 50% chance of getting pinged within 31 minutes.
 There's a 99% chance of a ping within 3.5 hours.
-The probability of waiting over 10 hours for a ping is one in a million.
+The probability of waiting over 10 hours\* for a ping is one in a million.
+
+\* However, due to a [flaw in the random number generation algorithm used](http://github.com/dreeves/TagTime/issues/62#issuecomment-239705969) when this happens\*\*, the following ping will be more than 3 hours later.
+
+\*\* Will not occur in the 21st century.
+
 
 # Beeminder Integration
 
