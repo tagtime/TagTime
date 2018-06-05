@@ -8,6 +8,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Binder;
@@ -161,11 +162,13 @@ public class PingService extends Service {
 		CharSequence text = getText(R.string.status_bar_notes_ping_msg);
 
 		// Set the icon, scrolling text, and timestamp.
-        Notification note = new NotificationCompat.Builder(getApplicationContext())
-                .setSmallIcon(R.drawable.stat_ping)
-                .setTicker(text)
-                .setWhen(ping.getTime())
-                .build();
+        NotificationCompat.Builder noteBuilder =
+				new NotificationCompat.Builder(getApplicationContext())
+						.setSmallIcon(R.drawable.stat_ping)
+						.setTicker(text)
+						.setWhen(ping.getTime());
+
+		addTagActions(noteBuilder);
 
 		// The PendingIntent to launch our activity if the user selects this
 		// notification
@@ -179,6 +182,7 @@ public class PingService extends Service {
 		// Set the info for the views that show in the notification panel.
 		// note.setLatestEventInfo(context, contentTitle, contentText,
 		// contentIntent)
+		Notification note = noteBuilder.build();
 		note.setLatestEventInfo(this, "Ping!", SDF.format(ping), contentIntent);
 
 		boolean suppress_noises = false;
@@ -219,6 +223,27 @@ public class PingService extends Service {
 		// so that we can cancel the notification later on).
 		NM.notify(PING_NOTES, note);
 
+	}
+
+	/**
+	 * Add an action to a notification for each tag in the database. Handles
+	 * opening/closing DB too.
+	 *
+	 * @param noteBuilder the builder that will create the notification
+	 */
+	private void addTagActions(NotificationCompat.Builder noteBuilder) {
+		pingsDB = PingsDbAdapter.getInstance();
+		pingsDB.openDatabase();
+		Cursor cursor = pingsDB.fetchAllTags("FREQ");
+		cursor.moveToFirst();
+		int countActions = 0;
+		while (!cursor.isAfterLast() && countActions++ < 3) {
+			int index = cursor.getColumnIndex(PingsDbAdapter.KEY_TAG);
+			String name = cursor.getString(index);
+			noteBuilder.addAction(0, name, null);
+			cursor.moveToNext();
+		}
+		pingsDB.closeDatabase();
 	}
 
 	// TODO: RTC_WAKEUP and appropriate perms into manifest
