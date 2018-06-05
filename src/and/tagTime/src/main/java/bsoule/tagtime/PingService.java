@@ -168,16 +168,9 @@ public class PingService extends Service {
 						.setTicker(text)
 						.setWhen(ping.getTime());
 
-		addTagActions(noteBuilder);
+		addTagActions(noteBuilder, rowID);
 
-		// The PendingIntent to launch our activity if the user selects this
-		// notification
-		Intent editIntent = new Intent(this, EditPing.class);
-
-		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
-		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, editIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+		PendingIntent contentIntent = createPendingIntent(rowID, null);
 
 		// Set the info for the views that show in the notification panel.
 		// note.setLatestEventInfo(context, contentTitle, contentText,
@@ -226,12 +219,36 @@ public class PingService extends Service {
 	}
 
 	/**
+	 * Create The PendingIntent to launch our activity if the user selects the notification
+	 * caused by a ping. Optionally select a tag in the ping editor.
+	 * @param rowID the ID of the ping
+	 * @param tag the tag to select or {@code null}
+	 * @return the PendingIntent
+	 */
+	private PendingIntent createPendingIntent(long rowID, String tag) {
+
+		Intent editIntent = new Intent(this, EditPing.class);
+
+		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
+		editIntent.putExtra(PingsDbAdapter.KEY_TAG, tag);
+		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+		return PendingIntent.getActivity(
+				this,
+				tag == null ? 0 : tag.hashCode(),
+				editIntent,
+				PendingIntent.FLAG_CANCEL_CURRENT
+		);
+	}
+
+	/**
 	 * Add an action to a notification for each tag in the database. Handles
 	 * opening/closing DB too.
 	 *
 	 * @param noteBuilder the builder that will create the notification
+	 * @param rowId the ID of the ping that caused the notification
 	 */
-	private void addTagActions(NotificationCompat.Builder noteBuilder) {
+	private void addTagActions(NotificationCompat.Builder noteBuilder, long rowId) {
 		pingsDB = PingsDbAdapter.getInstance();
 		pingsDB.openDatabase();
 		Cursor cursor = pingsDB.fetchAllTags("FREQ");
@@ -240,7 +257,8 @@ public class PingService extends Service {
 		while (!cursor.isAfterLast() && countActions++ < 3) {
 			int index = cursor.getColumnIndex(PingsDbAdapter.KEY_TAG);
 			String name = cursor.getString(index);
-			noteBuilder.addAction(0, name, null);
+			PendingIntent pendingIntent = createPendingIntent(rowId, name);
+			noteBuilder.addAction(0, name, pendingIntent);
 			cursor.moveToNext();
 		}
 		pingsDB.closeDatabase();
