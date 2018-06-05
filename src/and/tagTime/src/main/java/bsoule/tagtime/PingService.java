@@ -1,11 +1,5 @@
 package bsoule.tagtime;
 
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -23,13 +17,20 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-/* 
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+/*
  * the Ping service is in charge of maintaining random number
  * generator state on disk, sending ping notifications, and
  * setting ping alarms.
- * 
+ *
  */
 
 public class PingService extends Service {
@@ -160,7 +161,11 @@ public class PingService extends Service {
 		CharSequence text = getText(R.string.status_bar_notes_ping_msg);
 
 		// Set the icon, scrolling text, and timestamp.
-		Notification note = new Notification(R.drawable.stat_ping, text, ping.getTime());
+        Notification note = new NotificationCompat.Builder(getApplicationContext())
+                .setSmallIcon(R.drawable.stat_ping)
+                .setTicker(text)
+                .setWhen(ping.getTime())
+                .build();
 
 		// The PendingIntent to launch our activity if the user selects this
 		// notification
