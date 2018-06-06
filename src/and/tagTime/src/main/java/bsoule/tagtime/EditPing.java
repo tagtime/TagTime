@@ -61,6 +61,8 @@ public class EditPing extends SherlockActivity {
 
 	public static final String KEY_TAGS = "tags";
 
+	static final String KEY_PRESELECT_TAG = "KEY_PRESELECT_TAG";
+
 	private PingsDbAdapter mPingsDB;
 	private Cursor mTagsCursor;
 
@@ -304,6 +306,7 @@ public class EditPing extends SherlockActivity {
 			if (mCurrentTags != null) on = mCurrentTags.contains(tag);
 			TagToggle tog = new TagToggle(this, tag, id, on);
 			tog.setOnClickListener(mTogListener);
+			tog.setChecked(tag.equals(getIntent().getStringExtra(KEY_PRESELECT_TAG)));
 			ll.addView(tog);
 
 			mTagsCursor.moveToNext();

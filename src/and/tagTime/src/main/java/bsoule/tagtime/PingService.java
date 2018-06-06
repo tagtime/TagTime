@@ -231,6 +231,7 @@ public class PingService extends Service {
 
 		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
 		editIntent.putExtra(PingsDbAdapter.KEY_TAG, tag);
+		editIntent.putExtra(EditPing.KEY_PRESELECT_TAG, tag);
 		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
 		return PendingIntent.getActivity(
