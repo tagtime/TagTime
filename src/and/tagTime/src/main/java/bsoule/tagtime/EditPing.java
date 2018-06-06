@@ -300,6 +300,7 @@ public class EditPing extends SherlockActivity {
 		ll.setId(FIXTAGS);
 		ll.setOrientation(1);
 		ll.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+        String preselectTag = getIntent().getStringExtra(KEY_PRESELECT_TAG);
 		while (!mTagsCursor.isAfterLast()) {
 			String tag = mTagsCursor.getString(mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_TAG));
 			long id = mTagsCursor.getLong(mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_ROWID));
@@ -307,7 +308,9 @@ public class EditPing extends SherlockActivity {
 			if (mCurrentTags != null) on = mCurrentTags.contains(tag);
 			TagToggle tog = new TagToggle(this, tag, id, on);
 			tog.setOnClickListener(mTogListener);
-			tog.setChecked(tag.equals(getIntent().getStringExtra(KEY_PRESELECT_TAG)));
+            if (tag.equals(preselectTag)) {
+                tog.performClick();
+            }
 			ll.addView(tog);
 
 			mTagsCursor.moveToNext();
