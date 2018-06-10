@@ -1,13 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 16
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 18
 
     defaultConfig {
         applicationId "bsoule.tagtime"
         minSdkVersion 8
-        targetSdkVersion 8
+        targetSdkVersion 18
     }
 
     buildTypes {
