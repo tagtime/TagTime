@@ -154,13 +154,13 @@ public class EditPing extends SherlockActivity {
 			mTagsEdit = (EditText) v;
 		}
 
-		// Cancel the notification:
-		// - The notification is auto-cancelling when clicked
-		// - But auto-cancel does not work if a notification action was clicked so in that case
-		// it has to be cancelled explicitly
-		// - Only cancel note if it is for same ping as we are editing, by using its rowId as a tag
-		NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-		nm.cancel(String.valueOf(mRowId), R.layout.tagtime_editping);
+        // Cancel the notification:
+        // - The notification is auto-cancelling when clicked
+        // - But auto-cancel does not work if a notification action was clicked so in that case
+        // it has to be cancelled explicitly
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        assert nm != null;
+        nm.cancel(R.layout.tagtime_editping);
 
 		mPingsDB = PingsDbAdapter.getInstance();
 		mPingsDB.openDatabase();

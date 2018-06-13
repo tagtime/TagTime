@@ -214,7 +214,8 @@ public class PingService extends Service {
 		// that gets assigned to the notification (we happen to pull it from a
 		// layout id
 		// so that we can cancel the notification later on).
-		NM.notify(String.valueOf(rowID), PING_NOTES, note);
+		assert NM != null;
+		NM.notify(PING_NOTES, note);
 
 	}
 
