@@ -160,7 +160,8 @@ public class EditPing extends SherlockActivity {
         // it has to be cancelled explicitly
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         assert nm != null;
-        nm.cancel(R.layout.tagtime_editping);
+		boolean isFromNotifAction = getIntent().getStringExtra(KEY_PRESELECT_TAG) != null;
+		if (isFromNotifAction) nm.cancel(R.layout.tagtime_editping);
 
 		mPingsDB = PingsDbAdapter.getInstance();
 		mPingsDB.openDatabase();
