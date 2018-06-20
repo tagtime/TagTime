@@ -243,6 +243,22 @@ public class PingService extends Service {
 		);
 	}
 
+	private PendingIntent createBroadcastPendingIntent(long rowID, String tag) {
+
+		Intent editIntent = new Intent(this, SavePingReceiver.class);
+
+		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
+		editIntent.putExtra(PingsDbAdapter.KEY_TAG, tag);
+		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+		return PendingIntent.getBroadcast(
+				this,
+				tag == null ? 0 : tag.hashCode(),
+				editIntent,
+				PendingIntent.FLAG_CANCEL_CURRENT
+		);
+	}
+
 	/**
 	 * Add an action to a notification for each tag in the database. Handles
 	 * opening/closing DB too.
@@ -259,8 +275,9 @@ public class PingService extends Service {
 		while (!cursor.isAfterLast() && countActions++ < 3) {
 			int index = cursor.getColumnIndex(PingsDbAdapter.KEY_TAG);
 			String name = cursor.getString(index);
-			PendingIntent pendingIntent = createPendingIntent(rowId, name);
-			noteBuilder.addAction(0, name, pendingIntent);
+			PendingIntent pendingIntent = createBroadcastPendingIntent(rowId, name);
+			noteBuilder.addAction(0, name, pendingIntent)
+					.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 			cursor.moveToNext();
 		}
 		pingsDB.closeDatabase();
