@@ -61,8 +61,6 @@ public class EditPing extends SherlockActivity {
 
 	public static final String KEY_TAGS = "tags";
 
-	static final String KEY_PRESELECT_TAG = "KEY_PRESELECT_TAG";
-
 	private PingsDbAdapter mPingsDB;
 	private Cursor mTagsCursor;
 
@@ -154,14 +152,12 @@ public class EditPing extends SherlockActivity {
 			mTagsEdit = (EditText) v;
 		}
 
-        // Cancel the notification:
-        // - The notification is auto-cancelling when clicked
-        // - But auto-cancel does not work if a notification action was clicked so in that case
-        // it has to be cancelled explicitly
-        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        assert nm != null;
-		boolean isFromNotifAction = getIntent().getStringExtra(KEY_PRESELECT_TAG) != null;
-		if (isFromNotifAction) nm.cancel(R.layout.tagtime_editping);
+		// cancel the notification
+		// TODO: only cancel note if it is for same ping as we are editing
+		// TODO: We could make the notification auto-cancelling when clicked.
+		// NotificationManager nm = (NotificationManager)
+		// getSystemService(NOTIFICATION_SERVICE);
+		// nm.cancel(R.layout.tagtime_editping);
 
 		mPingsDB = PingsDbAdapter.getInstance();
 		mPingsDB.openDatabase();
@@ -301,7 +297,6 @@ public class EditPing extends SherlockActivity {
 		ll.setId(FIXTAGS);
 		ll.setOrientation(1);
 		ll.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
-        String preselectTag = getIntent().getStringExtra(KEY_PRESELECT_TAG);
 		while (!mTagsCursor.isAfterLast()) {
 			String tag = mTagsCursor.getString(mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_TAG));
 			long id = mTagsCursor.getLong(mTagsCursor.getColumnIndex(PingsDbAdapter.KEY_ROWID));
@@ -309,9 +304,6 @@ public class EditPing extends SherlockActivity {
 			if (mCurrentTags != null) on = mCurrentTags.contains(tag);
 			TagToggle tog = new TagToggle(this, tag, id, on);
 			tog.setOnClickListener(mTogListener);
-            if (tag.equals(preselectTag)) {
-                tog.performClick();
-            }
 			ll.addView(tog);
 
 			mTagsCursor.moveToNext();
