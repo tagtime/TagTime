@@ -298,7 +298,7 @@ public class PingService extends Service {
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, alit, 0);
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			alarum.setAndAllowWhileIdle(type, trigger, pendingIntent);
+			alarum.setExactAndAllowWhileIdle(type, trigger, pendingIntent);
 		} else {
 			alarum.set(type, trigger, pendingIntent);
 		}
