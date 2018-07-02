@@ -49,4 +49,7 @@
 	<string name="about_changelog">ChangeLog</string>
 	<string name="about_googleplay">Visit on Google Play</string>
 
+    <string name="ping_saving_success">Ping %1$d has been updated with tag %2$s</string>
+    <string name="ping_saving_failure">Ping %1$d could not be saved with tag %2$s</string>
+
 </resources>

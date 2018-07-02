@@ -1,11 +1,5 @@
 package bsoule.tagtime;
 
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -14,6 +8,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Binder;
@@ -23,13 +18,20 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-/* 
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+/*
  * the Ping service is in charge of maintaining random number
  * generator state on disk, sending ping notifications, and
  * setting ping alarms.
- * 
+ *
  */
 
 public class PingService extends Service {
@@ -160,20 +162,20 @@ public class PingService extends Service {
 		CharSequence text = getText(R.string.status_bar_notes_ping_msg);
 
 		// Set the icon, scrolling text, and timestamp.
-		Notification note = new Notification(R.drawable.stat_ping, text, ping.getTime());
+        NotificationCompat.Builder noteBuilder =
+				new NotificationCompat.Builder(getApplicationContext())
+						.setSmallIcon(R.drawable.stat_ping)
+						.setTicker(text)
+						.setWhen(ping.getTime());
 
-		// The PendingIntent to launch our activity if the user selects this
-		// notification
-		Intent editIntent = new Intent(this, EditPing.class);
+		addTagActions(noteBuilder, rowID);
 
-		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
-		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, editIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+		PendingIntent contentIntent = createPendingIntent(rowID, null);
 
 		// Set the info for the views that show in the notification panel.
 		// note.setLatestEventInfo(context, contentTitle, contentText,
 		// contentIntent)
+		Notification note = noteBuilder.build();
 		note.setLatestEventInfo(this, "Ping!", SDF.format(ping), contentIntent);
 
 		boolean suppress_noises = false;
@@ -212,8 +214,72 @@ public class PingService extends Service {
 		// that gets assigned to the notification (we happen to pull it from a
 		// layout id
 		// so that we can cancel the notification later on).
+		assert NM != null;
 		NM.notify(PING_NOTES, note);
 
+	}
+
+	/**
+	 * Create The PendingIntent to launch our activity if the user selects the notification
+	 * caused by a ping. Optionally select a tag in the ping editor.
+	 * @param rowID the ID of the ping
+	 * @param tag the tag to select or {@code null}
+	 * @return the PendingIntent
+	 */
+	private PendingIntent createPendingIntent(long rowID, String tag) {
+
+		Intent editIntent = new Intent(this, EditPing.class);
+
+		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
+		editIntent.putExtra(PingsDbAdapter.KEY_TAG, tag);
+		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+		return PendingIntent.getActivity(
+				this,
+				tag == null ? 0 : tag.hashCode(),
+				editIntent,
+				PendingIntent.FLAG_CANCEL_CURRENT
+		);
+	}
+
+	private PendingIntent createBroadcastPendingIntent(long rowID, String tag) {
+
+		Intent editIntent = new Intent(this, SavePingReceiver.class);
+
+		editIntent.putExtra(PingsDbAdapter.KEY_ROWID, rowID);
+		editIntent.putExtra(PingsDbAdapter.KEY_TAG, tag);
+		editIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+		return PendingIntent.getBroadcast(
+				this,
+				tag == null ? 0 : tag.hashCode(),
+				editIntent,
+				PendingIntent.FLAG_CANCEL_CURRENT
+		);
+	}
+
+	/**
+	 * Add an action to a notification for each tag in the database. Handles
+	 * opening/closing DB too.
+	 *
+	 * @param noteBuilder the builder that will create the notification
+	 * @param rowId the ID of the ping that caused the notification
+	 */
+	private void addTagActions(NotificationCompat.Builder noteBuilder, long rowId) {
+		pingsDB = PingsDbAdapter.getInstance();
+		pingsDB.openDatabase();
+		Cursor cursor = pingsDB.fetchAllTags("FREQ");
+		cursor.moveToFirst();
+		int countActions = 0;
+		while (!cursor.isAfterLast() && countActions++ < 3) {
+			int index = cursor.getColumnIndex(PingsDbAdapter.KEY_TAG);
+			String name = cursor.getString(index);
+			PendingIntent pendingIntent = createBroadcastPendingIntent(rowId, name);
+			noteBuilder.addAction(0, name, pendingIntent)
+					.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+			cursor.moveToNext();
+		}
+		pingsDB.closeDatabase();
 	}
 
 	// TODO: RTC_WAKEUP and appropriate perms into manifest
