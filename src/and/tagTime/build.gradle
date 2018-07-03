@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
+    compileSdkVersion 23
 
     defaultConfig {
         applicationId "bsoule.tagtime"
         minSdkVersion 8
-        targetSdkVersion 21
+        targetSdkVersion 23
     }
 
     buildTypes {
@@ -20,5 +20,8 @@ android {
 dependencies {
     compile project(':library')
     compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
-    compile 'com.android.support:support-v4:21.0.3'
+
+    // Stay in 22 as migration to 23 requires replacing ActionBarSherlock with ActionBarCompat
+    //noinspection GradleDependency,GradleCompatible
+    compile 'com.android.support:support-v4:22.2.1'
 }

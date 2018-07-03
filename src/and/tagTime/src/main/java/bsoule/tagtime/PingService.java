@@ -12,6 +12,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.PowerManager;
@@ -161,22 +162,25 @@ public class PingService extends Service {
 		Date ping = new Date(pingtime * 1000);
 		CharSequence text = getText(R.string.status_bar_notes_ping_msg);
 
+		PendingIntent contentIntent = createPendingIntent(rowID, null);
+
 		// Set the icon, scrolling text, and timestamp.
         NotificationCompat.Builder noteBuilder =
 				new NotificationCompat.Builder(getApplicationContext())
 						.setSmallIcon(R.drawable.stat_ping)
 						.setTicker(text)
+						.setContentTitle("Ping!")
+						.setContentText(SDF.format(ping))
+						.setContentIntent(contentIntent)
 						.setWhen(ping.getTime());
 
 		addTagActions(noteBuilder, rowID);
 
-		PendingIntent contentIntent = createPendingIntent(rowID, null);
-
 		// Set the info for the views that show in the notification panel.
 		// note.setLatestEventInfo(context, contentTitle, contentText,
 		// contentIntent)
+
 		Notification note = noteBuilder.build();
-		note.setLatestEventInfo(this, "Ping!", SDF.format(ping), contentIntent);
 
 		boolean suppress_noises = false;
 		if (mPrefs.getBoolean("pingQuietCharging", false)) {
@@ -287,7 +291,17 @@ public class PingService extends Service {
 		AlarmManager alarum = (AlarmManager) getSystemService(ALARM_SERVICE);
 		Intent alit = new Intent(this, TPStartUp.class);
 		alit.putExtra("ThisIntentIsTPStartUpClass", true);
-		alarum.set(AlarmManager.RTC_WAKEUP, PING * 1000, PendingIntent.getBroadcast(this, 0, alit, 0));
+
+		assert alarum != null;
+		int type = AlarmManager.RTC_WAKEUP;
+		long trigger = PING * 1000;
+		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, alit, 0);
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			alarum.setExactAndAllowWhileIdle(type, trigger, pendingIntent);
+		} else {
+			alarum.set(type, trigger, pendingIntent);
+		}
 	}
 
 	private static final long IA = 16807;
