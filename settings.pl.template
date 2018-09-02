@@ -44,9 +44,10 @@ $beemauth = "abc123";  # CHANGEME to your personal beeminder auth token
 # tag "off" is also added.)
 $retrothresh = 60;
 
+# If you want the universal ping schedule, don't touch these 3 settings...
 $gap = 45*60; # Average number of seconds between pings (eg, 60*60 = 1 hour).
-
-$seed = 666; # For pings not in sync with others, change this (NB: > 0).
+$URPING = 1184097393; # Ur-ping, ie, the birth of timepie/tagtime! (unixtime)
+$seed = 11193462;
 
 $linelen = 79; # Try to keep log lines at most this long.
 

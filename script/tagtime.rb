@@ -8,7 +8,7 @@ $IM = 2147483647;  # constant used for RNG (2^31-1).
 
 # $seed is a global variable that is really the state of the RNG.
 $gap = 45*60
-$seed = 666
+$seed = 11193462 
 $initseed = $seed
 
 # Returns a random integer in [1,$IM-1]; changes $seed, ie, RNG state.
@@ -41,7 +41,7 @@ def prevping(t)
   $seed = $initseed;
   # Starting at the beginning of time, walk forward computing next pings
   # until the next ping is >= t.
-  nxtping = 1184083200  # the birth of timepie/tagtime!
+  nxtping = 1184097393  # the birth of timepie/tagtime!
   lstping = nxtping
   lstseed = $seed
   while nxtping < t

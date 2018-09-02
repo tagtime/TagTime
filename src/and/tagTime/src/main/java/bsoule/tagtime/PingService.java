@@ -226,7 +226,7 @@ public class PingService extends Service {
 
 	private static final long IA = 16807;
 	private static final long IM = 2147483647;
-	private static final long INITSEED = 666;
+	private static final long INITSEED = 11193462;
 
 	/* *********************** *
 	 * Random number generator * ***********************
@@ -266,7 +266,7 @@ public class PingService extends Service {
 		// Starting at the beginning of time, walk forward computing next pings
 		// until the next ping is >= t.
 		final int TUES = 1261198800; // some random time more recent than that..
-		final int BOT = 1184083200; // start at the birth of timepie!
+		final int BOT = 1184097393; // start at the birth of timepie!
 		long nxt = TPController.DEBUG ? TUES : BOT;
 		long lst = nxt;
 		long lstseed = SEED;

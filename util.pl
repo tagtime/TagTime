@@ -10,22 +10,31 @@ $| = 1;  # autoflush STDOUT
 
 my $IA = 16807;          # constant used for RNG (see p37 of Simulation by Ross)
 my $IM = 2147483647;     # constant used for RNG (2^31-1)
-my $URPING = 1184083200; # ur-ping, ie, the birth of timepie/tagtime! (unixtime)
 
-# Alternative ur-pings and initial seeds that yield the exact same universal 
-# ping schedule: 
-#   seed=85333798,   urping=5843 (~1970)       # By choosing a non-random
-#   seed=8992,       urping=1035903364 (~2002) #  initial seed of 666 in 2007 we
-#   seed=1210011908, urping=1184042737 (~2007) #  slightly messed up the
-#   seed=666,        urping=1184083200 (~2007) #  distribution (ie, there's an 
-#   seed=11193462,   urping=1184097393 (~2007) #  improbably long max gap) iff
-#   seed=85014,      urping=1234180122 (~2009) #  you use an ur-ping before 
-#   seed=26506,      urping=1443641796 (~2015) #  1184083200.
+if(!defined($URPING)) {
+  # The original URPING, SEED from 2007 was 1184083200, 666 which caused
+  # offense -- http://forum.beeminder.com/t/2004/15 -- so I agreed to change it.
+  # Then I realized that it's bad if anyone doing a git pull has the ping
+  # schedule change on them so I'm adding the following hack to force-change the
+  # seed from the offending one. But this only happens if you have seed but no
+  # ur-ping specified. The settings file now expects both and if you specify
+  # both you can set them to whatever you want. So hopefully everyone is happy
+  # this way!
+  if($seed == 666) { $seed = 11193462; }
+  # Once the old seed is a distant memory we can get rid of the above altogether
+  # and only have the new URPING, SEED = 1184097393, 11193462
+  $URPING = 1184097393;
+}
 
 # $seed is a global variable that is really the state of the RNG.
 # Should be set in .tagtimerc but set to a default value here if not.
-if(!defined($seed)) { $seed = 666; }
+if(!defined($seed)) { $seed = 11193462; }
 my $initseed = $seed;
+
+# Above URPING is n 2007 and it's fine to jump to any later URPING/SEED pair
+# like this one in 2018:
+# URPING = 1532992625
+# SEED = 75570
 
 if(!defined($linelen)) { $linelen = 80; }  # default line length.
 
