@@ -156,7 +156,7 @@ sub launch {
   my($t) = @_;
   my($sec,$min,$hour) = localtime($t);
   $sec = dd($sec); $min = dd($min); $hour = dd($hour);
-  #$ENV{DISPLAY} = ":0.0";  # have to set this explicitly if invoked by cron.
+  $ENV{DISPLAY} ||= ":0.0";  # have to set this explicitly if invoked by cron.
   if(!$quiet) {
     if(!defined($playsound)) { print STDERR "\a"; }
     else { system("$playsound") == 0 or print "SYSERR: $playsound\n"; }
