@@ -27,28 +27,7 @@ if(!lockn()) {
 
 if($remote_id ne "" && $nxtping < $launchTime) {
   # If we have a gap, first try to fill in with stuff from the most recent remote log
-  $lastremlog = `ssh $remote_server 'cd $remote_path && ls -tr1 $usr.*.log | tail -n1'`;
-  chomp $lastremlog;
-  system(`scp -C $remote_server:$remote_path$lastremlog .`);
-  if(-e $logf) {
-    print "Filling in pings from remote file $lastremlog...\n" unless $quiet;
-    system(`cp $logf $logf.backup`);
-    open REMLOG, "<", $lastremlog;
-    open OURLOG, ">>", $logf;
-    $numfill = 0;
-    while(<REMLOG>) {
-      /^\s*(\d+)/; # parse out the timestamp for the current line
-      $curping = $1;
-      if($curping >= $nxtping) {
-        print OURLOG $_;
-        $numfill++;
-      }
-    }
-    print "Filled in $numfill pings\n" unless $quiet;
-  } else {
-    print "No previous logfile found, using entirety of $lastremlog\n" unless $quiet;
-    system(`cp $lastremlog $logf`)
-  }
+  fill_remote($nxtping);
 
   # Re-sync nxtping with any new loglines
   $nxtping = parseping($logf);
@@ -74,6 +53,19 @@ do {
       launch($nxtping);  # this shouldn't complete till you answer.
     }
     my($ts,$ln) = lastln();
+
+    # First, check to see if we have remote pings to fill in, if this computer
+    # was just sitting with a ping window up while they were being answered elsewhere
+    if($ts != $nxtping) {
+      my ($rts,$rln) = remoteln();
+      if ($rts > $ts) {
+        print "$rts > $ts, filling from remote" unless $quiet;
+        fill_remote(nextping($ts));
+        # re-read
+        ($ts, $ln) = lastln();
+      }
+    }
+
     if($ts != $nxtping) { # in case, eg, we closed the window w/o answering.
       # suppose there's a ping window waiting (call it ping 1), and while it's 
       # sitting there unanswered another ping (ping 2) pings.  then you kill 
@@ -110,15 +102,53 @@ if($remote_id ne "") {
 unlock();
 
 
-# Returns the last line in the log but as a 2-element array
+# Parses a log line as a 2-element array
 #   consisting of timestamp and rest of the line.
+sub parseln {
+  my ($x) = @_;
+  $x =~ /^\s*(\d+)\s*(.*)$/;
+  return ($1,$2);
+}
+# Returns the last line in the log as a 2-elm array
 sub lastln { 
   my $x;
   open(L, $logf) or die "ERROR-lastln: Can't open log: $!";
   $x = $_ while(<L>);
   close(L);
-  $x =~ /^\s*(\d+)\s*(.*)$/;
-  return ($1,$2);
+  return parseln($x);
+}
+
+# Returns the last line in the remote log as a 2-elm array
+sub remoteln {
+  # If we have a gap, first try to fill in with stuff from the most recent remote log
+  $remote_line = `ssh $remote_server 'cd $remote_path && tail -n1 \$(ls -tr1 $usr.*.log | tail -n1)'`;
+  return parseln($remote_line);
+}
+
+sub fill_remote {
+  my ($fill_from) = @_;
+  $lastremlog = `ssh $remote_server 'cd $remote_path && ls -tr1 $usr.*.log | tail -n1'`;
+  chomp $lastremlog;
+  system(`scp -C $remote_server:$remote_path$remlog .`);
+  if(-e $logf) {
+    print "Filling in pings from remote file $lastremlog...\n" unless $quiet;
+    system(`cp $logf $logf.backup`);
+    open REMLOG, "<", $lastremlog;
+    open OURLOG, ">>", $logf;
+    $numfill = 0;
+    while(<REMLOG>) {
+      /^\s*(\d+)/; # parse out the timestamp for the current line
+      $curping = $1;
+      if($curping >= $fill_from) {
+        print OURLOG $_;
+        $numfill++;
+      }
+    }
+    print "Filled in $numfill pings\n" unless $quiet;
+  } else {
+    print "No previous logfile found, using entirety of $lastremlog\n" unless $quiet;
+    system(`cp $lastremlog $logf`)
+  }
 }
 
 # Launch the tagtime pinger for the given time (in unix time).
