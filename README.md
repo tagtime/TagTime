@@ -94,11 +94,13 @@ settings.pl.
 Sample sounds are in the sound directory.
 Non-mac users, see README file in sound directory.
 
-A handy vim macro for duplicating the previous line's tags in the tagtime log:
+A handy vim macro for duplicating the previous/next line's tags in the tagtime log:
 
-    "replace tags on this tagtime line with those from the prev line.
-    "(warning: must have timestamp in square brackets on both lines)
-    map <f4> mzk0el"vy/\([\\|$\)<cr>jd/\([\\|$\)<cr>h"vp`zj
+    "replace tags on this tagtime line with those from the prev/next line.
+    "(NB: must have timestamp in square brackets on both lines)
+    map +    mzk0el"vy/\([\\|$\)<cr>jd/\([\\|$\)<cr>h"vp`zj
+    map -    mzj0el"vy/\([\\|$\)<cr>kd/\([\\|$\)<cr>h"vp`zk
+
 
 # Extra Features
 
