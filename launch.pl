@@ -127,9 +127,10 @@ sub remoteln {
 
 sub fill_remote {
   my ($fill_from) = @_;
+  print "Backfilling with remote from $fill_from" unless $quiet;
   $lastremlog = `ssh $remote_server 'cd $remote_path && ls -tr1 $usr.*.log | tail -n1'`;
   chomp $lastremlog;
-  system(`scp -C $remote_server:$remote_path$remlog .`);
+  system(`scp -C $remote_server:$remote_path$lastremlog .`);
   if(-e $logf) {
     print "Filling in pings from remote file $lastremlog...\n" unless $quiet;
     system(`cp $logf $logf.backup`);
