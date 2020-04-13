@@ -1,0 +1,12 @@
+[Unit]
+Description=TagTime
+Documentation=
+
+[Service]
+Type=simple
+ExecStart=/home/joel/bin/TagTime/tagtimed.pl
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
