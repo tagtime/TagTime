@@ -128,12 +128,15 @@ sub remoteln {
 sub fill_remote {
   my ($fill_from) = @_;
   print "Backfilling with remote from $fill_from" unless $quiet;
-  $lastremlog = `ssh $remote_server 'cd $remote_path && ls -tr1 $usr.*.log | tail -n1'`;
+  system("scp $remote_server:$remote_path$usr.*.log .");
+  $lastremlog = `awk \
+    '{if(\$1 > max) { max = \$1; latest = FILENAME}} END { print latest }'\
+    $usr.*.log`;
   chomp $lastremlog;
-  system(`scp -C $remote_server:$remote_path$lastremlog .`);
+
   if(-e $logf) {
     print "Filling in pings from remote file $lastremlog...\n" unless $quiet;
-    system(`cp $logf $logf.backup`);
+    system("cp $logf $logf.backup");
     open REMLOG, "<", $lastremlog;
     open OURLOG, ">>", $logf;
     $numfill = 0;
@@ -148,7 +151,7 @@ sub fill_remote {
     print "Filled in $numfill pings\n" unless $quiet;
   } else {
     print "No previous logfile found, using entirety of $lastremlog\n" unless $quiet;
-    system(`cp $lastremlog $logf`)
+    system("cp $lastremlog $logf")
   }
 }
 
