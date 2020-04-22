@@ -59,13 +59,13 @@ do {
     if($ts != $nxtping) {
       my ($rts,$rln) = remoteln();
       if ($rts > $ts) {
-        print "$rts > $ts, filling from remote" unless $quiet;
+        print "$rts > $ts, filling from remote\n" unless $quiet;
         fill_remote(nextping($ts));
         # re-read
         ($ts,$ln) = lastln();
-        print "New last timestamp: $ts" unless $quiet;
+        print "New last timestamp: $ts\n" unless $quiet;
       } else {
-        print "$rts <= $ts, nothing to fill from remote" unless $quiet;
+        print "$rts <= $ts, nothing to fill from remote\n" unless $quiet;
       }
     }
 
@@ -130,7 +130,7 @@ sub remoteln {
 
 sub fill_remote {
   my ($fill_from) = @_;
-  print "Backfilling with remote from $fill_from" unless $quiet;
+  print "Backfilling with remote from $fill_from\n" unless $quiet;
   system("scp $remote_sshid $remote_log$usr.*.log .");
   $lastremlog = `awk -f get_latest.awk $usr.*.log`;
   chomp $lastremlog;
