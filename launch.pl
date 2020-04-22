@@ -62,7 +62,10 @@ do {
         print "$rts > $ts, filling from remote" unless $quiet;
         fill_remote(nextping($ts));
         # re-read
-        ($ts, $ln) = lastln();
+        ($ts,$ln) = lastln();
+        print "New last timestamp: $ts" unless $quiet;
+      } else {
+        print "$rts <= $ts, nothing to fill from remote" unless $quiet;
       }
     }
 
