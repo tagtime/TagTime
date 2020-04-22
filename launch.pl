@@ -100,7 +100,7 @@ do {
 
 if($remote_id ne "") {
     print "Backing up log to remote server...\n" unless $quiet;
-    system("scp -C $logf $remote_log/$usr.$remote_id.log");
+    system("scp $remote_sshid -C $logf $remote_log$usr.$remote_id.log");
 }
 unlock();
 
@@ -124,17 +124,15 @@ sub lastln {
 # Returns the last line in the remote log as a 2-elm array
 sub remoteln {
   # If we have a gap, first try to fill in with stuff from the most recent remote log
-  $remote_line = `ssh $remote_server 'cd $remote_path && tail -n1 \$(ls -tr1 $usr.*.log | tail -n1)'`;
+  $remote_line = `ssh $remote_sshid $remote_server 'cd $remote_path && tail -n1 \$(ls -tr1 $usr.*.log | tail -n1)'`;
   return parseln($remote_line);
 }
 
 sub fill_remote {
   my ($fill_from) = @_;
   print "Backfilling with remote from $fill_from" unless $quiet;
-  system("scp $remote_server:$remote_path$usr.*.log .");
-  $lastremlog = `awk \
-    '{if(\$1 > max) { max = \$1; latest = FILENAME}} END { print latest }'\
-    $usr.*.log`;
+  system("scp $remote_sshid $remote_log$usr.*.log .");
+  $lastremlog = `awk -f get_latest.awk $usr.*.log`;
   chomp $lastremlog;
 
   if(-e $logf) {

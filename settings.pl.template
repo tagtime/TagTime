@@ -7,13 +7,18 @@ $path = "__PATH__";  # CHANGEME to your path to tagtime
         if($path !~ /\/$/) { $path.="/"; }
 $logf = "$path$usr.log";  # log file for pings
 
+$remote_key = "id_tagtime"; # CHANGEME to the file contaning your tagtime key (if different)
+$remote_user = "tagtime"; # CHANGEME to your backup user (if different)
 $remote_server = "__REMSERV__"; # CHANGEME to your backup server
 $remote_path = "__REMPATH__"; # CHANGEME to the path on your backup server
-               if($remote_path !~ /\/$/) { $path.="/"; }
+               if($remote_path !~ /\/$/) { $remote_path.="/"; }
 $remote_id = ""; # CHANGEME to a unique tag for this machine on the backup server
                  # Leaving this blank will disable backup functionality
 
+$remote_server = "$remote_user\@$remote_host";
 $remote_log = "$remote_server:$remote_path";
+$remote_sshid = "";
+            if ($remote_key ne "") { $remote_sshid = "-i $remote_key"; }
 
 # If you're using windows, you'll need cygwin and to set this flag to 1:
 $cygwin = __CYGWIN__;  # CHANGEME to 1 if you're using windows/cygwin.
