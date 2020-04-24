@@ -60,10 +60,24 @@ do {
       my ($rts,$rln) = remoteln();
       if ($rts > $ts) {
         print "$rts > $ts, filling from remote\n" unless $quiet;
-        fill_remote(nextping($ts));
+
+        $verify = nextping(prevping($ts)); # NB: must call prevping before nextping
+        if($ts == $verify) {
+          fill_remote(nextping($ts));
+        } else {
+          print "Local file has a bad last line:\n$ln";
+          $nxtping = prevping($launchTime);
+        }
         # re-read
         ($ts,$ln) = lastln();
-        print "New last timestamp: $ts\n" unless $quiet;
+        
+        $verify = nextping(prevping($ts));
+        if($ts == $verify) {
+          print "New last timestamp: $ts\n" unless $quiet;
+        } else {
+          print "Remote file has a bad last line:\n$ln";
+          $nxtping = prevping($launchTime);
+        }
       } else {
         print "$rts <= $ts, nothing to fill from remote\n" unless $quiet;
       }
