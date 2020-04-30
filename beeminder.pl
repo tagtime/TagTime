@@ -200,9 +200,15 @@ for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
     $bh{$ts} = beemcreate($usr,$slug,$t, $p1*$ping, splur($p1,"ping").": ".$s1);
     #print "Created: $y $m $d  ",$p1*$ping," \"$p1 pings: $s1\"\n";
   } elsif($p0 > 0 && $p1 <= 0) { # on beeminder but not in tagtime log: DELETE
-    $ndel++;
-    $minus += $p0;
-    beemdelete($usr, $slug, $b);
+    print "Beeminder point not found in tagtime log! Delete? [y/N]";
+    my $resp = <STDIN>;
+    if(/^y/i) {
+      $ndel++;
+      $minus += $p0;
+      beemdelete($usr, $slug, $b);
+    } else {
+      print "Not deleting! Please fix your logs and run beeminder.pl manually!"
+    }
     #print "Deleted: $y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\"\n";
   } elsif($p0 != $p1 || $s0 ne $s1) { # bmndr & tagtime log differ: UPDATE
     $nchg++;
