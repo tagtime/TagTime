@@ -138,7 +138,7 @@ sub lastln {
 # Returns the last line in the remote log as a 2-elm array
 sub remoteln {
   # If we have a gap, first try to fill in with stuff from the most recent remote log
-  $remote_line = `ssh $remote_sshid $remote_server 'cd $remote_path && tail -n1 \$(ls -tr1 $usr.*.log | tail -n1)'`;
+  $remote_line = `ssh $remote_sshid $remote_server 'cd $remote_path && tail -n1 -q cincodenada.*.log | sort | tail -n1'`;
   return parseln($remote_line);
 }
 
