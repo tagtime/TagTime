@@ -46,10 +46,11 @@ my $end   = 0;     # need to care about when updating beeminder.
 # need to: 1. it doesn't exist or is empty; 2. any beeminder IDs are missing
 # from the cache file; 3. there are multiple datapoints for the same day.
 $bflag = (!-s $beef);
-my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; # why bflag?
+my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; my $bf5 = 0 # why bflag?
 $bf1 = 1 if $bflag;
 undef %remember; # remember which dates we've already seen in the cache file
-if(open(B, "<$beef")) {
+if($remote_id ne "") { $bflag = 1; $bf1 = 0; $bf5 = 1 }
+elsif(open(B, "<$beef")) {
   while(my $l = <B>) {
     my($y,$m,$d,$v,$p,$c,$b) = ($l =~ /
       (\d+)\s+          # year
@@ -102,6 +103,8 @@ if($bflag) { # re-slurp all the datapoints from beeminder
     print "Cache file has duplicate Bmndr IDs; recreating... ";
   } elsif($bf4) {
     print "Couldn't read cache file; recreating... ";
+  } elsif($bf5) {
+    print "Using remote sync, skipping cache file... ";
   } else { # this case is impossible
     print "Recreating Beeminder cache ($tmp)[$bf1$bf2$bf3$bf4]... ";
   }
