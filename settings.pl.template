@@ -9,7 +9,7 @@ $logf = "$path$usr.log";  # log file for pings
 
 $remote_key = "id_tagtime"; # CHANGEME to the file contaning your tagtime key (if different)
 $remote_user = "tagtime"; # CHANGEME to your backup user (if different)
-$remote_server = "__REMSERV__"; # CHANGEME to your backup server
+$remote_host = "__REMHOST__"; # CHANGEME to your backup server
 $remote_path = "__REMPATH__"; # CHANGEME to the path on your backup server
                if($remote_path !~ /\/$/) { $remote_path.="/"; }
 $remote_id = ""; # CHANGEME to a unique tag for this machine on the backup server
