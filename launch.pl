@@ -35,6 +35,7 @@ if($remote_id ne "" && $nxtping < $launchTime) {
 
 my $editorFlag = 0;
 
+print "Filling in RETRO pings ($launchTime <=> $nxtping)\n" unless $quiet;
 # First, if we missed any pings by more than $retrothresh seconds for no
 # apparent reason, then assume the computer was off and auto-log them.
 while($nxtping < $launchTime-$retrothresh) {
@@ -53,6 +54,8 @@ do {
       launch($nxtping);  # this shouldn't complete till you answer.
     }
     my($ts,$ln) = lastln();
+
+    print "Processing ping response ($ts <=> $nxtping, ef=$editorFlag)\n" unless $quiet;
 
     # First, check to see if we have remote pings to fill in, if this computer
     # was just sitting with a ping window up while they were being answered elsewhere
@@ -83,6 +86,8 @@ do {
       }
     }
 
+    print "Checked from remote ($ts <=> $nxtping, ef=$editorFlag)\n" unless $quiet;
+
     if($ts != $nxtping) { # in case, eg, we closed the window w/o answering.
       # suppose there's a ping window waiting (call it ping 1), and while it's 
       # sitting there unanswered another ping (ping 2) pings.  then you kill 
@@ -99,6 +104,8 @@ do {
       #$editorFlag = 0;
       $editorFlag = 1;
     }
+
+    print "Generated err pings ($ts <=> $nxtping, ef=$editorFlag)\n" unless $quiet;
 
     $lstping = $nxtping; $nxtping = nextping($nxtping);
     # Here's where we would add an artificial gap of $nxtping-$lstping.
