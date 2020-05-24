@@ -46,7 +46,7 @@ my $end   = 0;     # need to care about when updating beeminder.
 # need to: 1. it doesn't exist or is empty; 2. any beeminder IDs are missing
 # from the cache file; 3. there are multiple datapoints for the same day.
 $bflag = (!-s $beef);
-my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; my $bf5 = 0 # why bflag?
+my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; my $bf5 = 0; # why bflag?
 $bf1 = 1 if $bflag;
 undef %remember; # remember which dates we've already seen in the cache file
 if($remote_id ne "") { $bflag = 1; $bf1 = 0; $bf5 = 1 }
