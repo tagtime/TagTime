@@ -3,23 +3,10 @@
 # and/or launch ping.pl for the current ping.
 # This should be called by the daemon (tagtimed.pl) every time a ping is due.
 
-my @faketimes;
-if(exists($ENV{FAKETIMES})) {
-  @faketimes = split(",", $ENV{FAKETIMES});
-}
-
-sub mytime() {
-  if(exists($ENV{FAKETIMES})) {
-    print "Dispensing time $faketimes[0]\n";
-    return shift @faketimes;
-  }
-  return time();
-}
-
-$launchTime = mytime();
-
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
+
+$launchTime = mytime();
 
 my $args = join(' ', @ARGV); # supported arguments: test, quiet
 my $test =   ($args =~ /\btest\b/);
@@ -223,6 +210,7 @@ sub editor {
 sub parseping {
   local $nxtping, $lastping;
   local ($logf) = @_;
+  print("Launch time: $launchTime\n");
   # figure out the next ping after the last one that's in the log file
   if(-e $logf) {
     $lll = `tail -1 $logf`;  # last log line

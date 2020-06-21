@@ -359,6 +359,18 @@ sub pd { my($s) = @_;
   return timelocal($second,$minute,$hour,$day,$month-1,$year);
 }
 
+# Testing mocks
+sub mytime() {
+  if(exists($ENV{FAKETIMES})) {
+    my @faketimes = split(",", $ENV{FAKETIMES});
+    $next_time = shift @faketimes;
+    $ENV{FAKETIMES} = join(",", @faketimes);
+    print "Dispensing time $next_time\n";
+    return shift @faketimes;
+  }
+  return time();
+}
+
 1;  # perl wants this for libraries imported with 'require'.
 
 

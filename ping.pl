@@ -12,11 +12,11 @@ eval {
   Term::ANSIColor->import(':constants');
 };
 
-my $pingTime = time();
-my $autotags = "";
-
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
+
+my $pingTime = mytime();
+my $autotags = "";
 
 my $tskf = "$path$usr.tsk";
 
@@ -27,7 +27,7 @@ my $eflag = 0; # if any problems then prompt before exiting
 $t = shift;
 if(!defined($t)) {
   $autotags .= " UNSCHED";
-  $t = time();
+  $t = mytime();
 }
 
 # Can't lock the same lockfile here since launch.pl will have the lock!

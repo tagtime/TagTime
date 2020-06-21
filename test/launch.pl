@@ -66,6 +66,7 @@ $ENV{FAKETIMES} = join(",", (
     $lstping + 10,
     $lstping + 11, # first $nxtping check
     $lstping + 12, # retrothresh
+    $lstping + 13, # pingtime
 ));
 
 $cmd = "${path}launch.pl";        # Catch up on any old pings.
