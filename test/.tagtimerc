@@ -2,14 +2,14 @@ use File::Basename;
 
 $usr = "tagtime_test";
 $path = "$ENV{HOME}/../";
-$logf = "$path/test/logs/$usr.log";  # log file for pings
+$logf = "$path/test/logs/$ENV{LOGFILE}.log";  # log file for pings
 
 $remote_key = "id_tagtime"; # CHANGEME to the file contaning your tagtime key (if different)
 $remote_user = "tagtime"; # CHANGEME to your backup user (if different)
 $remote_host = "fakehost"; # CHANGEME to your backup server
 $remote_path = "fakepath"; # CHANGEME to the path on your backup server
                if($remote_path !~ /\/$/) { $remote_path.="/"; }
-$remote_id = "tester"; # CHANGEME to a unique tag for this machine on the backup server
+$remote_id = $ENV{REMOTEID}; # CHANGEME to a unique tag for this machine on the backup server
                  # Leaving this blank will disable backup functionality
 
 $remote_server = "$remote_user\@$remote_host";
@@ -23,8 +23,8 @@ $ssh_cmd = "perl ${path}test/fakessh.pl";
 # If you're using windows, you'll need cygwin and to set this flag to 1:
 $cygwin = 0;  # CHANGEME to 1 if you're using windows/cygwin.
 
-$ED = "__ED__ +";  # CHANGEME if you don't like vi (eg: /usr/bin/pico)
-$XT = "__XT__";    # CHANGEME to your path to xterm
+$ED = "perl ${path}test/fakeedit.pl";  # CHANGEME if you don't like vi (eg: /usr/bin/pico)
+$XT = "perl ${path}test/faketerm.pl";    # CHANGEME to your path to xterm
 
 # Get your personal Beeminder auth token (after signing in) from
 #   https://www.beeminder.com/api/v1/auth_token.json

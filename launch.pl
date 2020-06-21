@@ -3,7 +3,20 @@
 # and/or launch ping.pl for the current ping.
 # This should be called by the daemon (tagtimed.pl) every time a ping is due.
 
-$launchTime = time();
+my @faketimes;
+if(exists($ENV{FAKETIMES})) {
+  @faketimes = split(",", $ENV{FAKETIMES});
+}
+
+sub mytime() {
+  if(exists($ENV{FAKETIMES})) {
+    print "Dispensing time $faketimes[0]\n";
+    return shift @faketimes;
+  }
+  return time();
+}
+
+$launchTime = mytime();
 
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
@@ -46,8 +59,8 @@ while($nxtping < $launchTime-$retrothresh) {
 
 # Next, ping for any pings in the last retrothresh seconds.
 do {
-  while($nxtping <= time()) {
-    if($nxtping < time()-$retrothresh) {
+  while($nxtping <= mytime()) {
+    if($nxtping < mytime()-$retrothresh) {
       slog(annotime("$nxtping afk RETRO", $nxtping)."\n");
       $editorFlag = 1;
     } else {
@@ -95,7 +108,7 @@ do {
       # ping but there will be nothing in the log yet for ping 2.  perhaps 
       # that's ok, just thinking out loud here...
       slog(annotime(
-             "$nxtping err [missed ping from ".ss(time()-$nxtping)." ago]",
+             "$nxtping err [missed ping from ".ss(mytime()-$nxtping)." ago]",
              $nxtping)."\n");
       editor($logf,"TagTime Log Editor (unanswered pings logged as \"err\")");
       $editorFlag = 0;
@@ -117,7 +130,7 @@ do {
     # that's why we have the outer do-while loop here, to start over if
     #   there are new pings in the past after we finish editing.
   }
-} while($nxtping <= time());
+} while($nxtping <= mytime());
 
 if($remote_id ne "") {
     print "Backing up log to remote server...\n" unless $quiet;
@@ -243,7 +256,7 @@ sub parseping {
 # with zero gap.
     # if another ping is overdue, mind the gap! (ie delay the 2nd ping so as to
     #   maintain the original gap betw them (but not more than retrothresh)):
-    #my $now = time();
+    #my $now = mytime();
     #my $eaten = $now - $prompt;  # subtract amount of time eaten up
     #                               #   answering last ping
     #if ($nxtping<$now && $nxtping>=$now-$retrothresh) {
