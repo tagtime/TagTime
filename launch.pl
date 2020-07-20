@@ -153,6 +153,9 @@ sub fill_remote {
   my ($fill_from) = @_;
   print "Backfilling with remote from $fill_from\n" unless $quiet;
   system("$scp_cmd $remote_log$usr.*.log .");
+  # Remove our log, we are source of truth for it
+  # Otherwise we overwrite our own edits, bleh
+  unlink "$usr.$remote_id.log";
   $lastremlog = `awk -f get_latest.awk $usr.*.log`;
   chomp $lastremlog;
 
