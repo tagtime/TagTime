@@ -185,6 +185,7 @@ my $nchg = 0;  # number of updated datapoints on beeminder
 my $minus = 0; # total number of pings decreased from what's on beeminder
 my $plus = 0;  # total number of pings increased from what's on beeminder
 my $ii = 0;
+my $delall = 0;
 for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
   my($y,$m,$d) = dt($t);
   my $ts = "$y-$m-$d";
@@ -203,12 +204,16 @@ for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
     $bh{$ts} = beemcreate($usr,$slug,$t, $p1*$ping, splur($p1,"ping").": ".$s1);
     #print "Created: $y $m $d  ",$p1*$ping," \"$p1 pings: $s1\"\n";
   } elsif($p0 > 0 && $p1 <= 0) { # on beeminder but not in tagtime log: DELETE
-    print "Beeminder point not found in tagtime log! Delete? [y/N]";
-    my $resp = <STDIN>;
-    if(/^y/i) {
+    my $resp = 'y';
+    unless($delall) {
+      print "Beeminder point not found in tagtime log! Delete? [y/N]";
+      $resp = <STDIN>;
+    }
+    if($resp =~ /^y/i or $delall) {
       $ndel++;
       $minus += $p0;
       beemdelete($usr, $slug, $b);
+      if($resp =~ /^Y/) { $delall = 1; }
     } else {
       print "Not deleting! Please fix your logs and run beeminder.pl manually!"
     }
