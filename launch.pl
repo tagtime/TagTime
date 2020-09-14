@@ -129,6 +129,7 @@ do {
 if($remote_id ne "") {
     print "Backing up log to remote server...\n" unless $quiet;
     system("$scp_cmd -C $logf $remote_log$usr.$remote_id.log");
+    system("$ssh_cmd $remote_server 'cd $remote_path; [ -d .git ] && git add *.log && git commit -m 'Backup from $remote_id'");
 }
 unlock();
 
