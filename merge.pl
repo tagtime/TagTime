@@ -34,6 +34,7 @@
 
 BEGIN { require "$ENV{HOME}/.tagtimerc"; }
 require "util.pl";
+use List::MoreUtils qw(uniq);
 
 sub merge {
   my $e = 0;         # number of lines with parse errors
@@ -87,18 +88,38 @@ sub merge {
     $i = nextping($i);
   }
 
+  # We ignore these entries, using them only if we have nothing else
+  my %ignore = map { $_ => 1 } ('afk off RETRO', 'afk RETRO', 'err');
   for my $t (sort(keys(%alltimes))) {
     my $missflag = 1;
     my @p = ();
+    my @backup;
     for my $l (@ARGV) {
       if(defined($th{$l.$t})) {
         $missflag = 0;
-        push(@p, $th{$l.$t});
+
+        # Pull out just the tags
+        my $line = $th{$l.$t};
+        $line =~ s/\s+\[.*?\]$//;
+        my @tags = split(/\s+/, $line);
+
+        if(exists($ignore{$line})) {
+          # Ignore ignorables, but stash the longest one,
+          # so we have something in case all entries are ignorable
+          if($#tags >= $#backup) { @backup = @tags; }
+        } else {
+          # Otherwise add our tags to the list
+          push(@p, @tags);
+        }
       }
     }
-    if($sch{$t} && $missflag) { push(@p, annotime('MISSING', $t, 33)); }
+    if($sch{$t} && $missflag) { push(@p, 'MISSING'); }
     if(!$sch{$t})             { push(@p, 'UNSCHED'); }
-    print $t, " ", join(' + ', @p), "\n";
+
+    # If we have tags get the unique set, otherwise use the line we stashed
+    my @combined = @p ? uniq @p : @backup;
+
+    print $t, ' ', annotime(join(' ', @combined), $t, 72), "\n";
   }
 }
 
