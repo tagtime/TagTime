@@ -33,7 +33,7 @@
 #   print t, join('+', @p)
 
 BEGIN { require "$ENV{HOME}/.tagtimerc"; }
-require "util.pl";
+require "${path}util.pl";
 use List::MoreUtils qw(uniq);
 
 sub merge {
