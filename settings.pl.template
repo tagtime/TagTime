@@ -15,14 +15,6 @@ $remote_path = "__REMPATH__"; # CHANGEME to the path on your backup server
 $remote_id = ""; # CHANGEME to a unique tag for this machine on the backup server
                  # Leaving this blank will disable backup functionality
 
-$remote_server = "$remote_user\@$remote_host";
-$remote_log = "$remote_server:$remote_path";
-$remote_sshid = "";
-            if ($remote_key ne "") { $remote_sshid = "-i $remote_key"; }
-
-$scp_cmd = "scp $remote_sshid";
-$ssh_cmd = "ssh $remote_sshid";
-
 # If you're using windows, you'll need cygwin and to set this flag to 1:
 $cygwin = __CYGWIN__;  # CHANGEME to 1 if you're using windows/cygwin.
 

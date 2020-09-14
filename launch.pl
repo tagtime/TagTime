@@ -7,6 +7,13 @@ require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
 require "${path}merge.pl";
 
+# Generate derived settings used only in this file
+$remote_server = "$remote_user\@$remote_host";
+$remote_log = "$remote_server:$remote_path";
+$remote_sshid = $remote_key eq "" ? "" : "-i $remote_key";
+$scp_cmd = "scp $remote_sshid";
+$ssh_cmd = "ssh $remote_sshid";
+
 $launchTime = mytime();
 
 my $args = join(' ', @ARGV); # supported arguments: test, quiet
