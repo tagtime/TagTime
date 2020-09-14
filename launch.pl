@@ -165,15 +165,16 @@ sub fill_remote {
   # Otherwise we overwrite our own edits, bleh
   unlink "$usr.$remote_id.log";
 
-  @mergefiles = glob("$usr.*.log");
+  @mergefiles = glob("$path$usr.*.log");
 
-  print "Merging pings from remote files " . join(',', @remfiles) . "...\n" unless $quiet;
+  print "Merging pings from remote files...\n" unless $quiet;
   if(-e $logf) {
     push(@mergefiles, $logf);
     system("cp $logf $logf.backup");
   }
-  open NEWLOG, ">", "$logf.new";
-  if(merge(NEWLOG, @mergefiles) == 0) {
+  open NEWLOG, ">", "$logf.merge";
+  print(@mergefiles);
+  if(merge(NEWLOG, 0, @mergefiles) == 0) {
     system("mv $logf.merge $logf");
     print "Merge successful\n" unless $quiet;
   } else {

@@ -38,13 +38,15 @@ use List::MoreUtils qw(uniq);
 
 sub merge {
   my $fh = shift;
+  my $fill_now = shift;
   my $e = 0;         # number of lines with parse errors
   my $errstr = "";   # concatenation of bad lines from log files
   my $earliest = -1; # earliest timestamp in all the log files
   my $latest = 0;    # latest timestamp in all the log files
   my %th;            # maps logfile+timestamp to tags for that log for that ping
   my %alltimes;      # maps all timestamps to 1
-  for my $logfile (@_) {
+  my @files = @_;
+  for my $logfile (@files) {
     open(LOG, $logfile) or die;
     $prevts = 0; # remember the previous timestamp
     while($line = <LOG>) {
@@ -78,8 +80,10 @@ sub merge {
     return 1;
   }
 
-  my $now = time();
-  if($now > $latest) { $latest = $now; }
+  if($fill_now) {
+    my $now = time();
+    if($now > $latest) { $latest = $now; }
+  }
   my %sch; # maps timestamps to whether they are a scheduled pings
   my $i = prevping($earliest);
   $i = nextping($i);
@@ -95,7 +99,7 @@ sub merge {
     my $missflag = 1;
     my @p = ();
     my @backup;
-    for my $l (@ARGV) {
+    for my $l (@files) {
       if(defined($th{$l.$t})) {
         $missflag = 0;
 
@@ -128,7 +132,7 @@ sub merge {
 
 sub run {
   die "USAGE: $0 logfile+\n" if @ARGV < 1;
-  exit(merge(STDOUT, @ARGV));
+  exit(merge(STDOUT, 1, @ARGV));
 }
 
 run unless caller;
