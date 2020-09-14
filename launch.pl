@@ -5,6 +5,7 @@
 
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
+require "${path}merge.pl";
 
 $launchTime = mytime();
 
@@ -17,21 +18,20 @@ if($test) {  # just pop up the editor and exit; mainly for testing.
   exit(0);
 }
 
-# figure out the next ping after the last one that's in the log file
-$nxtping = parseping($logf);
-
 if(!lockn()) { 
   print "Can't get lock. Exiting.\n" unless $quiet; 
   exit(1); 
 } # Don't wait if we can't get the lock.
 
+# figure out the next ping after the last one that's in the log file
+$nxtping = parseping($logf);
+
 if($remote_id ne "" && $nxtping < $launchTime) {
   # If we have a gap, first try to fill in with stuff from the most recent remote log
-  fill_remote($nxtping);
-
-  # Re-sync nxtping with any new loglines
-  $nxtping = parseping($logf);
+  fill_remote();
 }
+
+$nxtping = parseping($logf);
 
 my $editorFlag = 0;
 
@@ -66,7 +66,7 @@ do {
 
         $verify = nextping(prevping($ts)); # NB: must call prevping before nextping
         if($ts == $verify) {
-          fill_remote(nextping($ts));
+          fill_remote();
         } else {
           print "Local file has a bad last line:\n$ln";
           $nxtping = prevping($launchTime);
@@ -150,33 +150,25 @@ sub remoteln {
 }
 
 sub fill_remote {
-  my ($fill_from) = @_;
-  print "Backfilling with remote from $fill_from\n" unless $quiet;
+  print "Downloading remote files...\n" unless $quiet;
   system("$scp_cmd $remote_log$usr.*.log .");
   # Remove our log, we are source of truth for it
   # Otherwise we overwrite our own edits, bleh
   unlink "$usr.$remote_id.log";
-  $lastremlog = `awk -f get_latest.awk $usr.*.log`;
-  chomp $lastremlog;
 
+  @mergefiles = glob("$usr.*.log");
+
+  print "Merging pings from remote files " . join(',', @remfiles) . "...\n" unless $quiet;
   if(-e $logf) {
-    print "Filling in pings from remote file $lastremlog...\n" unless $quiet;
+    push(@mergefiles, $logf);
     system("cp $logf $logf.backup");
-    open REMLOG, "<", $lastremlog;
-    open OURLOG, ">>", $logf;
-    $numfill = 0;
-    while(<REMLOG>) {
-      /^\s*(\d+)/; # parse out the timestamp for the current line
-      $curping = $1;
-      if($curping >= $fill_from) {
-        print OURLOG $_;
-        $numfill++;
-      }
-    }
-    print "Filled in $numfill pings\n" unless $quiet;
+  }
+  open NEWLOG, ">", "$logf.new";
+  if(merge(NEWLOG, @mergefiles) == 0) {
+    system("mv $logf.merge $logf");
+    print "Merge successful\n" unless $quiet;
   } else {
-    print "No previous logfile found, using entirety of $lastremlog\n" unless $quiet;
-    system("cp $lastremlog $logf")
+    print "Merge errors! Check $logf.merge and resolve errors manually\n";
   }
 }
 

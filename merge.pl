@@ -37,6 +37,7 @@ require "util.pl";
 use List::MoreUtils qw(uniq);
 
 sub merge {
+  my $fh = shift;
   my $e = 0;         # number of lines with parse errors
   my $errstr = "";   # concatenation of bad lines from log files
   my $earliest = -1; # earliest timestamp in all the log files
@@ -74,7 +75,7 @@ sub merge {
     print "Errors in log file(s): $e. ",
           "They have to be fixed before this script can run:\n";
     print "\n$errstr";
-    exit(1);
+    return 1;
   }
 
   my $now = time();
@@ -119,13 +120,15 @@ sub merge {
     # If we have tags get the unique set, otherwise use the line we stashed
     my @combined = @p ? uniq @p : @backup;
 
-    print $t, ' ', annotime(join(' ', @combined), $t, 72), "\n";
+    print $fh $t, ' ', annotime(join(' ', @combined), $t, 72), "\n";
   }
+
+  return 0;
 }
 
 sub run {
   die "USAGE: $0 logfile+\n" if @ARGV < 1;
-  merge(@ARGV);
+  exit(merge(STDOUT, @ARGV));
 }
 
 run unless caller;
