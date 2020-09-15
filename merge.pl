@@ -59,7 +59,7 @@ sub merge {
       my $ts = shift(@tags);
       if($ts <= $prevts) {
         $e++;
-        $errstr .= "NON-MONOTONE:\n$line";
+        $errstr .= "NON-MONOTONE in $logfile:\n$line";
         next;
       }
       $prevts = $ts;
