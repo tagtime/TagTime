@@ -75,7 +75,7 @@ sub merge {
 
   if($e>0) {
     print "Errors in log file(s): $e. ",
-          "They have to be fixed before this script can run:\n";
+          "Please fix errors and then re-run merge.pl manually:\n";
     print "\n$errstr";
     return 1;
   }

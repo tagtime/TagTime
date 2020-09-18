@@ -178,7 +178,7 @@ sub fill_remote {
     system("mv $logf.merge $logf");
     debug("Merge successful");
   } else {
-    print "Merge errors! Check $logf.merge and resolve errors manually\n";
+    editor("$logf.merge", "Merge errors! Please resolve errors manually")
   }
 }
 
