@@ -84,6 +84,7 @@ do {
         $verify = nextping(prevping($ts));
         if($ts == $verify) {
           debug("New last timestamp: $ts");
+          $nxtping = $ts
         } else {
           print "Remote file has a bad last line:\n$ln";
           $nxtping = prevping($launchTime);
