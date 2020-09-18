@@ -26,8 +26,8 @@ if($test) {  # just pop up the editor and exit; mainly for testing.
 }
 
 if(!lockn()) { 
-  print "Can't get lock. Exiting.\n" unless $quiet; 
-  exit(1); 
+  debug("Can't get lock. Exiting.");
+  exit(1);
 } # Don't wait if we can't get the lock.
 
 # figure out the next ping after the last one that's in the log file
@@ -42,7 +42,7 @@ $nxtping = parseping($logf);
 
 my $editorFlag = 0;
 
-print "Filling in RETRO pings ($launchTime <=> $nxtping)\n" unless $quiet;
+debug("Filling in RETRO pings ($launchTime <=> $nxtping)");
 # First, if we missed any pings by more than $retrothresh seconds for no
 # apparent reason, then assume the computer was off and auto-log them.
 while($nxtping < $launchTime-$retrothresh) {
@@ -62,14 +62,14 @@ do {
     }
     my($ts,$ln) = lastln();
 
-    print "Processing ping response ($ts <=> $nxtping, ef=$editorFlag)\n" unless $quiet;
+    debug("Processing ping response ($ts <=> $nxtping, ef=$editorFlag)");
 
     # First, check to see if we have remote pings to fill in, if this computer
     # was just sitting with a ping window up while they were being answered elsewhere
     if($ts != $nxtping) {
       my ($rts,$rln) = remoteln();
       if ($rts > $ts) {
-        print "$rts > $ts, filling from remote\n" unless $quiet;
+        debug("$rts > $ts, filling from remote");
 
         $verify = nextping(prevping($ts)); # NB: must call prevping before nextping
         if($ts == $verify) {
@@ -83,17 +83,17 @@ do {
         
         $verify = nextping(prevping($ts));
         if($ts == $verify) {
-          print "New last timestamp: $ts\n" unless $quiet;
+          debug("New last timestamp: $ts");
         } else {
           print "Remote file has a bad last line:\n$ln";
           $nxtping = prevping($launchTime);
         }
       } else {
-        print "$rts <= $ts, nothing to fill from remote\n" unless $quiet;
+        debug("$rts <= $ts, nothing to fill from remote");
       }
     }
 
-    print "Checked from remote ($ts <=> $nxtping, ef=$editorFlag)\n" unless $quiet;
+    debug("Checked from remote ($ts <=> $nxtping, ef=$editorFlag)");
 
     if($ts != $nxtping) { # in case, eg, we closed the window w/o answering.
       # suppose there's a ping window waiting (call it ping 1), and while it's 
@@ -112,7 +112,7 @@ do {
       $editorFlag = 1;
     }
 
-    print "Generated err pings ($ts <=> $nxtping, ef=$editorFlag)\n" unless $quiet;
+    debug("Generated err pings ($ts <=> $nxtping, ef=$editorFlag)");
 
     $lstping = $nxtping; $nxtping = nextping($nxtping);
     # Here's where we would add an artificial gap of $nxtping-$lstping.
@@ -127,9 +127,9 @@ do {
 } while($nxtping <= mytime());
 
 if($remote_id ne "") {
-    print "Backing up log to remote server...\n" unless $quiet;
+    debug("Backing up log to remote server...");
     system("$scp_cmd -C $logf $remote_log$usr.$remote_id.log");
-    print "Making commit if remote is a git repo...";
+    debug("Making commit if remote is a git repo...");
     system("$ssh_cmd $remote_server 'cd $remote_path; [ -d .git ] && git commit --author=\"Tagtime <tagtime\@$remote_id>\" -am \"Backup from $remote_id\"'");
 }
 unlock();
@@ -159,7 +159,7 @@ sub remoteln {
 }
 
 sub fill_remote {
-  print "Downloading remote files...\n" unless $quiet;
+  debug("Downloading remote files...");
   system("$scp_cmd $remote_log$usr.*.log .");
   # Remove our log, we are source of truth for it
   # Otherwise we overwrite our own edits, bleh
@@ -167,7 +167,7 @@ sub fill_remote {
 
   @mergefiles = glob("$path$usr.*.log");
 
-  print "Merging pings from remote files...\n" unless $quiet;
+  debug("Merging pings from remote files...");
   if(-e $logf) {
     push(@mergefiles, $logf);
     system("cp $logf $logf.backup");
@@ -176,7 +176,7 @@ sub fill_remote {
   print(@mergefiles);
   if(merge(NEWLOG, 0, @mergefiles) == 0) {
     system("mv $logf.merge $logf");
-    print "Merge successful\n" unless $quiet;
+    debug("Merge successful");
   } else {
     print "Merge errors! Check $logf.merge and resolve errors manually\n";
   }

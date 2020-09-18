@@ -237,6 +237,13 @@ sub slog {
   close(F);
 }
 
+sub debug {
+  my $line = shift;
+  unless($quiet) {
+    print "$line\n"; $| = 1;
+  }
+}
+
 # double-digit: takes number from 0-99, returns 2-char string eg "03" or "42".
 sub dd { my($n) = @_;  return padl($n, "0", 2); }
   # simpler but less general version: return ($n<=9 && $n>=0 ? "0".$n : $n)
