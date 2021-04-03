@@ -47,7 +47,7 @@ sub merge {
   my %alltimes;      # maps all timestamps to 1
   my @files = @_;
   for my $logfile (@files) {
-    open(LOG, $logfile) or die;
+    open(LOG, $logfile) or die "Couldn't open $logfile";
     $prevts = 0; # remember the previous timestamp
     while($line = <LOG>) {
       if(!parsable($line)) {
@@ -74,9 +74,9 @@ sub merge {
   }
 
   if($e>0) {
-    print "Errors in log file(s): $e. ",
+    print STDERR "Errors in log file(s): $e. ",
           "Please fix errors and then re-run merge.pl manually:\n";
-    print "\n$errstr";
+    print STDERR "\n$errstr";
     return 1;
   }
 

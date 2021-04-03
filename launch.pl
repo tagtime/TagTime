@@ -179,7 +179,7 @@ sub fill_remote {
     system("mv $logf.merge $logf");
     debug("Merge successful");
   } else {
-    editor("$logf.merge", "Merge errors! Please resolve errors manually")
+    debug("Merge errors! Leaving empty merge file in place to signal ping")
   }
 }
 

@@ -35,6 +35,26 @@ if(!defined($t)) {
 # instances are invoked, but launch.pl will only launch one at a time.
 #lockb();  # wait till we can get the lock.
 
+# Warn about merge errors if there's a merge file remaining
+if(-e "$logf.merge") {
+  print divider(""), "\n";
+  print divider(" WARNING "x8), "\n";
+  print divider(""), "\n";
+  print "Failed merge to resolve!\n";
+  print <<EOS;
+There is a .merge file in your log directory. This probably means that Tagtime
+was unable to automatically merge your remote logs due to a malformed or
+conflicting logfile, and you'll have to resolve the siutation manually.
+
+Run the following command to do so:
+merge.pl $usr.*.log $usr.log > $usr.log.merge
+
+When you are satisfied, replace your logfile with the merged file, removing the
+merge file. Your remote logs will not get synced until you do so!
+EOS
+  print divider(""), "\n\n";
+}
+
 if($pingTime-$t > 9) {
   print divider(""), "\n";
   print divider(" WARNING "x8), "\n";
