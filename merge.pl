@@ -41,6 +41,7 @@ sub merge {
   my $fill_now = shift;
   my $e = 0;         # number of lines with parse errors
   my $errstr = "";   # concatenation of bad lines from log files
+  my %errfiles;      # map of files with errors
   my $earliest = -1; # earliest timestamp in all the log files
   my $latest = 0;    # latest timestamp in all the log files
   my %th;            # maps logfile+timestamp to tags for that log for that ping
@@ -53,6 +54,7 @@ sub merge {
       if(!parsable($line)) {
         $e++;
         $errstr .= $line;
+        $errfiles{$logfile} = $e;
         next;
       }
       my @tags = split(/\s+/, $line);
@@ -60,6 +62,7 @@ sub merge {
       if($ts <= $prevts) {
         $e++;
         $errstr .= "NON-MONOTONE in $logfile:\n$line";
+        $errfiles{$logfile} = $e;
         next;
       }
       $prevts = $ts;
@@ -74,7 +77,8 @@ sub merge {
   }
 
   if($e>0) {
-    print STDERR "Errors in log file(s): $e. ",
+    my $files = join ",", keys %errfiles;
+    print STDERR "Errors in log file(s): $files ",
           "Please fix errors and then re-run merge.pl manually:\n";
     print STDERR "\n$errstr";
     return 1;
