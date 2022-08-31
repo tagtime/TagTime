@@ -11,11 +11,16 @@ use LWP::UserAgent;  # tip: run 'sudo cpan' and at the cpan prompt do 'upgrade'
 use JSON;            # then 'install LWP::UserAgent' and 'install JSON' etc
 use HTTP::Request::Common;  # pjf recomends cpanmin.us
 use Data::Dumper; $Data::Dumper::Terse = 1;
+#use LWP::Protocol::Net::Curl; # Philip Hellyer recommends this to nix SSL errors
 $beembase = 'https://www.beeminder.com/api/v1/';
 
 # Fetch the Beeminder deadline for the relevant TagTime goal
 sub beemdeadline { my($u, $g) = @_;
   my $ua = LWP::UserAgent->new;
+  $ua->ssl_opts(
+    SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE, 
+    verify_hostname => 0
+  );
   my $uri = $beembase . 
             "users/$u/goals/$g.json?auth_token=$beemauth";
   my $resp = $ua->get($uri);
@@ -27,6 +32,10 @@ sub beemdeadline { my($u, $g) = @_;
 # Delete datapoint with given id for beeminder.com/u/g
 sub beemdelete { my($u, $g, $id) = @_;
   my $ua = LWP::UserAgent->new;
+  $ua->ssl_opts(
+    SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE, 
+    verify_hostname => 0
+  );
   my $uri = $beembase . 
             "users/$u/goals/$g/datapoints/$id.json?auth_token=$beemauth";
   my $resp = $ua->delete($uri);
@@ -36,6 +45,10 @@ sub beemdelete { my($u, $g, $id) = @_;
 # Fetch all the datapoints for beeminder.com/u/g
 sub beemfetch { my($u, $g) = @_;
   my $ua = LWP::UserAgent->new;
+  $ua->ssl_opts(
+    SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE, 
+    verify_hostname => 0
+  );
   #$ua->timeout(30); # give up if no response for this many seconds; default 180
   my $uri = $beembase .
             "users/$u/goals/$g/datapoints.json?auth_token=$beemauth";
@@ -48,6 +61,10 @@ sub beemfetch { my($u, $g) = @_;
 # and return the id of the new datapoint.
 sub beemcreate { my($u, $g, $t, $v, $c) = @_;
   my $ua = LWP::UserAgent->new;
+  $ua->ssl_opts(
+    SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE, 
+    verify_hostname => 0
+  );
   my $uri = $beembase."users/$u/goals/$g/datapoints.json?auth_token=$beemauth";
   my $data = { timestamp => $t,
                value     => $v,
@@ -61,6 +78,10 @@ sub beemcreate { my($u, $g, $t, $v, $c) = @_;
 # Update a datapoint with the given id. Similar to beemcreate/beemdelete.
 sub beemupdate { my($u, $g, $id, $t, $v, $c) = @_;
   my $ua = LWP::UserAgent->new;
+  $ua->ssl_opts(
+    SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE, 
+    verify_hostname => 0
+  );
   my $uri = $beembase . 
             "users/$u/goals/$g/datapoints/$id.json?auth_token=$beemauth";
   my $data = { timestamp => $t,
