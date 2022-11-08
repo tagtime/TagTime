@@ -108,30 +108,31 @@ do {
     # a pair of double-quotes means "ditto", and acts as if we entered
     # the last thing that was in our TagTime log file.
 
-    $resp = $last_doing;
-  }
-
-  # refetch the task numbers from task file; they may have changed.
-  if(-e $tskf) {
-    if(open(F, "<$tskf")) {
-      %tags = ();  # empty the hash first.
-      while(<F>) {
-        if(/^\-{4,}/ || /^x\s/i) { last; }
-        if(/^(\d+)\s+\S/) { $tags{$1} = gettags($_); } 
+    $tagstr = $last_doing;
+    $comments = "";
+  } else {
+    # refetch the task numbers from task file; they may have changed.
+    if(-e $tskf) {
+      if(open(F, "<$tskf")) {
+        %tags = ();  # empty the hash first.
+        while(<F>) {
+          if(/^\-{4,}/ || /^x\s/i) { last; }
+          if(/^(\d+)\s+\S/) { $tags{$1} = gettags($_); }
+        }
+        close(F);
+      } else {
+        print "ERROR: Can't read task file ($tskf) again\n";
+        $eflag++;
       }
-      close(F);
-    } else {
-      print "ERROR: Can't read task file ($tskf) again\n";
-      $eflag++;
     }
-  }
 
-  $tagstr = trim(strip($resp));
-  $comments = trim(stripc($resp));
-  $tagstr =~ s/\b(\d+)\b/($tags{$1} eq "" ? "$1" : "$1 ").$tags{$1}/eg;
-  $tagstr =~ s/\b(\d+)\b/tsk $1/;
-  $tagstr .= $autotags;
-  $tagstr =~ s/\s+/\ /g;
+    $tagstr = trim(strip($resp));
+    $comments = trim(stripc($resp));
+    $tagstr =~ s/\b(\d+)\b/($tags{$1} eq "" ? "$1" : "$1 ").$tags{$1}/eg;
+    $tagstr =~ s/\b(\d+)\b/tsk $1/;
+    $tagstr .= $autotags;
+    $tagstr =~ s/\s+/\ /g;
+  }
   $a = annotime("$t $tagstr $comments", $t)."\n";
 } while($tagstr ne "" &&
         ($enforcenums  && ($tagstr !~ /\b(\d+|non|afk)\b/) ||
