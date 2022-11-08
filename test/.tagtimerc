@@ -1,0 +1,50 @@
+use File::Basename;
+
+$usr = "tagtime_test";
+$path = "$ENV{HOME}/../";
+$logf = "$path/test/logs/$ENV{LOGFILE}.log";  # log file for pings
+
+$remote_key = "id_tagtime"; # CHANGEME to the file contaning your tagtime key (if different)
+$remote_user = "tagtime"; # CHANGEME to your backup user (if different)
+$remote_host = "fakehost"; # CHANGEME to your backup server
+$remote_path = "fakepath"; # CHANGEME to the path on your backup server
+               if($remote_path !~ /\/$/) { $remote_path.="/"; }
+$remote_id = $ENV{REMOTEID}; # CHANGEME to a unique tag for this machine on the backup server
+                 # Leaving this blank will disable backup functionality
+
+$remote_server = "$remote_user\@$remote_host";
+$remote_log = "$remote_server:$remote_path";
+$remote_sshid = "";
+            if ($remote_key ne "") { $remote_sshid = "-i $remote_key"; }
+
+$scp_cmd = "perl ${path}test/fakescp.pl";
+$ssh_cmd = "perl ${path}test/fakessh.pl";
+
+# If you're using windows, you'll need cygwin and to set this flag to 1:
+$cygwin = 0;  # CHANGEME to 1 if you're using windows/cygwin.
+
+$ED = "perl ${path}test/fakeedit.pl";  # CHANGEME if you don't like vi (eg: /usr/bin/pico)
+$XT = "perl ${path}test/faketerm.pl";    # CHANGEME to your path to xterm
+
+# Get your personal Beeminder auth token (after signing in) from
+#   https://www.beeminder.com/api/v1/auth_token.json
+$beemauth = "abc123";  # CHANGEME to your personal beeminder auth token
+
+%beeminder = ();
+
+$retrothresh = 60;
+
+$gap = 45*60; # Average number of seconds between pings (eg, 60*60 = 1 hour).
+
+$seed = 666; # For pings not in sync with others, change this (NB: > 0).
+
+$linelen = 79; # Try to keep log lines at most this long.
+
+$catchup = 0;  # Whether it beeps for old pings, ie, should it beep a bunch
+               # of times in a row when the computer wakes from sleep.
+
+$enforcenums = 0;  # Whether it forces you to include a number in your
+                   # ping response (include tag non or nonXX where XX is day 
+                   # of month to override). This is for task editor integration.
+
+1; # When requiring a library in perl it has to return 1.

@@ -46,10 +46,11 @@ my $end   = 0;     # need to care about when updating beeminder.
 # need to: 1. it doesn't exist or is empty; 2. any beeminder IDs are missing
 # from the cache file; 3. there are multiple datapoints for the same day.
 $bflag = (!-s $beef);
-my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; # why bflag?
+my $bf1 = 0; my $bf2 = 0; my $bf3 = 0; my $bf4 = 0; my $bf5 = 0; # why bflag?
 $bf1 = 1 if $bflag;
 undef %remember; # remember which dates we've already seen in the cache file
-if(open(B, "<$beef")) {
+if($remote_id ne "") { $bflag = 1; $bf1 = 0; $bf5 = 1 }
+elsif(open(B, "<$beef")) {
   while(my $l = <B>) {
     my($y,$m,$d,$v,$p,$c,$b) = ($l =~ /
       (\d+)\s+          # year
@@ -102,6 +103,8 @@ if($bflag) { # re-slurp all the datapoints from beeminder
     print "Cache file has duplicate Bmndr IDs; recreating... ";
   } elsif($bf4) {
     print "Couldn't read cache file; recreating... ";
+  } elsif($bf5) {
+    print "Using remote sync, skipping cache file... ";
   } else { # this case is impossible
     print "Recreating Beeminder cache ($tmp)[$bf1$bf2$bf3$bf4]... ";
   }
@@ -182,6 +185,7 @@ my $nchg = 0;  # number of updated datapoints on beeminder
 my $minus = 0; # total number of pings decreased from what's on beeminder
 my $plus = 0;  # total number of pings increased from what's on beeminder
 my $ii = 0;
+my $delall = 0;
 for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
   my($y,$m,$d) = dt($t);
   my $ts = "$y-$m-$d";
@@ -200,9 +204,19 @@ for(my $t = daysnap($start)-86400; $t <= daysnap($end)+86400; $t += 86400) {
     $bh{$ts} = beemcreate($usr,$slug,$t, $p1*$ping, splur($p1,"ping").": ".$s1);
     #print "Created: $y $m $d  ",$p1*$ping," \"$p1 pings: $s1\"\n";
   } elsif($p0 > 0 && $p1 <= 0) { # on beeminder but not in tagtime log: DELETE
-    $ndel++;
-    $minus += $p0;
-    beemdelete($usr, $slug, $b);
+    my $resp = 'y';
+    unless($delall) {
+      print "Beeminder point not found in tagtime log! Delete? [y/N]";
+      $resp = <STDIN>;
+    }
+    if($resp =~ /^y/i or $delall) {
+      $ndel++;
+      $minus += $p0;
+      beemdelete($usr, $slug, $b);
+      if($resp =~ /^Y/) { $delall = 1; }
+    } else {
+      print "Not deleting! Please fix your logs and run beeminder.pl manually!"
+    }
     #print "Deleted: $y $m $d  ",$p0*$ping," \"$p0 pings: $s0 [bID:$b]\"\n";
   } elsif($p0 != $p1 || $s0 ne $s1) { # bmndr & tagtime log differ: UPDATE
     $nchg++;

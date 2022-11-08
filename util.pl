@@ -253,6 +253,13 @@ sub slog {
   close(F);
 }
 
+sub debug {
+  my $line = shift;
+  unless($quiet) {
+    print "$line\n"; $| = 1;
+  }
+}
+
 # double-digit: takes number from 0-99, returns 2-char string eg "03" or "42".
 sub dd { my($n) = @_;  return padl($n, "0", 2); }
   # simpler but less general version: return ($n<=9 && $n>=0 ? "0".$n : $n)
@@ -373,6 +380,18 @@ sub pd { my($s) = @_;
   }
 
   return timelocal($second,$minute,$hour,$day,$month-1,$year);
+}
+
+# Testing mocks
+sub mytime() {
+  if(exists($ENV{FAKETIMES})) {
+    my @faketimes = split(",", $ENV{FAKETIMES});
+    $next_time = shift @faketimes;
+    $ENV{FAKETIMES} = join(",", @faketimes);
+    print "Dispensing time $next_time\n";
+    return shift @faketimes;
+  }
+  return time();
 }
 
 1;  # perl wants this for libraries imported with 'require'.
