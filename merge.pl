@@ -33,7 +33,7 @@
 #   print t, join('+', @p)
 
 BEGIN { require "$ENV{HOME}/.tagtimerc"; }
-require "util.pl";
+require "$ENV{HOME}/lab/tagtime/util.pl";
 
 die "USAGE: $0 logfile+\n" if @ARGV < 1;
 
