@@ -101,15 +101,15 @@ for(@x) { print; }  # lines starting with x or X, ie, completed.
 # Return the estimated time (in seconds) for a task.
 sub estim { my($a) = @_;
   my %uh = ( "s" => 1,
-	     "m" => 60,
-	     "h" => 3600,
-	     "d" => 3600*24,
-	     "w" => 3600*24*7,
-	     "y" => 3600*24*365.25,
-	     "c" => 60*45,  # a chrock is 45 minutes (deprecated)
+             "m" => 60,
+             "h" => 3600,
+             "d" => 3600*24,
+             "w" => 3600*24*7,
+             "y" => 3600*24*365.25,
+             "c" => 60*45,  # a chrock is 45 minutes (deprecated)
              "t" => 60*45,  # a tock is 45 minutes
              "p" => 60*25,  # a pomodoro (aka a tick) is 25 minutes
-	   );
+           );
   my($n, $u) = ($a =~ /\~([\d\.]*)(\w)/);
   $n = 1 if $n eq "";
   return $n * $uh{$u};
@@ -226,21 +226,21 @@ sub elapsed { my($a, $b, $c, $u) = @_;
   if($b eq "") { $b = hcts($now); }
   my $s = phcts($b,$a) - phcts($a) + $c;
   my %uh = ( "s" => 1,
-	     "m" => 1.0/60,
-	     "h" => 1.0/3600,
-	     "d" => 1.0/3600/24,
-	     "w" => 1.0/3600/24/7,
-	     "y" => 1.0/3600/24/365.25,
-	     "c" => 1.0/60/45,  # a chrock is 45 minutes (deprecated)
+             "m" => 1.0/60,
+             "h" => 1.0/3600,
+             "d" => 1.0/3600/24,
+             "w" => 1.0/3600/24/7,
+             "y" => 1.0/3600/24/365.25,
+             "c" => 1.0/60/45,  # a chrock is 45 minutes (deprecated)
              "t" => 1.0/60/45,  # a tock is 45 minutes
              "p" => 1.0/60/25,  # a pomodoro (aka a tick) is 25 minutes
 	   );
   if(!defined($uh{$u})) {
-    if($s<60) { $u = "s"; }
-    elsif($s<3600) { $u = "m"; }
-    elsif($s<3600*24) { $u = "h"; }
+    if   ($s<60)               { $u = "s"; }
+    elsif($s<3600)             { $u = "m"; }
+    elsif($s<3600*24)          { $u = "h"; }
     elsif($s<3600*24*365.25/2) { $u = "d"; }
-    else { $u = "y"; }
+    else                       { $u = "y"; }
   }
   return round1(10*$uh{$u}*$s)/10 . $u;
 }
