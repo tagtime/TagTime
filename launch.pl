@@ -111,8 +111,9 @@ sub launch {
     if(!defined($playsound)) { print STDERR "\a"; }
     else { system("$playsound") == 0 or print "SYSERR: $playsound\n"; }
   }
-  $cmd = "$XT -T 'TagTime ${hour}:${min}:${sec}' " .
-    "-fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl $t";
+  #$cmd = "$XT -T 'TagTime ${hour}:${min}:${sec}' " .
+  #  "-fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl $t";
+  $cmd = "$XT ${path}ping.pl $t";
   system($cmd) == 0 or print "SYSERR: $cmd\n";
   #system("${path}term.sh ${path}ping.pl $t");
 }
@@ -122,7 +123,8 @@ sub editor {
   my($f, $t) = @_;
   $ENV{DISPLAY} ||= ":0.0";  # have to set this explicitly if invoked by cron.
   if(!defined($EDIT_COMMAND)) {
-    $cmd = "$XT -T '$t' -fg white -bg red -cr MidnightBlue -bc -rw -e $ED $f";
+    #$cmd = "$XT -T '$t' -fg white -bg red -cr MidnightBlue -bc -rw -e $ED $f";
+    $cmd = "$XT $ED $f";
     system($cmd) == 0 or print "SYSERR: $cmd\n";
     #system("${path}term.sh $ED $f");
   } else {
