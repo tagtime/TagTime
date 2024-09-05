@@ -31,7 +31,7 @@ if(!defined($URPING)) {
 if(!defined($seed)) { $seed = 11193462; }
 my $initseed = $seed;
 
-# Above URPING is n 2007 and it's fine to jump to any later URPING/SEED pair
+# Above URPING is in 2007 and it's fine to jump to any later URPING/SEED pair
 # like this one in 2018:
 # URPING = 1532992625
 # SEED = 75570
@@ -194,9 +194,14 @@ sub unlock {
   }
 }
 
-# Singular or Plural:  Pluralize the given noun properly, if n is not 1. 
-#   Eg: splur(3, "boy") -> "3 boys"
-sub splur { my($n, $noun) = @_;  return "$n $noun".($n==1 ? "" : "s"); }
+# Singular or plural: Take a number n, the singular form s, and optionally the
+# plural form p.
+# Eg: splur(3, "boy") -> "3 boys" or splur(2, "person", "people") -> "2 people".
+sub splur { my ($n, $s, $p) = @_;
+  return    $n == 1      ? "$n $s"     # Singular or
+          : !defined($p) ? "$n ${s}s"  # plural or
+          :                "$n $p";    # irregular plural.
+}
 
 # Trim whitespace from front and back of string s.
 sub trim { my($s) = @_;  $s =~ s/^\s+//;  $s =~ s/\s+$//;  return $s; }
