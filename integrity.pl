@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 # This is modeled on merge.pl and just reports on any missing or unscheduled
-# pings in a log file given on the command line.
+# pings in a log file given on the command line. You can also pipe a log file 
+# into it.
 
 # Notes: Collect every timestamp in the given log file, plus all the scheduled
 # ping timestamps from the earliest one in the log up to the max of now and the
@@ -11,7 +12,7 @@
 BEGIN { require "$ENV{HOME}/.tagtimerc"; }
 require "$ENV{HOME}/lab/tagtime/util.pl";
 
-die "USAGE: $0 logfile\n" if @ARGV != 1;
+#die "USAGE: $0 logfile\n" if @ARGV != 1;
 
 # Generate a dummy tagtime log line for timestamp t
 sub genmiss { my ($t) = @_; "$t " . annotime('MISSING', $t, 33); }
@@ -19,16 +20,16 @@ sub genmiss { my ($t) = @_; "$t " . annotime('MISSING', $t, 33); }
 my $earliest = -1; # earliest timestamp in the log file
 my $latest = 0;    # latest timestamp in the log file, maxed with now
 my $loglat = 0;    # actual latest timestamp in the log file
-my %tash;          # tag hash: maps ping timestamp to tags from the logfile
+my %tash;          # tag hash: maps ping timestamp to tags from the log file
 my %alltimes;      # maps all timestamps to 1
-my $logfile = $ARGV[0];
-open(LOG, $logfile) or die;
+#my $logfile = $ARGV[0];
+#open(LOG, $logfile) or die;
 $prevts = 0; # remember the previous timestamp
-while($line = <LOG>) {
-  if(!parsable($line)) { die "Unparsable line in $logfile:\n$line"; }
+while($line = <>) {
+  if(!parsable($line)) { die "Unparsable line in logfile:\n$line"; }
   my @tags = split(/\s+/, $line);
   my $ts = shift(@tags);
-  if($ts <= $prevts) { die "Non-monotone timestamps in $logfile:\n$line"; }
+  if($ts <= $prevts) { die "Non-monotone timestamps in logfile:\n$line"; }
   $prevts = $ts;
   if($ts < $earliest || $earliest == -1) { $earliest = $ts; }
   if($ts > $latest)                      { $latest   = $ts; }
@@ -54,7 +55,7 @@ while($i <= $latest) {
 my $missed = 0;
 my $stale = 0;  # missed pings after the log file ends
 my $unsched = 0;
-my $bafflement = 0; # number of timestamps neither scheduled nor in the logfile
+my $bafflement = 0; # number of timestamps neither scheduled nor in the log file
 my $m; # remember the last missed ping
 my $u; # remember the last unsched ping
 for my $t (sort(keys(%alltimes))) {
