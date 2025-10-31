@@ -1,12 +1,28 @@
+_TagTime is stochastic time-tracking for space cadets._
+
 To determine how you spend your time, TagTime literally randomly samples you.
 At random times it pops up and asks what you're doing *right at that moment*.
 You answer with tags.
 
 See
-[messymatters.com/tagtime](http://messymatters.com/tagtime )
-for the whole story.
+[messymatters.com/tagtime](http://messymatters.com/tagtime "From 2011, by Daniel Reeves and Bethany Soule")
+for the origin story.
 
-We're currently auto-tweeting git commits: [@tagtm](http://twitter.com/tagtm ).
+---
+
+So much is out of date in this README but TagTime is thriving in various ways.
+Check out 
+[tagtime.com](https://tagtime.com "The domain tagti.me points to this GitHub page")
+for a more up-to-date list of TagTime-related 
+resources, 
+implementations, 
+discussion fora,
+etc.
+
+---
+
+At one time we were auto-tweeting git commits: 
+[@tagtm](http://twitter.com/tagtm "Apparently that stopped working in 2018").
 
 # Code
 
