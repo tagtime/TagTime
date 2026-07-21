@@ -1,0 +1,30 @@
+#!/bin/bash
+
+open -a iTerm
+osascript <<EOF
+tell application "iTerm2"
+  activate
+  set newWindow to (create window with profile "TagTime" command "$@")
+
+  delay 1
+  -- macOS 26 focus-stealing prevention reverts any single activate from a
+  -- background process (usually within ~100ms, occasionally slower than our
+  -- 1s poll, hence requiring frontmost on 2 consecutive polls), so re-raise
+  -- until one steal sticks, then stop fighting for focus.
+  -- See https://developer.apple.com/forums/thread/807805
+  set stuck to 0
+  repeat while (exists newWindow) and stuck < 2
+    if frontmost then
+      set stuck to stuck + 1
+    else
+      set stuck to 0
+      activate
+      select newWindow
+    end if
+    delay 1
+  end repeat
+  repeat while exists newWindow
+    delay 1
+  end repeat
+end tell
+EOF

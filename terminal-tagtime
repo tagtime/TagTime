@@ -1,0 +1,20 @@
+#!/bin/bash
+# I think this doesn't work right; I forget why/how. See iterm2-tagtime
+
+#open -a Terminal
+osascript <<EOF
+tell application "Terminal"
+  if not (exists window 1) then reopen
+  activate
+  do script "$@" in window 1
+
+  #tell application "System Events" to keystroke "echo hi"
+  #set newWindow to (create window with profile "TagTime" command "$@")
+  #set newWindow to (create window)
+
+  #delay 1
+  #repeat while exists newWindow
+  #  delay 1
+  #end repeat
+end tell
+EOF
