@@ -36,6 +36,37 @@ I'm tentatively retiring the following rules that seem unncessary for Fable and 
 
 # Agent Scratchpad (human edits only above this line)
 
+## Old terminal-tagtime (overwritten 2026-07-21, kept for the record)
+
+Replaced with a working version. The `do script "$@" in window 1` was the core
+bug: it injected the command into Terminal's existing frontmost window (likely
+the one running tagtimed) instead of creating a fresh window.
+
+```bash
+#!/bin/bash
+# See iterm2-tagtime
+# We haven't figured out how to programmatically open a Terminal with red
+# styling and have it dismiss itself, like we get with iTerm2
+
+#open -a Terminal
+osascript <<EOF
+tell application "Terminal"
+  if not (exists window 1) then reopen
+  activate
+  do script "$@" in window 1
+
+  #tell application "System Events" to keystroke "echo hi"
+  #set newWindow to (create window with profile "TagTime" command "$@")
+  #set newWindow to (create window)
+
+  #delay 1
+  #repeat while exists newWindow
+  #  delay 1
+  #end repeat
+end tell
+EOF
+```
+
 ## Popup timing instrumentation (removed 2026-07-21, kept for reuse)
 
 Used to diagnose the macOS 26 focus-stealing bug (windows created in ~0.5s but

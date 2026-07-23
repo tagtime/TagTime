@@ -1,30 +1,36 @@
 #!/bin/bash
+# Pop up a red iTerm2 terminal window and run the given command in it.
+# PREREQ:
+# Create an iTerm2 profile called "TagTime" by going to 
+# iTerm2 > Settings > Profiles and set it up as follows:
+# 1. White font on red background (Colors tab)
+# 2. Session > "After a session ends" > "Close"
 
-open -a iTerm
+# Temporary instrumentation for diagnosing slow popups: append lines with
+# hi-res timestamps to tmp/popup-timing.log. Remove when diagnosed.
+tlog="$(dirname "$0")/tmp/popup-timing.log"
+hires() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
+echo "$(hires) xt-start $*" >> "$tlog"
+
 osascript <<EOF
 tell application "iTerm2"
-  activate
   set newWindow to (create window with profile "TagTime" command "$@")
-
-  delay 1
-  -- macOS 26 focus-stealing prevention reverts any single activate from a
-  -- background process (usually within ~100ms, occasionally slower than our
-  -- 1s poll, hence requiring frontmost on 2 consecutive polls), so re-raise
-  -- until one steal sticks, then stop fighting for focus.
-  -- See https://developer.apple.com/forums/thread/807805
-  set stuck to 0
-  repeat while (exists newWindow) and stuck < 2
-    if frontmost then
-      set stuck to stuck + 1
-    else
-      set stuck to 0
-      activate
-      select newWindow
-    end if
-    delay 1
+  -- macOS 26 defers or reverts single activations from background processes
+  -- (see https://developer.apple.com/forums/thread/807805), so land the
+  -- initial popup with a short dense burst of raise attempts -- perceptually
+  -- one popup event -- and after the burst never steal focus again. AE
+  -- "activate" (the app self-activating) is the only raise macOS lets a
+  -- background process land; gentler per-window raises get denied, at the
+  -- cost that all the app's windows come forward, ours selected on top.
+  repeat 10 times
+    if not (exists newWindow) then exit repeat
+    select newWindow
+    activate
+    delay 0.3
   end repeat
   repeat while exists newWindow
     delay 1
   end repeat
 end tell
 EOF
+echo "$(hires) xt-exit" >> "$tlog"

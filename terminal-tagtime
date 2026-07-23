@@ -1,20 +1,65 @@
 #!/bin/bash
-# I think this doesn't work right; I forget why/how. See iterm2-tagtime
+# Pop up a red Terminal window and run the given command in it.
+# PREREQ:
+# Create a Terminal.app profile called "TagTime" by going to 
+# Terminal > Settings > Profiles and setting up the following:
+# 1. White font on red background
+# 2. Shell > "When the shell exits" > "Close if the shell exited cleanly"
+# 3. Maybe make sure Keyboard > "Delete sends Control-H" is unchecked
 
-#open -a Terminal
+# Temporary instrumentation for diagnosing slow popups: append lines with
+# hi-res timestamps to tmp/popup-timing.log. Remove when diagnosed.
+tlog="$(dirname "$0")/tmp/popup-timing.log"
+hires() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
+echo "$(hires) xt-start $*" >> "$tlog"
+
 osascript <<EOF
 tell application "Terminal"
-  if not (exists window 1) then reopen
-  activate
-  do script "$@" in window 1
-
-  #tell application "System Events" to keystroke "echo hi"
-  #set newWindow to (create window with profile "TagTime" command "$@")
-  #set newWindow to (create window)
-
-  #delay 1
-  #repeat while exists newWindow
-  #  delay 1
-  #end repeat
+  if not (exists settings set "TagTime") then error "no settings set named TagTime; see setup docs in terminal-tagtime"
+  set newTab to do script "clear; exec $@"
+  set current settings of newTab to settings set "TagTime"
+  -- find the new tab's window by tty ("front window" right after do script
+  -- is a race that can capture some other window's id)
+  set theTty to tty of newTab
+  set w to missing value
+  repeat with win in windows
+    -- a window that errors mid-read (eg mid-teardown) can't be ours; skip it
+    try
+      if tty of selected tab of win is theTty then
+        set w to id of win
+        exit repeat
+      end if
+    end try
+  end repeat
+  if w is missing value then error "can't find the window for the new tab"
+  -- macOS 26 defers or reverts single activations from background processes
+  -- (see https://developer.apple.com/forums/thread/807805), so land the
+  -- initial popup with a short dense burst of raise attempts -- perceptually
+  -- one popup event -- and after the burst never steal focus again. AE
+  -- "activate" (the app self-activating) is the only raise macOS lets a
+  -- background process land; gentler per-window raises get denied, at the
+  -- cost that all the app's windows come forward, ours on top.
+  repeat 10 times
+    if not (exists window id w) then exit repeat
+    set index of window id w to 1
+    activate
+    delay 0.3
+  end repeat
+  -- wait for the command to finish, then close the window ourselves --
+  -- Terminal's profile-level close-on-exit fires only sometimes, and the
+  -- window/tab can vanish between any two statements here, which raises an
+  -- error; that error just means the window is already gone, ie, mission
+  -- accomplished, so bail out of the try block and we're done
+  try
+    repeat while busy of window id w
+      delay 1
+    end repeat
+    close window id w
+  on error m number n
+    -- -1719/-1728 mean the window/tab vanished mid-statement, which is the
+    -- goal state; anything else is a real error and gets rethrown
+    if {-1719, -1728} does not contain n then error m number n
+  end try
 end tell
 EOF
+echo "$(hires) xt-exit" >> "$tlog"

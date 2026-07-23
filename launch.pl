@@ -7,6 +7,7 @@ $launchTime = time();
 
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
+use Time::HiRes ();
 
 my $args = join(' ', @ARGV); # supported arguments: test, quiet
 my $test =   ($args =~ /\btest\b/);
@@ -114,8 +115,20 @@ sub launch {
   #$cmd = "$XT -T 'TagTime ${hour}:${min}:${sec}' " .
   #  "-fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl $t";
   $cmd = "$XT ${path}ping.pl $t";
+  tslog("launch ping=$t");
   system($cmd) == 0 or print "SYSERR: $cmd\n";
+  tslog("closed ping=$t");
   #system("${path}term.sh ${path}ping.pl $t");
+}
+
+# Temporary instrumentation for diagnosing slow popups: append a line with a
+# hi-res timestamp to tmp/popup-timing.log. Remove when diagnosed.
+sub tslog {
+  my($msg) = @_;
+  open(my $f, ">>", "${path}tmp/popup-timing.log")
+    or print "SYSERR: can't append to popup-timing.log: $!\n";
+  printf $f "%.3f %s\n", Time::HiRes::time(), $msg;
+  close($f);
 }
 
 # Launch an editor to edit file f, labeling the window with title t.
