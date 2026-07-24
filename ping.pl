@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Prompt for what you're doing RIGHT NOW.
-# In the future this should show a cool pie chart that lets you click on the 
+# In the future this could show a cool pie chart that lets you click on the 
 # appropriate pie slice, making that slice grow slightly. And the slice 
 # boundaries could be fuzzy to indicate the confidence intervals! Ooh, and you 
 # can drag the slices around to change the order so similar things are next to 
@@ -49,12 +49,12 @@ EOS
 
 # walk through the task file, printing the active tasks and capturing the list
 # of tags for each task (capturing in a hash keyed on task number).
-# TODO: have a function that takes a reference to a tasknum->tags hash and a
+# Ideally have a function that takes a reference to a tasknum->tags hash and a
 # tasknum->fulltaskline hash and populates those hashes, purging them first.
-# that way we we're not duplicating most of this walk through code. one 
-# annoyance: we want to print them in the order they appear in the task file.
-# maybe an optional parameter to the function that says whether to print the
-# tasks to stdout as you encounter them.
+# that way we're not duplicating most of this walk through code. one annoyance:
+# we want to print them in the order they appear in the task file. maybe an
+# optional parameter to the function that says whether to print the tasks to
+# stdout as you encounter them.
 if(-e $tskf) {  # show pending tasks
   if(open(F, "<$tskf")) {
     while(<F>) {
@@ -94,12 +94,12 @@ if($INC{'Term/ANSIColor.pm'}) {
 
 print qq{Ditto (") to repeat prev tags: $ansi_last_doing\n\n};
 
-my($resp, $tagstr, $comments, $a);
+my($resp, $tagstr, $comments, $a, $rejected);
 do {
   use strict;
   use warnings;
 
-  our (%tags, $t);
+  our (%tags, $t, $enforcenums, $enforcenonon);
 
   $resp = <STDIN>;
 
@@ -133,9 +133,13 @@ do {
   $tagstr .= $autotags;
   $tagstr =~ s/\s+/\ /g;
   $a = annotime("$t $tagstr $comments", $t)."\n";
-} while($tagstr ne "" &&
+  $rejected = ($tagstr ne "" &&
         ($enforcenums  && ($tagstr !~ /\b(\d+|non|afk)\b/) ||
          $enforcenonon && ($tagstr =~ /\bnon\b/)));
+  if($rejected) {
+    print "Error! See enforcenums / enforcenonon in settings. Try again:\n";
+  }
+} while($rejected);
 print $a;
 slog($a);
 

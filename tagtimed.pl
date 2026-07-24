@@ -115,7 +115,7 @@ while(1) {
 # Invoke popup for this ping plus additional popups if there were more pings 
 # while answering this one.
 sub pingery { 
-  # TODO: move everything from launch.pl to here
+  # Ancient to-do: move everything from launch.pl to here
   return 0;
 }
 

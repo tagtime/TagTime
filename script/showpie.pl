@@ -6,8 +6,9 @@
 # This currently assumes exactly one tag per line in the log file.
 # Anything after that first tag will be ignored.
 # (Although --keep and --exclude consider all tags.)
-# TODO: with --keep foo it should strip out foo so you can see subtags
-# TODO: for --ago, specify number of weeks to include, like frask.pl does.
+# Future work:
+# 1. with --keep foo it should strip out foo so you can see subtags
+# 2. for --ago, specify number of weeks to include, like frask.pl does.
 
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";

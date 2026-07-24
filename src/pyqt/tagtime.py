@@ -5,8 +5,9 @@ import math
 import sys
 from PyQt4 import QtCore, QtGui, uic
 
-#todo: a gui to save the tags in the popup
-#todo: a main window that goes in the status bar with configuration for account / sync
+# Still needed:
+# 1. a gui to save the tags in the popup
+# 2. a main window that goes in the status bar with config for account / sync
 
 def xor_shift(x):
     x ^= (ctypes.c_uint64(x).value << 21)

@@ -70,7 +70,7 @@ imap <silent> <cr> <esc>:call PressEnter()<cr>i
 map <silent> <f5> :call SortActive()<cr>
 imap <f5> <esc><f5>
 
-"F6 pauses a task (TODO: just inserting the PAUSE() string for now)
+"F6 should pause a task (but just inserting the PAUSE() string for now)
 map <silent> <f6> :call PauseTask()<cr>
 imap <f6> <esc><f6>
 map \ <f6>

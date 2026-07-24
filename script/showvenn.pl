@@ -13,7 +13,7 @@
 #   1 = show pie for the previous week, up till last saturday night.
 #   i = show pie for the week i weeks ago.
 #  -1 = show pie for all time.
-#  TODO: specify number of weeks to include, like frask.pl does.
+# Future work: specify number of weeks to include, like frask.pl does.
 # --pie
 #   pie=1 will make a visual representation of your timepie
 # --exclude

@@ -38,7 +38,7 @@ for my $i (@peops) {
 print divider(" SMACK FRAC "), "\n";
 
 # WARNING: this code to compute $start and $end copied from showpie.pl:
-# TODO: make a function in util.pl:  drange(ago, weeks)
+# Ancient to-do: make a function in util.pl:  drange(ago, weeks)
 # that gives start and end for a date range where 'ago' is how many tagtime
 # weeks ago to start (always starts on saturday night midnight) and weeks is
 # how many weeks to include.
