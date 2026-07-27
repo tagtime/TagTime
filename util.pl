@@ -1,6 +1,11 @@
 # Utility functions for tagtime.
 # This uses settings from ~/.tagtimerc so that must have been loaded first.
 
+# Force people to get their settings file updated
+defined($XT) || defined($ED) and die
+  "ERROR: XT and ED have been replaced by POP and EDPOP in .tagtimerc -- ".
+  "see settings.pl.template\n";
+
 use Fcntl qw(:DEFAULT :flock);
 use Time::Local;  # more sophisticated packages are Date::Calc and Date::Manip
 
