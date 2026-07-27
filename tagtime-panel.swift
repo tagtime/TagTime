@@ -156,13 +156,44 @@ var finished = false
 // the ping timestamp argument, for recognizing ping.pl's acceptance echo
 let pingArg: String? = args.count >= 2 ? args[1] : nil
 
+// Carryover for a title escape split across pipe reads. Main thread only.
+var escBuf = ""
+
+// Pull xterm title escapes (ESC ] 0-or-2 ; title BEL; ping.pl emits them
+// when further pings ping) out of a chunk of child output: apply each as
+// the panel title and return the chunk with them removed. An incomplete
+// sequence at the end of a chunk waits in escBuf for the next chunk --
+// bounded, so a stray ESC ] can't swallow the transcript forever.
+func consume(_ chunk: String) -> String {
+  var buf = escBuf + chunk
+  escBuf = ""
+  var display = ""
+  while let esc = buf.range(of: "\u{1b}]") {
+    display += String(buf[..<esc.lowerBound])
+    let rest = String(buf[esc.lowerBound...])
+    guard let bel = rest.range(of: "\u{07}") else {
+      if rest.count < 512 { escBuf = rest; return display }
+      return display + rest
+    }
+    let body = rest[rest.index(rest.startIndex, offsetBy: 2)..<bel.lowerBound]
+    if body.hasPrefix("0;") || body.hasPrefix("2;") {
+      panel.title = String(body.dropFirst(2))
+    } else {
+      display += String(rest[..<bel.lowerBound])  // some other OSC; show it
+    }
+    buf = String(rest[bel.upperBound...])
+  }
+  return display + buf
+}
+
 outPipe.fileHandleForReading.readabilityHandler = { fh in
   let data = fh.availableData
   if data.isEmpty { return }
   // lossy decode: a multibyte char split across two pipe reads must garble
   // one char, not drop the chunk
-  let s = String(decoding: data, as: UTF8.self)
+  let raw = String(decoding: data, as: UTF8.self)
   DispatchQueue.main.async {
+    let s = consume(raw)
     append(s)
     // Once ping.pl accepts the answer (it echoes the log line, which starts
     // with the ping timestamp we passed it), nothing reads stdin anymore, so

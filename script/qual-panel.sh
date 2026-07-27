@@ -24,6 +24,8 @@ expect_exit 0 "clean child exit propagates 0"       ./tagtime-panel /usr/bin/tru
 expect_exit 3 "nonzero child exit propagates"       ./tagtime-panel /bin/sh -c "exit 3"
 expect_exit 2 "no arguments is a usage error"       ./tagtime-panel
 expect_exit 2 "nonexistent command errors"          ./tagtime-panel /nonexistent/cmd
+expect_exit 0 "title escape in child output is harmless" \
+  ./tagtime-panel /bin/sh -c 'printf "\033]0;QualTitle\007ok\n"'
 
 before=$(wc -l < tmp/popup-timing.log)
 ./tagtime-panel /usr/bin/true >/dev/null 2>&1

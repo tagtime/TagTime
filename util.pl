@@ -91,6 +91,14 @@ sub popcmd {
   return $cmd;
 }
 
+# Take the number of pings pung since the popup for the last ping popped up,
+# return the new window title letting the user know that. Used by ping.pl which
+# emits it via the standard xterm title escape.
+sub pingtitle {
+  my($n) = @_;
+  return "TagTime (".splur($n, "additional ping")." pung after this one)";
+}
+
 # Strips out stuff in parens and brackets; remaining parens/brackets means
 #  they were unmatched.
 sub strip {

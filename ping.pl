@@ -30,6 +30,21 @@ if(!defined($t)) {
   $t = time();
 }
 
+# If more pings come due while this prompt is up, announce them in the window
+# title via the standard xterm title escape, which tagtime-panel and actual
+# terminals all understand. SIGALRM interrupts the blocking <STDIN> reads
+# below just long enough to print the escape; the reads then resume.
+my $morepings = 0;  # number of pings that have pung since this one
+my $comingping = nextping(prevping($t));  # walks the RNG state up to $t
+while($comingping <= $t) { $comingping = nextping($comingping); }
+$SIG{ALRM} = sub {
+  $morepings++;
+  print "\e]0;", pingtitle($morepings), "\a";
+  $comingping = nextping($comingping);
+  alarm(max(1, $comingping - time()));
+};
+alarm(max(1, $comingping - time()));
+
 # Can't lock the same lockfile here since launch.pl will have the lock!
 # This script may want to lock a separate lock file, just in case multiple
 # instances are invoked, but launch.pl will only launch one at a time.
