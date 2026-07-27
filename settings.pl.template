@@ -10,8 +10,24 @@ $logf = "$path$usr.log";  # log file for pings
 # If you're using windows, you'll need cygwin and to set this flag to 1:
 $cygwin = __CYGWIN__;  # CHANGEME to 1 if you're using windows/cygwin.
 
-$ED = "__ED__ +";  # CHANGEME if you don't like vi (eg: /usr/bin/pico)
-$XT = "__XT__";    # CHANGEME to your path to xterm
+# Command to pop up the prompt for a ping, where %t in the command is replaced
+# by the unixtime of the ping. The command has to (a) pop up a popup and (b) run
+# ping.pl with %t as an argument. Also it has to block till the ping is
+# answered.
+# CHANGEME to set $POP to exactly one of the following. The xterm one is for 
+# Linux and the tagtime-panel one is for macOS. If you use the latter you'll
+# need to build it first per the comments in tagtime-panel.swift. The iterm2 one
+# is also for macOS but as of macOS Tahoe seems to be unreliable in terms of
+# actually getting the iTerm2 window to pop up.
+$POP = "xterm -fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl %t";
+#$POP = "${path}iterm2-tagtime ${path}ping.pl %t";
+#$POP = "${path}tagtime-panel ${path}ping.pl %t";
+
+# Similar to above, pop up an editor on your TagTime log file for retroactively
+# answering pings. The tagtime-panel option above doesn't work for running an
+# editor. CHANGEME to use a different editor than vim, like /usr/bin/pico:
+$EDPOP = "xterm -fg white -bg red -bc -rw -e /usr/bin/vi + $logf";
+#$EDPOP = "${path}iterm2-tagtime /usr/bin/vi + $logf";  # macOS with iTerm2
 
 # Get your personal Beeminder auth token (after signing in) from
 #   https://www.beeminder.com/api/v1/auth_token.json

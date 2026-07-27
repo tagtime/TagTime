@@ -29,7 +29,7 @@ At one time we were auto-tweeting git commits:
 The core Perl implementation of TagTime itself is in the following files:
 
 * tagtimed.pl -- the TagTime daemon
-* launch.pl -- launches the pinger by popping up an xterm
+* launch.pl -- launches the pinger by popping up an xterm or similar
 * ping.pl -- prompts for the tags
 * util.pl -- utility functions
 * settings.pl.template -- user-specific settings
@@ -71,7 +71,7 @@ contributions to the code.
 
 0. Clone the repository on Github
 1. cd into your local tagtime directory
-2. Run: python2 install.py USERNAME
+2. Run: python install.py USERNAME
 3. Verify in settings.pl (wherever it says CHANGEME) that the install
    script filled in everything correctly
 4. Make sure you have X11 (on Mac) or Cygwin (on Windows) running (not an issue

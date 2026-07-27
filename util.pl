@@ -79,6 +79,18 @@ sub prevping {
   return $lstping;
 }
 
+# Takes a ping time (unixtime), returns the command that pops up the prompt
+# for that ping: $POP from the settings file with the ping time substituted
+# for every occurrence of the placeholder %t.
+sub popcmd {
+  my($t) = @_;
+  defined($POP) or die "ERROR2212: POP must be defined in .tagtimerc\n";
+  $POP =~ /%t/  or die "ERROR2213: POP must contain \"%t\" in .tagtimerc\n";
+  my $cmd = $POP;
+  $cmd =~ s/%t/$t/g;
+  return $cmd;
+}
+
 # Strips out stuff in parens and brackets; remaining parens/brackets means
 #  they were unmatched.
 sub strip {

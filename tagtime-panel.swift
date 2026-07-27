@@ -61,7 +61,9 @@ let mono = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
 // Show on the screen holding the mouse pointer -- that's where attention is.
 let mouse = NSEvent.mouseLocation
 let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main!
-let W: CGFloat = 700, H: CGFloat = 420
+// wide enough for ping.pl's 80-col annotime lines; short enough that the
+// typical 4-line transcript doesn't leave a vast red void above the input
+let W: CGFloat = 700, H: CGFloat = 300
 let vis = screen.visibleFrame
 let rect = NSRect(x: vis.midX - W/2, y: vis.midY - H/2, width: W, height: H)
 
@@ -80,30 +82,55 @@ panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 // panels default to hiding when the app deactivates, which for this app
 // (active only while you're typing into it) would mean vanishing
 panel.hidesOnDeactivate = false
+// red bleeds into the title bar; dark appearance keeps the title legible on it
+panel.backgroundColor = bgRed
+panel.titlebarAppearsTransparent = true
+panel.appearance = NSAppearance(named: .darkAqua)
+panel.isMovableByWindowBackground = true
+// minimize/zoom are disabled by the styleMask; hide their dead gray dots
+panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
+panel.standardWindowButton(.zoomButton)?.isHidden = true
 
-let inputH: CGFloat = 28
+let pad: CGFloat = 10
 let content = panel.contentView!
 
-let scroll = NSScrollView(frame: NSRect(x: 0, y: inputH, width: W, height: content.bounds.height - inputH))
+// The input field is the one white thing on the red window, so it reads
+// unmistakably as the place to type. No placeholder: the transcript's prompt
+// line already asks the question. Same font as the transcript so typed text
+// doesn't change size when it echoes there. Sized to its natural height --
+// an NSTextField taller than that top-aligns its text while editing.
+let input = ClickField(frame: .zero)
+input.font = mono
+input.appearance = NSAppearance(named: .aqua)  // stay white despite the darkAqua window
+input.textColor = .black
+input.sizeToFit()
+let barH = input.frame.height + 2*pad
+input.frame = NSRect(x: pad, y: pad, width: W - 2*pad, height: input.frame.height)
+input.autoresizingMask = [.width, .maxYMargin]
+
+// no scroller: it's a transcript, auto-pinned to the end (trackpad still scrolls)
+let scroll = NSScrollView(frame: NSRect(x: 0, y: barH, width: W, height: content.bounds.height - barH))
 scroll.autoresizingMask = [.width, .height]
-scroll.hasVerticalScroller = true
+scroll.hasVerticalScroller = false
+scroll.drawsBackground = false
 let tv = NSTextView(frame: NSRect(origin: .zero, size: scroll.contentSize))
 tv.autoresizingMask = [.width]
 tv.isEditable = false
+// canonical grow-with-content setup so a long transcript (task list,
+// beeminder updates) keeps scrolling instead of clipping at the frame height
+tv.isVerticallyResizable = true
+tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+tv.textContainer?.widthTracksTextView = true
 tv.backgroundColor = bgRed
-tv.textContainerInset = NSSize(width: 6, height: 6)
+tv.textContainerInset = NSSize(width: pad, height: pad)
 scroll.documentView = tv
 content.addSubview(scroll)
-
-let input = ClickField(frame: NSRect(x: 0, y: 0, width: W, height: inputH))
-input.autoresizingMask = [.width, .maxYMargin]
-input.font = mono
-input.placeholderString = "What are you doing RIGHT NOW?"
 content.addSubview(input)
 
 // raw text only: smart-quote substitution would turn the ditto response (a
 // lone ") into a curly quote ping.pl doesn't recognize
 if let fe = panel.fieldEditor(true, for: input) as? NSTextView {
+  fe.insertionPointColor = bgRed  // the default hairline black caret is easy to lose
   fe.isAutomaticQuoteSubstitutionEnabled = false
   fe.isAutomaticDashSubstitutionEnabled = false
   fe.isAutomaticTextReplacementEnabled = false

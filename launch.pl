@@ -14,7 +14,7 @@ my $test =   ($args =~ /\btest\b/);
 my $quiet =  ($args =~ /\bquiet\b/);
 
 if($test) {  # just pop up the editor and exit; mainly for testing.
-  editor($logf, "TagTime Log Editor (invoked explicitly with \"test\" arg)");
+  editor();  # TagTime Log Editor (invoked explicitly with "test" arg)
   exit(0);
 }
 
@@ -68,7 +68,7 @@ do {
       slog(annotime(
              "$nxtping err [missed ping from ".ss(time()-$nxtping)." ago]",
              $nxtping)."\n");
-      editor($logf,"TagTime Log Editor (unanswered pings logged as \"err\")");
+      editor();  # TagTime Log Editor (unanswered pings logged as "err")
       $editorFlag = 0;
     } elsif(trim(strip($ln)) eq "") {  # no tags in last line of log.
       #editor($logf, "TagTime Log Editor (add tags for last ping)");
@@ -80,7 +80,7 @@ do {
     # Here's where we would add an artificial gap of $nxtping-$lstping.
   }
   if($editorFlag) {
-    editor($logf, "TagTime Log Editor (fill in your RETRO pings)");
+    editor();  # TagTime Log Editor (fill in your RETRO pings)
     $editorFlag = 0;
     # when editor finishes there may be new pings missed!
     # that's why we have the outer do-while loop here, to start over if
@@ -105,20 +105,15 @@ sub lastln {
 # Launch the tagtime pinger for the given time (in unix time).
 sub launch {
   my($t) = @_;
-  my($sec,$min,$hour) = localtime($t);
-  $sec = dd($sec); $min = dd($min); $hour = dd($hour);
   #$ENV{DISPLAY} = ":0.0";  # have to set this explicitly if invoked by cron.
   if(!$quiet) {
     if(!defined($playsound)) { print STDERR "\a"; }
     else { system("$playsound") == 0 or print "SYSERR: $playsound\n"; }
   }
-  #$cmd = "$XT -T 'TagTime ${hour}:${min}:${sec}' " .
-  #  "-fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl $t";
-  $cmd = "$XT ${path}ping.pl $t";
+  $cmd = popcmd($t);
   tslog("launch ping=$t");
   system($cmd) == 0 or print "SYSERR: $cmd\n";
   tslog("closed ping=$t");
-  #system("${path}term.sh ${path}ping.pl $t");
 }
 
 # Temporary instrumentation for diagnosing slow popups: append a line with a
@@ -131,19 +126,11 @@ sub tslog {
   close($f);
 }
 
-# Launch an editor to edit file f, labeling the window with title t.
+# Pop up an editor on the ping log, using $EDPOP from the settings file.
 sub editor {
-  my($f, $t) = @_;
   $ENV{DISPLAY} ||= ":0.0";  # have to set this explicitly if invoked by cron.
-  if(!defined($EDIT_COMMAND)) {
-    #$cmd = "$XT -T '$t' -fg white -bg red -cr MidnightBlue -bc -rw -e $ED $f";
-    $cmd = "$XT $ED $f";
-    system($cmd) == 0 or print "SYSERR: $cmd\n";
-    #system("${path}term.sh $ED $f");
-  } else {
-    $cmd = "$EDIT_COMMAND $f";
-    system($cmd) == 0 or print "SYSERR: $cmd\n";
-  }
+  defined($EDPOP) or die "EDPOP must be defined in .tagtimerc\n";
+  system($EDPOP) == 0 or print "SYSERR: $EDPOP\n";
 }
 
 
