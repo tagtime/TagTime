@@ -80,6 +80,18 @@ contributions to the code.
 6. Answer the pings!
    (Always answer with what it caught you at right at that moment)
 
+# Native ping popup on macOS
+
+Prerequisite: The Xcode command-line tools.
+
+Run this to compile the Mac-native ping popup window:
+
+    swiftc -O -o TagTime tagtime-panel.swift
+
+Then put something like this in your settings.pl / .tagtimerc:
+
+    $POP = "${path}TagTime ${path}ping.pl %t";
+
 # Perl Newbies
 
 1. Run: sudo cpan

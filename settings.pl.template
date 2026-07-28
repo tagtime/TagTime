@@ -21,7 +21,7 @@ $cygwin = __CYGWIN__;  # CHANGEME to 1 if you're using windows/cygwin.
 # actually getting the iTerm2 window to pop up.
 $POP = "xterm -fg white -bg red -cr MidnightBlue -bc -rw -e ${path}ping.pl %t";
 #$POP = "${path}iterm2-tagtime ${path}ping.pl %t";
-#$POP = "${path}tagtime-panel ${path}ping.pl %t";
+#$POP = "${path}TagTime ${path}ping.pl %t";
 
 # Similar to above, pop up an editor on your TagTime log file for retroactively
 # answering pings. The tagtime-panel option above doesn't work for running an

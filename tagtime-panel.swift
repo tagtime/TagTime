@@ -11,8 +11,11 @@
 // keyboard once at popup (classic TagTime interrupt; macOS may defer that
 // grant until you click) and never re-takes it.
 //
-// Build:  swiftc -O -o tagtime-panel tagtime-panel.swift
-// Usage:  tagtime-panel /path/to/ping.pl <pingtime>
+// Build:  swiftc -O -o TagTime tagtime-panel.swift
+//         (binary named TagTime: the cmd-tab switcher labels an unbundled
+//         app with its executable name -- LaunchServices ignores an embedded
+//         __info_plist's CFBundleName, so renaming is the whole mechanism)
+// Usage:  TagTime /path/to/ping.pl <pingtime>
 // Exits with the child's exit status; closing the window without answering
 // terminates the child and exits 1 (launch.pl then logs "err" as ever).
 
@@ -20,7 +23,7 @@ import AppKit
 
 let args = Array(CommandLine.arguments.dropFirst())
 if args.isEmpty {
-  FileHandle.standardError.write("usage: tagtime-panel cmd [args...]\n".data(using: .utf8)!)
+  FileHandle.standardError.write("usage: TagTime cmd [args...]\n".data(using: .utf8)!)
   exit(2)
 }
 
@@ -43,7 +46,11 @@ func tslog(_ msg: String) {
 }
 
 let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
+// .regular, not .accessory: regular apps are listed in the cmd-tab switcher,
+// and cmd-tab is user-initiated activation -- the one signal macOS 26 always
+// honors -- so it's a reliable keyboard-recovery path when the initial grab
+// was deferred. Costs a generic Dock icon while a ping is up.
+app.setActivationPolicy(.regular)
 
 class KeyablePanel: NSPanel {
   override var canBecomeKey: Bool { true }
@@ -57,6 +64,14 @@ class ClickField: NSTextField {
 
 let bgRed = NSColor(calibratedRed: 0.87, green: 0.08, blue: 0.08, alpha: 1.0)
 let mono = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+
+// Dock and cmd-tab switcher icon: a plain red square matching the panel,
+// drawn at runtime so the unbundled binary needs no icon asset.
+app.applicationIconImage = NSImage(size: NSSize(width: 512, height: 512), flipped: false) { r in
+  bgRed.setFill()
+  r.fill()
+  return true
+}
 
 // Show on the screen holding the mouse pointer -- that's where attention is.
 let mouse = NSEvent.mouseLocation
@@ -113,7 +128,23 @@ let scroll = NSScrollView(frame: NSRect(x: 0, y: barH, width: W, height: content
 scroll.autoresizingMask = [.width, .height]
 scroll.hasVerticalScroller = false
 scroll.drawsBackground = false
-let tv = NSTextView(frame: NSRect(origin: .zero, size: scroll.contentSize))
+// A plain click on the transcript bounces focus back to the input field,
+// caret after any half-typed answer (makeFirstResponder alone would
+// select-all, letting the next keystroke wipe the answer). A drag or
+// double-click makes a selection, which keeps focus here so cmd-C works.
+// So does any click once the answer is accepted: a disabled field refuses
+// first-responderhood, making the bounce a no-op then.
+class Transcript: NSTextView {
+  override func mouseDown(with event: NSEvent) {
+    super.mouseDown(with: event)  // the whole click-or-drag selection loop
+    if selectedRange.length == 0 {
+      window?.makeFirstResponder(input)
+      input.currentEditor()?.selectedRange =
+        NSRange(location: (input.stringValue as NSString).length, length: 0)
+    }
+  }
+}
+let tv = Transcript(frame: NSRect(origin: .zero, size: scroll.contentSize))
 tv.autoresizingMask = [.width]
 tv.isEditable = false
 // canonical grow-with-content setup so a long transcript (task list,
@@ -228,6 +259,17 @@ class Actions: NSObject, NSWindowDelegate {
     append(line + "\n")  // piped stdin isn't tty-echoed, so echo it ourselves
     inPipe.fileHandleForWriting.write((line + "\n").data(using: .utf8)!)
   }
+  // User-initiated focus of the panel (a click anywhere on it, cmd-tab, the
+  // Dock icon) lands the caret in the input field while the ping awaits an
+  // answer. Not a re-grab: this runs only once the user has already handed
+  // us the keyboard. Skipped when an editing session is live -- refocusing
+  // the field would select-all and a keystroke would then wipe a
+  // half-typed answer.
+  func windowDidBecomeKey(_ n: Notification) {
+    if input.isEnabled && input.currentEditor() == nil {
+      (n.object as! NSWindow).makeFirstResponder(input)
+    }
+  }
   func windowWillClose(_ n: Notification) {
     if !finished {  // closed without answering: kill child, exit nonzero
       proc.terminate()
@@ -239,6 +281,14 @@ let actions = Actions()
 input.target = actions
 input.action = #selector(Actions.submit(_:))
 panel.delegate = actions
+
+// Cmd-tab activation reaches the app but doesn't automatically key a panel
+// (panels can't be main windows), so key it ourselves; windowDidBecomeKey
+// then lands the caret in the field.
+NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
+                                       object: nil, queue: .main) { _ in
+  panel.makeKeyAndOrderFront(nil)
+}
 
 tslog("xt-start " + args.joined(separator: " "))
 do {
