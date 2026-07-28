@@ -1,18 +1,19 @@
 #!/bin/bash
 # Pop up a red iTerm2 terminal window and run the given command in it.
 # PREREQ:
-# Create an iTerm2 profile called "TagTime" by going to 
+# Create an iTerm2 profile called "TagTime" by going to
 # iTerm2 > Settings > Profiles and set it up as follows:
 # 1. White font on red background (Colors tab)
 # 2. Session > "After a session ends" > "Close"
 
-# Temporary instrumentation for diagnosing slow popups: append lines with
-# hi-res timestamps to tmp/popup-timing.log. Remove when diagnosed.
-tlog="$(dirname "$0")/tmp/popup-timing.log"
-hires() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
-echo "$(hires) xt-start $*" >> "$tlog"
-
-osascript <<EOF
+# Create the window and land the initial raise; prints the window id so
+# the window can be closed by us at the end, not only by close-on-end.
+# (A function because macOS's bash 3.2 can't parse a heredoc inside $().
+# NB it must be CALLED with "$@": inside a function, $@ is the function's
+# own arguments -- calling it bare passes command "" and iTerm2 silently
+# runs a default login shell instead of the command.)
+make_window() {
+  osascript <<EOF
 tell application "iTerm2"
   set newWindow to (create window with profile "TagTime" command "$@")
   -- macOS 26 defers or reverts single activations from background processes
@@ -28,9 +29,64 @@ tell application "iTerm2"
     activate
     delay 0.3
   end repeat
-  repeat while exists newWindow
-    delay 1
-  end repeat
+  if exists newWindow then return id of newWindow
+  return ""
 end tell
 EOF
-echo "$(hires) xt-exit" >> "$tlog"
+}
+
+# Ghost-window fix (2026-07-27): wait for the COMMAND's process to exit,
+# never for the window to close. When a session ends while iTerm2 is in
+# the background, close-on-end can hide the window without destroying it
+# -- an invisible ghost that keeps `exists newWindow` true until the next
+# user-initiated iTerm2 activation -- so a wait on `exists` held
+# launch.pl's lock, and thereby every due ping, for 18-84 minutes at a
+# stretch. AE `close` on a ghost is deferred the same way (returns without
+# error, window persists), so the close at the bottom is best-effort;
+# ghosts are invisible and flush at the next iTerm2 activation, harmless
+# now that nothing waits on the window.
+idf="$(dirname "$0")/tmp/winid.$$"
+make_window "$@" > "$idf" &
+mkpid=$!
+
+# Watch for the command's process from t=0 (starting only after the ~3s
+# raise burst would charge any command shorter than that a long never-seen
+# wait). Give up once the window is up and a grace period passes with no
+# sighting: the command already ran and exited.
+pid=""; grace=0; polls=0
+while :; do
+  # exclude this wrapper and its subshells, whose own command lines
+  # contain the command string (self-match would watch the wrong pid)
+  pid=$(ps -axo pid=,command= | grep -F -e " $*" -e " $(basename "$1")${*#$1}" \
+        | grep -v -e grep -e iterm2-tagtime | awk 'NR==1{print $1}')
+  [ -n "$pid" ] && break
+  if ! kill -0 "$mkpid" 2>/dev/null; then
+    grace=$((grace+1))
+    [ "$grace" -ge 6 ] && break
+  fi
+  polls=$((polls+1))
+  [ "$polls" -ge 240 ] && break  # absolute cap so this can never hang
+  sleep 0.5
+done
+
+if [ -n "$pid" ]; then
+  while kill -0 "$pid" 2>/dev/null; do sleep 0.5; done
+fi
+
+wait "$mkpid"; mkrc=$?
+winid=$(cat "$idf" 2>/dev/null); rm -f "$idf"
+if [ "$mkrc" -ne 0 ]; then
+  echo "SYSERR: iterm2-tagtime: create window failed" >&2
+  exit 1
+fi
+
+# close only when the command was positively seen exiting: if the ps
+# matcher missed a live command, closing the window would SIGHUP e.g. a
+# vi mid-edit, so in that case leave the window to the profile's
+# close-on-end.
+if [ -n "$pid" ] && [ -n "$winid" ]; then
+  osascript -e "tell application \"iTerm2\"" \
+            -e "if exists window id $winid then close window id $winid" \
+            -e "end tell"
+fi
+exit 0

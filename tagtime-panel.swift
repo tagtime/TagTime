@@ -27,24 +27,6 @@ if args.isEmpty {
   exit(2)
 }
 
-// Temporary instrumentation shared with the popup scripts: hi-res timestamped
-// lines in tmp/popup-timing.log next to this binary. Remove when diagnosed.
-let binDir = (CommandLine.arguments[0] as NSString).deletingLastPathComponent
-func tslog(_ msg: String) {
-  let path = binDir + "/tmp/popup-timing.log"
-  let line = String(format: "%.3f %@\n", Date().timeIntervalSince1970, msg)
-  if !FileManager.default.fileExists(atPath: path) {
-    FileManager.default.createFile(atPath: path, contents: nil)
-  }
-  guard let fh = FileHandle(forWritingAtPath: path) else {
-    FileHandle.standardError.write("SYSERR: can't append to popup-timing.log\n".data(using: .utf8)!)
-    return
-  }
-  fh.seekToEndOfFile()
-  fh.write(line.data(using: .utf8)!)
-  fh.closeFile()
-}
-
 let app = NSApplication.shared
 // .regular, not .accessory: regular apps are listed in the cmd-tab switcher,
 // and cmd-tab is user-initiated activation -- the one signal macOS 26 always
@@ -64,6 +46,26 @@ class ClickField: NSTextField {
 
 let bgRed = NSColor(calibratedRed: 0.87, green: 0.08, blue: 0.08, alpha: 1.0)
 let mono = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+
+// Cmd-C/X/V/A are dispatched through the main menu's key equivalents, and an
+// unbundled binary starts with no menu at all, so without this they're dead
+// keys. Item 0 is the app-name menu slot (AppKit renders it regardless of
+// content); no Quit in it, deliberately -- cmd-Q would exit 0 without killing
+// the child, and the close button already covers dismissal.
+let editMenu = NSMenu(title: "Edit")
+editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+editMenu.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+editMenu.addItem(.separator())
+editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+let mainMenu = NSMenu()
+mainMenu.addItem(NSMenuItem())
+let editItem = NSMenuItem()
+editItem.submenu = editMenu
+mainMenu.addItem(editItem)
+app.mainMenu = mainMenu
 
 // Dock and cmd-tab switcher icon: a plain red square matching the panel,
 // drawn at runtime so the unbundled binary needs no icon asset.
@@ -246,7 +248,6 @@ outPipe.fileHandleForReading.readabilityHandler = { fh in
 proc.terminationHandler = { p in
   DispatchQueue.main.async {
     finished = true
-    tslog("xt-exit")
     outPipe.fileHandleForReading.readabilityHandler = nil
     exit(p.terminationStatus)
   }
@@ -290,7 +291,6 @@ NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNot
   panel.makeKeyAndOrderFront(nil)
 }
 
-tslog("xt-start " + args.joined(separator: " "))
 do {
   try proc.run()
 } catch {

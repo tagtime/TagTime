@@ -7,7 +7,6 @@ $launchTime = time();
 
 require "$ENV{HOME}/.tagtimerc";
 require "${path}util.pl";
-use Time::HiRes ();
 
 my $args = join(' ', @ARGV); # supported arguments: test, quiet
 my $test =   ($args =~ /\btest\b/);
@@ -111,19 +110,7 @@ sub launch {
     else { system("$playsound") == 0 or print "SYSERR: $playsound\n"; }
   }
   $cmd = popcmd($t);
-  tslog("launch ping=$t");
   system($cmd) == 0 or print "SYSERR: $cmd\n";
-  tslog("closed ping=$t");
-}
-
-# Temporary instrumentation for diagnosing slow popups: append a line with a
-# hi-res timestamp to tmp/popup-timing.log. Remove when diagnosed.
-sub tslog {
-  my($msg) = @_;
-  open(my $f, ">>", "${path}tmp/popup-timing.log")
-    or print "SYSERR: can't append to popup-timing.log: $!\n";
-  printf $f "%.3f %s\n", Time::HiRes::time(), $msg;
-  close($f);
 }
 
 # Pop up an editor on the ping log, using $EDPOP from the settings file.

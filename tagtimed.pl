@@ -96,7 +96,9 @@ while(1) {
   if($nxtping <= $now) {
     if($catchup || $nxtping > $now-$retrothresh) {
       if(!defined($playsound)) { print STDERR "\a"; }
-      else { system("$playsound") == 0 or print "SYSERR: $playsound\n"; }
+      # play the ping sound in the background; afplay blocks ~1s
+      # neither afplay nor the popup should wait on the other
+      else { system("($playsound || echo SYSERR: $playsound) &"); }
     }
     # invokes popup for this ping plus additional popups if there were more
     #   pings while answering this one:
